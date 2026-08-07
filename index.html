@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>气象深高Online - 首页</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+	<link rel="icon" href="/favicon.ico" type="image/x-icon">
+</head>
+<body>
+
+    <!-- 顶部导航条 -->
+    <nav class="top-nav">
+        <div class="nav-left">
+            <img src="/data/icons/logo.png" alt="Logo" class="nav-logo">
+            <span class="nav-title">气象深高Online</span>
+        </div>
+        <div class="nav-right">
+            <!-- 修改点：主页链接改为SVG图标 -->
+            <a href="/index.html" class="nav-link" title="返回主页">
+                <img src="/data/icons/home.svg" alt="主页" class="nav-icon">
+            </a>
+        </div>
+    </nav>
+
+    <!-- 主内容容器 -->
+    <div class="main-container">
+        
+        <!-- 版块一：校园天气 -->
+        <section class="content-section">
+            <div class="section-header">
+                <div class="section-line"></div>
+                <div class="section-text">
+                    <h2 class="section-title">校园天气</h2>
+                    <p class="section-subtitle">实时数据监测与未来趋势预测</p>
+                </div>
+            </div>
+
+            <!-- 原有天气应用结构 -->
+            <div class="weather-container">
+                <div class="left-panel">
+                    <div class="main-card">
+                        <div class="card-header">
+                            <div class="header-left">
+                                <span class="title-text">中心校区实况</span>
+                                <span class="observe-time" id="observeTime">--:--</span>
+                            </div>
+                            <div class="header-right">
+                                <img src="data/icons/refresh.png" alt="刷新" class="refresh-btn" id="refreshBtn">
+                            </div>
+                        </div>
+                        <div class="realtime-section">
+                            <div class="realtime-left">
+                                <div class="realtime-temp" id="realtimeTemp">N/A<span class="unit">°C</span></div>
+                                <div class="apparent-temp" id="apparentTemp">体感值 N/A<span class="unit">°C</span></div>
+                            </div>
+                            <div class="realtime-right">
+                                <img src="data/icons/02.png" alt="天气" class="today-icon" id="todayIcon">
+                                <div class="realtime-info-right">
+                                    <div class="today-range" id="todayRange">N/A ~ N/A<span class="unit">°C</span></div>
+                                    <div class="today-desc" id="todayDesc" title="N/A">N/A</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="forecast-section">
+                            <div class="forecast-header">
+                                <span class="forecast-title">三日天气</span>
+                                <span class="publish-time" id="publishTime">N/A 发布</span>
+                            </div>
+                            <div class="forecast-days" id="forecastDays"></div>
+                        </div>
+                    </div>
+
+                    <div class="warning-card">
+                        <div class="warning-left">
+                            <span class="warning-title">预警信息</span>
+                        </div>
+                        <div class="warning-right">
+                            <div class="warning-icons" id="warningIcons"></div>
+                            <div class="no-warn-text" id="noWarnText">当前没有预警或网络断开</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="rain-card">
+                    <div class="rain-header">
+                        <span class="title-text rain-title-text">中心校区降雨预报</span>
+                    </div>
+                    <div class="rain-content">
+                        <div class="rain-bars" id="rainBars"></div>
+                        <div class="rain-time-labels" id="rainTimeLabels"></div>
+                    </div>
+                    <div class="rain-desc" id="rainDesc">无降雨或未联网</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 版块二：更多内容 -->
+        <section class="content-section">
+            <div class="section-header">
+                <div class="section-line"></div>
+                <div class="section-text">
+                    <h2 class="section-title">更多内容</h2>
+                    <p class="section-subtitle">探索气象社团与外部资源</p>
+                </div>
+            </div>
+
+            <div class="cards-wrapper">
+                <!-- 卡片 1：十天天气 -->
+                <div class="content-card">
+                    <div class="card-image">
+                        <img src="/data/pictures/10days.webp" alt="十天天气" class="card-img">
+                    </div>
+                    <div class="card-content">
+                        <div class="card-header">
+                            <h3 class="card-title">十天天气</h3>
+                        </div>
+                        <p class="card-description">查阅未来十天我市的官方天气预报，请注意，时效较远的预报有更大概率出现变动。</p>
+                        <div class="card-footer">
+                            <!-- 修改点：添加点击事件 -->
+                            <button class="read-more-btn" onclick="window.location.href='/10days.html'">
+                                要去！
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                                    <path d="M5 12h14m-7-7l7 7-7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 卡片 2：友情链接 -->
+                <div class="content-card">
+                    <div class="card-image">
+                        <img src="/data/pictures/links.webp" alt="友情链接" class="card-img">
+                    </div>
+                    <div class="card-content">
+                        <div class="card-header">
+                            <h3 class="card-title">友情链接</h3>
+                        </div>
+                        <p class="card-description">访问中央气象台、ECMWF、本地气象局等权威机构网站，获取更多专业气象数据与预警信息。</p>
+                        <div class="card-footer">
+                            <!-- 修改点：添加点击事件 -->
+                            <button class="read-more-btn" onclick="window.location.href='/links.html'">
+                                要去！
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                                    <path d="M5 12h14m-7-7l7 7-7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 卡片 3：社团介绍 -->
+                <div class="content-card" style="display: none;">
+                    <div class="card-image">
+                        <img src="/data/icons/sample_club.webp" alt="社团介绍" class="card-img">
+                    </div>
+                    <div class="card-content">
+                        <div class="card-header">
+                            <h3 class="card-title">社团介绍</h3>
+                        </div>
+                        <p class="card-description">了解我们的社团历史、日常观测活动、学术讲座以及如何加入我们，一起探索大气科学的奥秘。</p>
+                        <div class="card-footer">
+                            <!-- 修改点：添加点击事件 -->
+                            <button class="read-more-btn" onclick="window.location.href='/clubs.html'">
+                                要去！
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                                    <path d="M5 12h14m-7-7l7 7-7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- 模态框 -->
+    <div id="infoModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn">&times;</span>
+            <p id="modalText">信息加载中...</p>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
