@@ -1,11 +1,7 @@
 // script.js
 $(document).ready(function() {
-    // ==========================================
-    // CDN 路径前缀：与 <head> 中的 window.CDN_BASE 保持一致
-    // ==========================================
     const CDN_BASE = window.CDN_BASE || "";
 
-    // 先替换 HTML 中所有硬编码的图片路径（在发请求前完成）
     if (CDN_BASE) {
         $('img').each(function() {
             var src = $(this).attr('src');
@@ -19,26 +15,21 @@ $(document).ready(function() {
     }
 
     const CORS_PROXY = "/api/proxy?url=";
-    
-    // API URLs
     const BASE_URL_FORECAST = "https://weather.121.com.cn/data_cache/szWeather/sz10day_new.js";
     const BASE_URL_ALARM = "https://weather.121.com.cn/data_cache/szWeather/alarm/szAlarm.js";
-    const BASE_URL_REALTIME = "https://szqxapp1.121.com.cn/sztq-app/v6/v7/meteorologicalObt/topics?obtId=G3634&cityId=28060159493";
     const BASE_URL_RAIN = "https://wx.121.com.cn/Mobile/LdService/position?latitude=22.552188&longitude=114.025106&sign=1e86faea84f8574f155c9e485ed4710e";
 
     const WARNING_LEVEL_PRIORITY = { 'hongse': 5, 'chengse': 4, 'huangse': 3, 'leidian': 3, 'ganhan': 3, 'lanse': 2, 'baisse': 1 };
-    let rotation = 0;
 
-    // 工具函数
     function stripUnits(value) {
         if (!value) return 'N/A';
         const match = String(value).match(/[\d.]+/);
         return match ? match[0] : 'N/A';
     }
 
-    function extractObserveTime(describe) {
-        if (!describe) return 'N/A';
-        const match = describe.match(/(\d{2}:\d{2})/);
+    function extractObserveTime(dataTime) {
+        if (!dataTime) return 'N/A';
+        const match = String(dataTime).match(/(\d{2}:\d{2})/);
         return match ? match[0] : 'N/A';
     }
 
@@ -47,7 +38,6 @@ $(document).ready(function() {
         return s.replace(/星期([一二三四五六日])/, '周$1');
     }
 
-    // 体感温度计算
     function apparentTemperature(T, RH, v) {
         T = parseFloat(T); RH = parseFloat(RH); v = parseFloat(v);
         if (isNaN(T) || isNaN(RH) || isNaN(v)) return 'N/A';
@@ -61,7 +51,6 @@ $(document).ready(function() {
         return Math.round(AT * 10) / 10;
     }
 
-    // 预警去重逻辑
     function deduplicateAlarms(alarms) {
         if (!alarms) return [];
         let typeBestAlarm = {};
@@ -69,7 +58,6 @@ $(document).ready(function() {
             let icon = alarm.icon || '';
             let level = 0;
             let alarmType = 'unknown';
-            
             for (let key in WARNING_LEVEL_PRIORITY) {
                 if (icon.includes(key)) {
                     level = WARNING_LEVEL_PRIORITY[key];
@@ -79,18 +67,15 @@ $(document).ready(function() {
             }
             alarm._level = level;
             alarm._type = alarmType;
-
             if (!typeBestAlarm[alarmType] || level > typeBestAlarm[alarmType]._level) {
                 typeBestAlarm[alarmType] = alarm;
             }
         });
-
         let result = Object.values(typeBestAlarm).sort((a, b) => b._level - a._level);
         result.forEach(a => { delete a._level; delete a._type; });
         return result.slice(0, 6);
     }
 
-    // 降雨计算
     function calcHeight(rain_mm) {
         const MAX_BAR_HEIGHT = 90;
         const MAX_RAIN_VALUE = 40;
@@ -99,8 +84,7 @@ $(document).ready(function() {
         return Math.round((rain_mm / MAX_RAIN_VALUE) * MAX_BAR_HEIGHT);
     }
 
-    // 渲染主数据
-    function renderWeatherData(forecast, realtime) {
+    function renderWeatherData(forecast, rainData) {
         try {
             let pubDate = forecast.pubDate || 'N/A';
             let today = forecast.today || {};
@@ -134,35 +118,34 @@ $(document).ready(function() {
             }
             $('#forecastDays').html(daysHtml);
 
-            if (realtime && realtime.result) {
-                let r = realtime.result;
-                let temp = stripUnits(r.t);
-                let hum = stripUnits(r.rh);
-                let wind = stripUnits(r.ws);
-                
+            if (rainData) {
+                let temp = rainData.temp;
+                let hum = rainData.humidity;
+                let wind = rainData.wind;
                 $('#realtimeTemp').html(`${temp}<span class="unit">°C</span>`);
-                $('#observeTime').text(extractObserveTime(r.describe));
-                
+                $('#observeTime').text(extractObserveTime(rainData.dataTime));
                 let appTemp = apparentTemperature(temp, hum, wind);
                 $('#apparentTemp').html(`体感值 ${appTemp}<span class="unit">°C</span>`);
+            } else {
+                $('#realtimeTemp').html(`N/A<span class="unit">°C</span>`);
+                $('#observeTime').text('N/A');
+                $('#apparentTemp').html(`体感值 N/A<span class="unit">°C</span>`);
             }
         } catch (e) {
             console.error("渲染主数据出错:", e);
         }
     }
 
-    // 渲染预警
     function renderAlarms(alarmData) {
         let count = 0;
         let iconsHtml = '';
         if (alarmData && alarmData.subAlarm && alarmData.subAlarm.length > 0) {
             let deduped = deduplicateAlarms(alarmData.subAlarm);
             count = deduped.length;
-            deduped.forEach((alarm, i) => {
+            deduped.forEach((alarm) => {
                 iconsHtml += `<img src="${CDN_BASE}/data/warnings/${alarm.icon}.png" title="${alarm.str}">`;
             });
         }
-
         if (count > 0) {
             $('#warningIcons').html(iconsHtml).show();
             $('#noWarnText').hide();
@@ -172,7 +155,6 @@ $(document).ready(function() {
         }
     }
 
-    // 渲染降雨
     function renderRain(rainData) {
         $('#rainCard').show();
         $('#rainDesc').hide();
@@ -189,13 +171,12 @@ $(document).ready(function() {
         let hasRain = Math.max(...heights) > 3;
 
         if (!hasRain) {
-            $('#rainDesc').text("无降雨或未联网").show();
+            $('#rainDesc').text(rainData.wlrain || "无降雨").show();
             return;
         }
 
         let dtStr = rainData.dataTimeFormat;
         let dt = new Date(dtStr.replace(/\//g, '-'));
-        
         let barsHtml = '';
         let labelsHtml = '';
         let keyTimes = {
@@ -228,22 +209,12 @@ $(document).ready(function() {
         return `${h}:${m}`;
     }
 
-    // 数据获取
     function fetchAllData() {
         const ts = new Date().getTime();
-        
         const URL_FORECAST = `${BASE_URL_FORECAST}?_=${ts}`;
         const URL_ALARM = `${BASE_URL_ALARM}?_=${ts}`;
-
-        function randomAmps(max) {
-            const n = Math.floor(Math.random() * (max + 1));
-            return '&'.repeat(n);
-        }
-        const queryWithRandomAmps = '?' + randomAmps(10) + 'obtId=G3634' + randomAmps(10) + '&cityId=28060159493' + randomAmps(10);
-        const targetRealtimeUrl = "https://szqxapp1.121.com.cn/sztq-app/v6/v7/meteorologicalObt/topics" + queryWithRandomAmps;
-
-        const URL_REALTIME = CORS_PROXY + encodeURIComponent(targetRealtimeUrl);
-        const URL_RAIN = CORS_PROXY + encodeURIComponent(BASE_URL_RAIN) + "&_=" + ts;
+        // 降雨 API 不再加时间戳，由 Edge 缓存控制新鲜度
+        const URL_RAIN = CORS_PROXY + encodeURIComponent(BASE_URL_RAIN);
 
         $.getScript(URL_FORECAST, function() {
             let forecastData = window.SZ121_10dayWeather;
@@ -251,16 +222,12 @@ $(document).ready(function() {
             $.getScript(URL_ALARM, function() {
                 let alarmData = window.SZ121_AlarmInfo;
                 renderAlarms(alarmData);
-                
-                $.getJSON(URL_REALTIME, function(realtimeData) {
-                    renderWeatherData(forecastData, realtimeData);
-                }).fail(function() {
-                    renderWeatherData(forecastData, null);
-                });
-                
+
                 $.getJSON(URL_RAIN, function(rainData) {
+                    renderWeatherData(forecastData, rainData);
                     renderRain(rainData);
                 }).fail(function() {
+                    renderWeatherData(forecastData, null);
                     renderRain(null);
                 });
                 
@@ -273,13 +240,10 @@ $(document).ready(function() {
         });
     }
 
-    // 绑定刷新按钮
     $('#refreshBtn').on('click', fetchAllData);
-
-    // 初始化加载
     fetchAllData();
 
-    // 模态框交互逻辑
+    // 模态框
     const modal = $('#infoModal');
     const modalText = $('#modalText');
 
@@ -295,9 +259,7 @@ $(document).ready(function() {
 
     $('.close-btn').on('click', hideModal);
     $(window).on('click', function(event) {
-        if ($(event.target).is(modal)) {
-            hideModal();
-        }
+        if ($(event.target).is(modal)) hideModal();
     });
 
     $(document).on('click', '#todayIcon', function() { showModal($(this).attr('title')); });
