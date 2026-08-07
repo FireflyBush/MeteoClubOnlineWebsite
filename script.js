@@ -1,5 +1,23 @@
 // script.js
 $(document).ready(function() {
+    // ==========================================
+    // CDN 路径前缀：与 <head> 中的 window.CDN_BASE 保持一致
+    // ==========================================
+    const CDN_BASE = window.CDN_BASE || "";
+
+    // 先替换 HTML 中所有硬编码的图片路径（在发请求前完成）
+    if (CDN_BASE) {
+        $('img').each(function() {
+            var src = $(this).attr('src');
+            if (!src) return;
+            if (src.startsWith('/data/')) {
+                $(this).attr('src', CDN_BASE + src);
+            } else if (src.startsWith('data/') && !src.startsWith('data:')) {
+                $(this).attr('src', CDN_BASE + '/' + src);
+            }
+        });
+    }
+
     const CORS_PROXY = "/api/proxy?url=";
     
     // API URLs
@@ -91,7 +109,7 @@ $(document).ready(function() {
             let rawDesc = today.report || 'N/A';
             let cleanedDesc = rawDesc.replace(/气温[^；]*；/, '').replace(/；。/, '。').replace(/；$/, '');
             $('#todayDesc').text(cleanedDesc).attr('title', cleanedDesc);
-            $('#todayIcon').attr('src', `data/icons/${today.icon || '02'}.png`).attr('title', cleanedDesc);
+            $('#todayIcon').attr('src', `${CDN_BASE}/data/icons/${today.icon || '02'}.png`).attr('title', cleanedDesc);
             $('#todayRange').html(`${parseInt(today.minT) || 'N/A'} ~ ${parseInt(today.maxT) || 'N/A'}<span class="unit">°C</span>`);
             $('#publishTime').text(`${pubDate} 发布`);
 
@@ -104,7 +122,7 @@ $(document).ready(function() {
                         <div class="day-item">
                             <div class="day-date">${dateStr}</div>
                             <div class="day-info">
-                                <img src="data/icons/${d[4] || '02'}.png" class="day-icon" title="${d[1]}">
+                                <img src="${CDN_BASE}/data/icons/${d[4] || '02'}.png" class="day-icon" title="${d[1]}">
                                 <div class="day-temps">
                                     <div class="day-max">${parseInt(d[2]) || 'N/A'}<span class="unit">°C</span></div>
                                     <div class="day-min">${parseInt(d[3]) || 'N/A'}<span class="unit">°C</span></div>
@@ -123,7 +141,7 @@ $(document).ready(function() {
                 let wind = stripUnits(r.ws);
                 
                 $('#realtimeTemp').html(`${temp}<span class="unit">°C</span>`);
-                $('#observeTime').text(extractObserveTime(r.describe)); // 渲染到右上角
+                $('#observeTime').text(extractObserveTime(r.describe));
                 
                 let appTemp = apparentTemperature(temp, hum, wind);
                 $('#apparentTemp').html(`体感值 ${appTemp}<span class="unit">°C</span>`);
@@ -141,7 +159,7 @@ $(document).ready(function() {
             let deduped = deduplicateAlarms(alarmData.subAlarm);
             count = deduped.length;
             deduped.forEach((alarm, i) => {
-                iconsHtml += `<img src="data/warnings/${alarm.icon}.png" title="${alarm.str}">`;
+                iconsHtml += `<img src="${CDN_BASE}/data/warnings/${alarm.icon}.png" title="${alarm.str}">`;
             });
         }
 
@@ -190,7 +208,6 @@ $(document).ready(function() {
 
         for (let i = 0; i < 30; i++) {
             let w = heights[i] / 90 * 100;
-            // 修改点：使用 CSS 变量 --rain-pct 传递百分比
             barsHtml += `<div class="rain-bar-item"><div class="rain-bar-fill" style="--rain-pct: ${w}%;"></div></div>`;
         }
         $('#rainBars').html(barsHtml);
@@ -212,73 +229,49 @@ $(document).ready(function() {
     }
 
     // 数据获取
-function fetchAllData() {
-    // ... 刷新按钮旋转等代码不变 ...
-
-    const ts = new Date().getTime();
-    
-    // 1. 预报数据 (不使用代理，保持原样)
-    const URL_FORECAST = `${BASE_URL_FORECAST}?_=${ts}`;
-    
-    // 2. 预警数据 (不使用代理，保持原样)
-    const URL_ALARM = `${BASE_URL_ALARM}?_=${ts}`;
-
-    // 3. 实况数据 - 开始修改
-    // 我们需要把目标 URL 放入 CORS_PROXY 中，并使用 encodeURIComponent
-    // 注意：这里不再直接使用 $.getJSON(URL_REALTIME)，而是构造好完整的代理地址
-    
-    const BASE_REALTIME_URL = "https://szqxapp1.121.com.cn/sztq-app/v6/v7/meteorologicalObt/topics";
-    
-    // 生成那一串随机字符的逻辑保持不变
-    function randomAmps(max) {
-        const n = Math.floor(Math.random() * (max + 1));
-        return '&'.repeat(n);
-    }
-    const queryWithRandomAmps = '?' + randomAmps(10) + 'obtId=G3634' + randomAmps(10) + '&cityId=28060159493' + randomAmps(10);
-    const targetRealtimeUrl = BASE_REALTIME_URL + queryWithRandomAmps;
-
-    // --- 关键修改点 ---
-    // 使用 encodeURIComponent 包裹目标 URL，然后拼接到代理地址后
-    const URL_REALTIME = CORS_PROXY + encodeURIComponent(targetRealtimeUrl);
-
-    // 4. 降雨数据 - 开始修改
-    // 同样使用 encodeURIComponent 包裹目标 URL
-    const URL_RAIN = CORS_PROXY + encodeURIComponent(BASE_URL_RAIN) + "&_=" + ts;
-
-    // --- 请求逻辑 ---
-    
-    // 1. 获取预报 (Script 标签方式，不走代理)
-    $.getScript(URL_FORECAST, function() {
-        let forecastData = window.SZ121_10dayWeather;
+    function fetchAllData() {
+        const ts = new Date().getTime();
         
-        // 2. 获取预警 (Script 标签方式，不走代理)
-        $.getScript(URL_ALARM, function() {
-            let alarmData = window.SZ121_AlarmInfo;
-            renderAlarms(alarmData);
+        const URL_FORECAST = `${BASE_URL_FORECAST}?_=${ts}`;
+        const URL_ALARM = `${BASE_URL_ALARM}?_=${ts}`;
+
+        function randomAmps(max) {
+            const n = Math.floor(Math.random() * (max + 1));
+            return '&'.repeat(n);
+        }
+        const queryWithRandomAmps = '?' + randomAmps(10) + 'obtId=G3634' + randomAmps(10) + '&cityId=28060159493' + randomAmps(10);
+        const targetRealtimeUrl = "https://szqxapp1.121.com.cn/sztq-app/v6/v7/meteorologicalObt/topics" + queryWithRandomAmps;
+
+        const URL_REALTIME = CORS_PROXY + encodeURIComponent(targetRealtimeUrl);
+        const URL_RAIN = CORS_PROXY + encodeURIComponent(BASE_URL_RAIN) + "&_=" + ts;
+
+        $.getScript(URL_FORECAST, function() {
+            let forecastData = window.SZ121_10dayWeather;
             
-            // 3. 获取实况 (走代理)
-            $.getJSON(URL_REALTIME, function(realtimeData) {
-                renderWeatherData(forecastData, realtimeData);
+            $.getScript(URL_ALARM, function() {
+                let alarmData = window.SZ121_AlarmInfo;
+                renderAlarms(alarmData);
+                
+                $.getJSON(URL_REALTIME, function(realtimeData) {
+                    renderWeatherData(forecastData, realtimeData);
+                }).fail(function() {
+                    renderWeatherData(forecastData, null);
+                });
+                
+                $.getJSON(URL_RAIN, function(rainData) {
+                    renderRain(rainData);
+                }).fail(function() {
+                    renderRain(null);
+                });
+                
             }).fail(function() {
-                // 失败时尝试使用空数据渲染
-                renderWeatherData(forecastData, null);
-            });
-            
-            // 4. 获取降雨 (走代理)
-            $.getJSON(URL_RAIN, function(rainData) {
-                renderRain(rainData);
-            }).fail(function() {
-                renderRain(null);
+                renderAlarms(null);
             });
             
         }).fail(function() {
-            renderAlarms(null);
+            console.warn("预报数据获取失败");
         });
-        
-    }).fail(function() {
-        console.warn("预报数据获取失败");
-    });
-}
+    }
 
     // 绑定刷新按钮
     $('#refreshBtn').on('click', fetchAllData);
@@ -286,9 +279,7 @@ function fetchAllData() {
     // 初始化加载
     fetchAllData();
 
-    // ==========================================
     // 模态框交互逻辑
-    // ==========================================
     const modal = $('#infoModal');
     const modalText = $('#modalText');
 

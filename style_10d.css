@@ -1,0 +1,171 @@
+/* =========================================
+   十天预报专用样式（依赖 style.css 变量）
+   ========================================= */
+
+.forecast-10days {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.day-row {
+    display: flex;
+    align-items: center;
+    padding: 14px 18px;
+    background-color: var(--bg-color);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+    box-shadow: var(--glass-shadow);
+    transition: all .3s cubic-bezier(.25, .8, .25, 1);
+}
+
+.day-row:hover {
+    transform: translateX(5px);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+}
+
+/* 日期区域：某月某日 / 某天 明确分两行 */
+.day-info-left {
+    width: 72px;
+    flex-shrink: 0;
+    text-align: center;
+}
+
+.day-info-left .date {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--title-color);
+    line-height: 1.3;
+    white-space: nowrap;
+}
+
+.day-info-left .weekday {
+    font-size: 13px;
+    color: var(--dim-color);
+    line-height: 1.3;
+    margin-top: 2px;
+    white-space: nowrap;
+}
+
+.day-icon-10d {
+    width: 50px;
+    height: 50px;
+    margin: 0 16px;
+    flex-shrink: 0;
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+
+.day-icon-10d:active {
+    transform: scale(0.92);
+}
+
+.day-weather-text {
+    flex: 1;
+    font-size: 16px;
+    color: var(--text-color);
+    min-width: 0;
+}
+
+/* 温度范围条 */
+.day-temp-range {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 200px;
+    flex-shrink: 0;
+}
+
+.temp-bar-track {
+    flex: 1;
+    height: 5px;
+    background-color: var(--rain-bg);
+    border-radius: 3px;
+    position: relative;
+    overflow: hidden;
+}
+
+.temp-bar-fill {
+    position: absolute;
+    height: 100%;
+    border-radius: 3px;
+    background: linear-gradient(90deg, rgb(0 122 255 / 65%), rgb(255 150 0 / 65%));
+    transition: left 0.5s, width 0.5s;
+}
+
+.temp-min, .temp-max {
+    font-size: 16px;
+    font-weight: bold;
+    width: 36px;
+    text-align: center;
+}
+
+.temp-min { color: var(--dim-color); }
+.temp-max { color: var(--title-color); }
+
+.status-text {
+    text-align: center;
+    padding: 40px;
+    color: var(--dim-color);
+    font-size: 16px;
+}
+
+.publish-info {
+    text-align: right;
+    font-size: 14px;
+    color: var(--dim-color);
+    margin-bottom: 16px;
+    padding-right: 6px;
+}
+
+/* =========================================
+   手机端适配
+   ========================================= */
+@media (max-width: 1000px) {
+    .day-row {
+        padding: 10px 12px;
+        gap: 8px;
+    }
+
+    .day-info-left {
+        width: 56px;
+    }
+
+    .day-info-left .date {
+        font-size: 13px;
+    }
+
+    .day-info-left .weekday {
+        font-size: 12px;
+        margin-top: 1px;
+    }
+
+    .day-icon-10d {
+        width: 40px;
+        height: 40px;
+        margin: 0 8px;
+    }
+
+    /* 手机端隐藏天气文字，点击图标通过模态框查看 */
+    .day-weather-text {
+        display: none;
+    }
+
+    .day-temp-range {
+        width: auto;
+        flex: 1;
+        min-width: 0;
+        gap: 6px;
+    }
+
+    .temp-bar-track {
+        min-width: 40px;
+    }
+
+    .temp-min, .temp-max {
+        font-size: 14px;
+        width: 30px;
+    }
+}

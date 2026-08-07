@@ -6,7 +6,14 @@
     <title>气象深高Online - 首页</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-	<link rel="icon" href="/favicon.ico" type="image/x-icon">
+    <link rel="icon" href="/favicon.ico" type="image/x-icon">
+    
+    <!-- ==========================================
+         全局 CDN 配置：后续更新图片时只改这里
+         ========================================== -->
+    <script>
+        window.CDN_BASE = "https://cdn.jsdelivr.net/gh/FireflyBush/MeteoClubOnlineWebsite@2026.0808";
+    </script>
 </head>
 <body>
 
@@ -17,7 +24,6 @@
             <span class="nav-title">气象深高Online</span>
         </div>
         <div class="nav-right">
-            <!-- 修改点：主页链接改为SVG图标 -->
             <a href="/index.html" class="nav-link" title="返回主页">
                 <img src="/data/icons/home.svg" alt="主页" class="nav-icon">
             </a>
@@ -37,7 +43,6 @@
                 </div>
             </div>
 
-            <!-- 原有天气应用结构 -->
             <div class="weather-container">
                 <div class="left-panel">
                     <div class="main-card">
@@ -118,7 +123,6 @@
                         </div>
                         <p class="card-description">查阅未来十天我市的官方天气预报，请注意，时效较远的预报有更大概率出现变动。</p>
                         <div class="card-footer">
-                            <!-- 修改点：添加点击事件 -->
                             <button class="read-more-btn" onclick="window.location.href='/10days.html'">
                                 要去！
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
@@ -140,7 +144,6 @@
                         </div>
                         <p class="card-description">访问中央气象台、ECMWF、本地气象局等权威机构网站，获取更多专业气象数据与预警信息。</p>
                         <div class="card-footer">
-                            <!-- 修改点：添加点击事件 -->
                             <button class="read-more-btn" onclick="window.location.href='/links.html'">
                                 要去！
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
@@ -162,7 +165,6 @@
                         </div>
                         <p class="card-description">了解我们的社团历史、日常观测活动、学术讲座以及如何加入我们，一起探索大气科学的奥秘。</p>
                         <div class="card-footer">
-                            <!-- 修改点：添加点击事件 -->
                             <button class="read-more-btn" onclick="window.location.href='/clubs.html'">
                                 要去！
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
