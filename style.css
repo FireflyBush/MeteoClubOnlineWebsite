@@ -1,0 +1,357 @@
+/* style.css —— 晴雨表浅色磨砂主题样式 (优化整理版) */
+
+/* =========================================
+   1. 全局变量与重置
+   ========================================= */
+:root {
+    --bg-color: rgba(255, 255, 255, 0.55);
+    --text-color: rgba(0, 0, 0, 0.75);
+    --dim-color: rgba(0, 0, 0, 0.5);
+    --title-color: #545454;
+    --yellow-line: rgb(255 150 0 / 65%);
+    --blue-line: rgb(0 122 255 / 65%);
+    --rain-blue: #007AFF;
+    --rain-bg: rgba(0, 0, 0, 0.08);
+    --glass-border: rgba(255, 255, 255, 0.8);
+    --glass-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    --nav-height: 60px;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+@font-face {
+    font-family: 'GWM';
+    src: url('./ui_R.woff2') format('woff2');
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+}
+
+::-webkit-scrollbar { width: 8px; border-radius: 4px; }
+::-webkit-scrollbar-track { background: #0000001a; }
+::-webkit-scrollbar-thumb { background: rgb(0 122 255 / 65%); border-radius: 4px; }
+
+body {
+    background-color: #eef2f6;
+    font-family: "GWM", "Microsoft YaHei", "Segoe UI", sans-serif;
+    color: var(--text-color);
+    min-height: 100vh;
+    padding-top: calc(var(--nav-height) + 20px);
+    overflow-x: hidden;
+}
+
+/* =========================================
+   2. 顶部导航条
+   ========================================= */
+.top-nav {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: var(--nav-height);
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+    border-bottom: 1px solid var(--glass-border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 24px;
+    z-index: 1000;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.03);
+}
+
+.nav-left { display: flex; align-items: center; gap: 12px; }
+
+.nav-logo { height: 36px; width: auto; object-fit: contain; }
+
+.nav-title {
+    font-size: 18px;
+    font-weight: bold;
+    color: var(--title-color);
+}
+
+.nav-right .nav-link {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #eef2f6;
+    width: 36px;
+    height: 36px;
+    padding: 0; /* 覆盖原有内边距，适配图标 */
+    border-radius: 50%; /* 圆形按钮 */
+    transition: all 0.2s;
+    text-decoration: none;
+}
+
+.nav-right .nav-link:hover {
+    background: rgba(0, 0, 0, 0.25);
+}
+
+.nav-icon {
+    width: 20px;
+    height: 20px;
+    fill: currentColor; /* 跟随文字颜色 */
+    pointer-events: none; /* 防止点击图片无法触发链接 */
+}
+
+/* =========================================
+   3. 主容器与版块
+   ========================================= */
+.main-container {
+    width: 100%;
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 0 16px 40px 16px;
+}
+
+.content-section { margin-bottom: 40px; }
+
+/* 版块标题 */
+.section-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.section-line {
+    width: 6px; height: 36px;
+    background-color: var(--blue-line);
+    border-radius: 3px;
+    margin-right: 15px;
+    flex-shrink: 0;
+}
+
+.section-text {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.section-title {
+    font-size: 22px;
+    font-weight: bold;
+    color: var(--title-color);
+    line-height: 1.2;
+}
+
+.section-subtitle {
+    font-size: 14px;
+    color: var(--dim-color);
+    margin-top: 2px;
+}
+
+/* =========================================
+   4. 天气应用组件
+   ========================================= */
+.weather-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    width: 100%;
+}
+
+.left-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    flex: 2 1 400px;
+    min-width: 300px;
+}
+
+/* 卡片通用 */
+.main-card, .warning-card, .rain-card {
+    background-color: var(--bg-color);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--glass-shadow);
+    border-radius: 12px;
+    padding: 16px;
+    position: relative;
+    transition: all .3s cubic-bezier(.25, .8, .25, 1);
+}
+
+.main-card:hover, .warning-card:hover, .rain-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
+}
+
+/* 实况与预报 */
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.header-left, .header-right {
+    display: flex; align-items: center; gap: 10px;
+}
+
+.title-text, .forecast-title, .warning-title {
+    font-size: 20px; color: var(--title-color); line-height: 1.2;
+    display: inline-block; font-weight: bold;
+    background-image: linear-gradient(transparent calc(100% - 7px), var(--yellow-line) calc(100% - 7px));
+    background-repeat: no-repeat; background-position: left bottom;
+}
+
+.observe-time { font-size: 16px; color: var(--dim-color); margin-right: 10px; }
+.refresh-btn { width: 24px; height: 24px; cursor: pointer; opacity: 0.6; transition: transform 0.5s; filter: brightness(0); }
+.refresh-btn:hover { opacity: 1; transform: rotate(180deg); }
+
+.realtime-section {
+    display: flex; align-items: center; gap: 5px;
+    padding: 10px 0; border-bottom: 1px solid rgba(0,0,0,0.05); margin-bottom: 16px;
+}
+
+.realtime-left { display: flex; flex-direction: column; gap: 4px; }
+.realtime-temp { font-size: 40px; font-weight: bold; line-height: 1; }
+.realtime-temp .unit, .today-range .unit { font-size: 20px; color: var(--dim-color); }
+.apparent-temp { font-size: 16px; color: var(--dim-color); }
+
+.realtime-right {
+    display: flex; flex-direction: row; align-items: center; gap: 5px; flex: 1; min-width: 0;
+}
+
+.realtime-info-right {
+    display: flex; flex-direction: column; gap: 4px; text-align: left; min-width: 0;
+}
+
+.today-icon { width: 75px; height: 75px; cursor: pointer; }
+.today-range { font-size: 20px; font-weight: bold; }
+.today-desc { font-size: 16px; color: var(--dim-color); white-space: normal; overflow: auto; text-overflow: ellipsis; cursor: pointer; max-height: 40px; }
+
+/* 三日预报 */
+.forecast-section { display: flex; flex-direction: column; gap: 16px; }
+.forecast-header { display: flex; justify-content: space-between; align-items: center; }
+.publish-time { font-size: 16px; color: var(--dim-color); }
+.forecast-days { display: flex; justify-content: space-between; gap: 30px; }
+.day-item { flex: 1; text-align: center; position: relative; display: flex; flex-direction: column; align-items: center; }
+.day-date { font-size: 16px; color: var(--dim-color); font-weight: bold; }
+.day-info { display: flex; flex-direction: row; justify-content: center; align-items: center; }
+.day-icon { width: 65px; height: 65px; cursor: pointer; }
+.day-temps { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.day-max, .day-min { font-size: 20px; font-weight: bold; }
+.day-max .unit, .day-min .unit { font-size: 16px; color: var(--dim-color); }
+
+/* 预警卡片 */
+.warning-card { display: flex; flex-direction: column; gap: 10px; }
+.warning-left { display: flex; align-items: center; }
+.warning-right { width: 100%; display: flex; justify-content: flex-start; align-items: center; gap: 12px; }
+.warning-icons { display: flex; flex-wrap: wrap; gap: 5px; }
+.warning-icons img { height: 45px; cursor: pointer; }
+.no-warn-text { font-size: 16px; color: var(--dim-color); }
+
+/* 降雨卡片 */
+.rain-card { flex: 1 1 170px; min-width: 170px; display: flex; flex-direction: column; }
+.rain-title-text { font-size: 20px; background-image: linear-gradient(transparent calc(100% - 7px), var(--blue-line) calc(100% - 7px)); }
+.rain-header { margin-bottom: 16px; display: flex; align-items: center; }
+.rain-content { display: flex; gap: 10px; flex: 1; align-items: stretch; }
+.rain-bars { flex: 1; display: flex; flex-direction: column; gap: 4px; justify-content: flex-start; }
+.rain-bar-item { height: 7.8px; width: 100%; background-color: var(--rain-bg); border-radius: 3px; }
+.rain-bar-fill { height: 100%; background-color: var(--rain-blue); width: var(--rain-pct, 0); transition: width 0.5s; }
+.rain-time-labels { display: flex; flex-direction: column; justify-content: space-between; font-size: 14px; color: var(--dim-color); text-align: right; padding-right: 5px; }
+.rain-desc { margin-top: 16px; font-size: 16px; color: var(--dim-color); text-align: center; display: none; }
+
+/* =========================================
+   5. 链接卡片组件
+   ========================================= */
+.cards-wrapper {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+}
+
+.content-card {
+    background: rgba(255, 255, 255, 0.7);
+    -webkit-backdrop-filter: blur(20px);
+    backdrop-filter: blur(20px);
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+    transition: all .3s cubic-bezier(.25, .8, .25, 1);
+    display: flex;
+    flex-direction: column;
+}
+
+.content-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
+}
+
+.card-image { position: relative; width: 100%; height: 140px; background-color: #ddd; }
+.card-img { width: 100%; height: 100%; object-fit: cover; display: block;object-position: center top;}
+.image-overlay { position: absolute; top: 10px; right: 10px; }
+.category-badge { background: rgba(0, 0, 0, 0.6); color: #fff; padding: 4px 10px; border-radius: 12px; font-size: 12px; backdrop-filter: blur(4px); }
+
+.card-content { padding: 16px; display: flex; flex-direction: column; flex: 1; }
+.card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
+.card-title { font-size: 18px; font-weight: bold; color: var(--title-color); margin: 0; line-height: 1.4; }
+.card-date { font-size: 12px; color: var(--dim-color); white-space: nowrap; margin-left: 10px; }
+.card-description { font-size: 14px; color: var(--dim-color); line-height: 1.5; margin-bottom: 16px; flex: 1; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.card-footer { margin-top: auto; }
+
+.read-more-btn {
+    background: transparent;
+    border: 1px solid var(--rain-blue);
+    color: var(--rain-blue);
+    padding: 6px 16px;
+    border-radius: 20px;
+    font-size: 14px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s;
+    font-family: inherit;
+}
+
+.read-more-btn:hover { background: var(--rain-blue); color: #fff; }
+
+/* =========================================
+   6. 模态框
+   ========================================= */
+.modal { display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.4); justify-content: center; align-items: center; }
+.modal-content { background-color: #fefefe; padding: 25px 20px; border-radius: 12px; width: 80%; max-width: 300px; text-align: center; position: relative; box-shadow: 0 4px 20px rgba(0,0,0,0.15); animation: fadeIn 0.3s ease; }
+@keyframes fadeIn { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
+.close-btn { color: #aaa; position: absolute; top: 5px; right: 16px; font-size: 28px; font-weight: bold; cursor: pointer; }
+.close-btn:hover { color: #333; }
+#modalText { font-size: 16px; color: #333; line-height: 1.6; margin-top: 10px; word-break: break-all; }
+
+/* =========================================
+   7. 响应式适配
+   ========================================= */
+@media (max-width: 1000px) {
+    .weather-container { flex-direction: column; }
+    .left-panel { width: 100%; flex: none; }
+    .rain-card { width: 100%; flex: none; min-height: 200px; }
+    
+    .cards-wrapper { grid-template-columns: 1fr; }
+    
+    .realtime-section { flex-direction: row; }
+    .forecast-days { gap: 4px; }
+    
+    .rain-content { flex-direction: column; gap: 8px; }
+    .rain-bars { flex-direction: row; align-items: flex-end; height: 100px; gap: 2px; }
+    .rain-bar-item { height: 100px; width: 100%; display: flex; align-items: flex-end; }
+    .rain-bar-fill { width: 100%; height: var(--rain-pct, 0); background-color: var(--rain-blue); transition: height 0.5s; }
+    .rain-time-labels { flex-direction: row; justify-content: space-between; text-align: center; padding-right: 0; font-size: 12px; }
+    
+    .warning-icons img { height: 37.5px; cursor: pointer; }
+    .day-icon { width: 50px; height: 50px; cursor: pointer; }
+    .today-icon { width: 65px; height: 65px; cursor: pointer; }
+    .day-max, .day-min { font-size: 18px; font-weight: bold; }
+    
+    .nav-title { display: none; } /* 移动端隐藏标题 */
+}
+
+@media (min-width: 1000px) {
+    .main-container { transform: scale(1.25); transform-origin: top; }
+    
+    /* 桌面端标题居中 */
+    .nav-title {
+        position: absolute;
+        left: 50%;
+        transform: translateX(-50%);
+        font-size: 22px;
+        white-space: nowrap;
+        margin: 0;
+    }
+}
