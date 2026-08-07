@@ -8,7 +8,6 @@ export async function onRequest(context) {
     return new Response('Missing "url" parameter', { status: 400 });
   }
 
-  // 处理浏览器 CORS 预检请求
   if (request.method === "OPTIONS") {
     return new Response(null, {
       status: 204,
@@ -32,11 +31,14 @@ export async function onRequest(context) {
         const resp = new Response(cached.body, cached);
         resp.headers.set("Access-Control-Allow-Origin", "*");
         resp.headers.set("X-Cache", "HIT");
+        // 关键修复：命中缓存时，强制浏览器不缓存，确保每次刷新都向 Cloudflare 发请求
+        resp.headers.set("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+        resp.headers.set("Pragma", "no-cache");
+        resp.headers.set("Expires", "0");
         return resp;
       }
     }
 
-    // 构造更真实的浏览器请求头
     const response = await fetch(targetUrl, {
       method: request.method,
       headers: {
@@ -62,7 +64,7 @@ export async function onRequest(context) {
     clientResponse.headers.set("Access-Control-Allow-Origin", "*");
     clientResponse.headers.delete("Content-Security-Policy");
 
-    // 禁止浏览器本地缓存，确保用户每次刷新都向 Cloudflare 请求
+    // 禁止浏览器本地缓存
     clientResponse.headers.set("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
     clientResponse.headers.set("Pragma", "no-cache");
     clientResponse.headers.set("Expires", "0");
