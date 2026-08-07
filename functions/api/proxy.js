@@ -73,7 +73,7 @@ export async function onRequest(context) {
         status: response.status,
         headers: new Headers(clientResponse.headers)
       });
-      toCache.headers.set("Cache-Control", "public, max-age=240");
+      toCache.headers.set("Cache-Control", "public, max-age=180");
       toCache.headers.delete("Set-Cookie");
       await cache.put(new Request(targetUrl), toCache);
     }
