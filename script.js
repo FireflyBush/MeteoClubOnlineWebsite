@@ -213,8 +213,7 @@ $(document).ready(function() {
         const ts = new Date().getTime();
         const URL_FORECAST = `${BASE_URL_FORECAST}?_=${ts}`;
         const URL_ALARM = `${BASE_URL_ALARM}?_=${ts}`;
-        // 降雨 API 不再加时间戳，由 Edge 缓存控制新鲜度
-        const URL_RAIN = CORS_PROXY + encodeURIComponent(BASE_URL_RAIN);
+        const URL_RAIN = CORS_PROXY + encodeURIComponent(BASE_URL_RAIN + "&_=" + ts);
 
         $.getScript(URL_FORECAST, function() {
             let forecastData = window.SZ121_10dayWeather;
