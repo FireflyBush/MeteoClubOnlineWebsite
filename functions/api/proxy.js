@@ -23,7 +23,11 @@ export async function onRequest(context) {
   try {
     const cache = caches.default;
     const isRainApi = targetUrl.includes('wx.121.com.cn');
-    const cacheKey = new Request(targetUrl);
+
+    // 降雨 API：缓存 key 固定为域名级别，不随 URL 时间戳变化
+    // 这样 script.js 每次加 &_=123456 都能命中同一份冷却缓存
+    const cacheKeyStr = isRainApi ? "domain:wx.121.com.cn" : targetUrl;
+    const cacheKey = new Request(cacheKeyStr);
 
     if (isRainApi && request.method === "GET") {
       const cached = await cache.match(cacheKey);
@@ -31,25 +35,26 @@ export async function onRequest(context) {
         const expires = cached.headers.get("X-Cache-Expires");
         const now = Date.now();
 
+        // 3 分钟冷却期内：直接返回缓存，不碰源站
         if (expires && parseInt(expires) > now) {
-          const newHeaders = new Headers(cached.headers);
-          newHeaders.set("Access-Control-Allow-Origin", "*");
-          newHeaders.set("X-Cache", "HIT");
-          newHeaders.set("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
-          newHeaders.set("Pragma", "no-cache");
-          newHeaders.set("Expires", "0");
-
           return new Response(cached.body, {
             status: cached.status,
-            statusText: cached.statusText,
-            headers: newHeaders
+            headers: {
+              "Access-Control-Allow-Origin": "*",
+              "X-Cache": "HIT",
+              "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
+              "Pragma": "no-cache",
+              "Expires": "0",
+            }
           });
         }
 
+        // 已过期：删除缓存，准备用新 URL 穿透源站
         await cache.delete(cacheKey);
       }
     }
 
+    // 转发请求到目标服务器（targetUrl 带时间戳，源站视为新请求）
     const response = await fetch(targetUrl, {
       method: request.method,
       headers: {
@@ -68,10 +73,10 @@ export async function onRequest(context) {
 
     const bodyText = await response.text();
 
+    // 降雨 API：写入缓存（key 固定为域名，3 分钟 TTL）
     if (isRainApi && request.method === "GET" && response.status === 200) {
       const cacheHeaders = new Headers();
       cacheHeaders.set("Content-Type", response.headers.get("Content-Type") || "application/json");
-      cacheHeaders.set("Cache-Control", "public, max-age=180");
       cacheHeaders.set("X-Cache-Expires", (Date.now() + 180000).toString());
 
       const cacheResponse = new Response(bodyText, {
@@ -82,6 +87,7 @@ export async function onRequest(context) {
       await cache.put(cacheKey, cacheResponse);
     }
 
+    // 返回给浏览器（禁止浏览器本地缓存）
     return new Response(bodyText, {
       status: response.status,
       statusText: response.statusText,
