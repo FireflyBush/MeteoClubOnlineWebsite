@@ -24,28 +24,30 @@ export async function onRequest(context) {
     const cache = caches.default;
     const isRainApi = targetUrl.includes('wx.121.com.cn');
 
-    // 降雨 API：缓存 key 固定为域名级别，不随 URL 时间戳变化
-    // 这样 script.js 每次加 &_=123456 都能命中同一份冷却缓存
-    const cacheKeyStr = isRainApi ? "domain:wx.121.com.cn" : targetUrl;
-    const cacheKey = new Request(cacheKeyStr);
-
+    // 降雨 API：域名级冷却缓存
     if (isRainApi && request.method === "GET") {
+      const cacheKey = new Request("https://internal.cache/rain-api-cooldown");
       const cached = await cache.match(cacheKey);
+      
       if (cached) {
         const expires = cached.headers.get("X-Cache-Expires");
         const now = Date.now();
 
         // 3 分钟冷却期内：直接返回缓存，不碰源站
         if (expires && parseInt(expires) > now) {
+          const hitHeaders = new Headers();
+          hitHeaders.set("Access-Control-Allow-Origin", "*");
+          hitHeaders.set("X-Cache", "HIT");
+          hitHeaders.set("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+          hitHeaders.set("Pragma", "no-cache");
+          hitHeaders.set("Expires", "0");
+          
+          const ct = cached.headers.get("Content-Type");
+          if (ct) hitHeaders.set("Content-Type", ct);
+
           return new Response(cached.body, {
             status: cached.status,
-            headers: {
-              "Access-Control-Allow-Origin": "*",
-              "X-Cache": "HIT",
-              "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
-              "Pragma": "no-cache",
-              "Expires": "0",
-            }
+            headers: hitHeaders
           });
         }
 
@@ -54,7 +56,7 @@ export async function onRequest(context) {
       }
     }
 
-    // 转发请求到目标服务器（targetUrl 带时间戳，源站视为新请求）
+    // 转发到目标服务器（targetUrl 带时间戳，源站视为新请求）
     const response = await fetch(targetUrl, {
       method: request.method,
       headers: {
@@ -73,10 +75,11 @@ export async function onRequest(context) {
 
     const bodyText = await response.text();
 
-    // 降雨 API：写入缓存（key 固定为域名，3 分钟 TTL）
+    // 降雨 API：写入域名级缓存（3 分钟 TTL）
     if (isRainApi && request.method === "GET" && response.status === 200) {
       const cacheHeaders = new Headers();
-      cacheHeaders.set("Content-Type", response.headers.get("Content-Type") || "application/json");
+      const ct = response.headers.get("Content-Type");
+      cacheHeaders.set("Content-Type", ct || "application/json");
       cacheHeaders.set("X-Cache-Expires", (Date.now() + 180000).toString());
 
       const cacheResponse = new Response(bodyText, {
@@ -84,19 +87,23 @@ export async function onRequest(context) {
         headers: cacheHeaders
       });
 
-      await cache.put(cacheKey, cacheResponse);
+      await cache.put(new Request("https://internal.cache/rain-api-cooldown"), cacheResponse);
     }
 
-    // 返回给浏览器（禁止浏览器本地缓存）
+    // 返回浏览器（禁止浏览器本地缓存，但保留 Content-Type）
+    const browserHeaders = new Headers();
+    browserHeaders.set("Access-Control-Allow-Origin", "*");
+    browserHeaders.set("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+    browserHeaders.set("Pragma", "no-cache");
+    browserHeaders.set("Expires", "0");
+    
+    const respCT = response.headers.get("Content-Type");
+    if (respCT) browserHeaders.set("Content-Type", respCT);
+
     return new Response(bodyText, {
       status: response.status,
       statusText: response.statusText,
-      headers: {
-        "Access-Control-Allow-Origin": "*",
-        "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
-        "Pragma": "no-cache",
-        "Expires": "0",
-      }
+      headers: browserHeaders
     });
 
   } catch (e) {
