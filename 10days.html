@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>气象深高Online - 十天天气</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style_10d.css">
+    <link rel="icon" href="/favicon.ico" type="image/x-icon">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    
+    <!-- CDN 前缀：后续只改这里 -->
+    <script>
+        window.CDN_BASE = "https://cdn.jsdelivr.net/gh/FireflyBush/MeteoClubOnlineWebsite@2026.0808";
+    </script>
+</head>
+<body>
+
+    <!-- 顶部导航条：照搬 -->
+    <nav class="top-nav">
+        <div class="nav-left">
+            <img src="/data/icons/logo.png" alt="Logo" class="nav-logo">
+            <span class="nav-title">气象深高Online</span>
+        </div>
+        <div class="nav-right">
+            <a href="/index.html" class="nav-link" title="返回主页">
+                <img src="/data/icons/home.svg" alt="主页" class="nav-icon">
+            </a>
+        </div>
+    </nav>
+
+    <!-- 主内容区 -->
+    <div class="main-container">
+        <section class="content-section">
+            <div class="section-header">
+                <div class="section-line"></div>
+                <div class="section-text">
+                    <h2 class="section-title">十天天气</h2>
+                    <p class="section-subtitle">深圳市未来十天官方天气预报</p>
+                </div>
+            </div>
+
+            <div class="main-card">
+                <div class="publish-info" id="publishInfo"></div>
+                <div id="loadingStatus" class="status-text">正在获取预报数据...</div>
+                <div class="forecast-10days" id="forecast10Days" style="display:none;"></div>
+            </div>
+        </section>
+    </div>
+
+    <!-- 模态框：复用 style.css 中的 .modal 样式 -->
+    <div id="infoModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn">&times;</span>
+            <p id="modalText">信息加载中...</p>
+        </div>
+    </div>
+
+    <script src="script_10d.js"></script>
+</body>
+</html>

@@ -7,6 +7,13 @@
     <!-- 直接使用现有样式表 -->
     <link rel="stylesheet" href="style.css">
 	<link rel="icon" href="/favicon.ico" type="image/x-icon">
+    
+    <!-- ==========================================
+         全局 CDN 配置：后续更新图片时只改这里
+         ========================================== -->
+    <script>
+        window.CDN_BASE = "https://cdn.jsdelivr.net/gh/FireflyBush/MeteoClubOnlineWebsite@2026.0808";
+    </script>
 </head>
 <body>
 
@@ -320,6 +327,23 @@
     </div>
 
 </div>
+
+<!-- ==========================================
+     静态图片自动替换为 jsDelivr CDN 路径
+     ========================================== -->
+<script>
+    (function() {
+        var base = window.CDN_BASE;
+        if (!base) return;
+        document.querySelectorAll('img').forEach(function(img) {
+            var src = img.getAttribute('src');
+            if (!src) return;
+            if (src.startsWith('/data/')) {
+                img.src = base + src;
+            }
+        });
+    })();
+</script>
 
 </body>
 </html>
