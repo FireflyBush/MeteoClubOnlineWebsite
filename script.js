@@ -84,60 +84,57 @@ $(document).ready(function() {
         return Math.round((rain_mm / MAX_RAIN_VALUE) * MAX_BAR_HEIGHT);
     }
 
-function renderWeatherData(forecast, rainData) {
-    try {
-        let pubDate = forecast.pubDate || 'N/A';
-        let today = forecast.today || {};
-        let day10 = forecast.day10 || [];
+    function renderWeatherData(forecast, rainData) {
+        try {
+            let pubDate = forecast.pubDate || 'N/A';
+            let today = forecast.today || {};
+            let day10 = forecast.day10 || [];
 
-        // --- 预报区（只要 forecast 有数据就渲染）---
-        let rawDesc = today.report || 'N/A';
-        let cleanedDesc = rawDesc.replace(/气温[^；]*；/, '').replace(/；。/, '。').replace(/；$/, '');
-        $('#todayDesc').text(cleanedDesc).attr('title', cleanedDesc);
-        $('#todayIcon').attr('src', `${CDN_BASE}/data/icons/${today.icon || '02'}.png`).attr('title', cleanedDesc);
-        $('#todayRange').html(`${parseInt(today.minT) || 'N/A'} ~ ${parseInt(today.maxT) || 'N/A'}<span class="unit">°C</span>`);
-        $('#publishTime').text(`${pubDate} 发布`);
+            let rawDesc = today.report || 'N/A';
+            let cleanedDesc = rawDesc.replace(/气温[^；]*；/, '').replace(/；。/, '。').replace(/；$/, '');
+            $('#todayDesc').text(cleanedDesc).attr('title', cleanedDesc);
+            $('#todayIcon').attr('src', `${CDN_BASE}/data/icons/${today.icon || '02'}.png`).attr('title', cleanedDesc);
+            $('#todayRange').html(`${parseInt(today.minT) || 'N/A'} ~ ${parseInt(today.maxT) || 'N/A'}<span class="unit">°C</span>`);
+            $('#publishTime').text(`${pubDate} 发布`);
 
-        let daysHtml = '';
-        for (let i = 0; i < 3; i++) {
-            if (day10[i]) {
-                let d = day10[i];
-                let dateStr = convertWeekday(d[0]);
-                daysHtml += `
-                    <div class="day-item">
-                        <div class="day-date">${dateStr}</div>
-                        <div class="day-info">
-                            <img src="${CDN_BASE}/data/icons/${d[4] || '02'}.png" class="day-icon" title="${d[1]}">
-                            <div class="day-temps">
-                                <div class="day-max">${parseInt(d[2]) || 'N/A'}<span class="unit">°C</span></div>
-                                <div class="day-min">${parseInt(d[3]) || 'N/A'}<span class="unit">°C</span></div>
+            let daysHtml = '';
+            for (let i = 0; i < 3; i++) {
+                if (day10[i]) {
+                    let d = day10[i];
+                    let dateStr = convertWeekday(d[0]);
+                    daysHtml += `
+                        <div class="day-item">
+                            <div class="day-date">${dateStr}</div>
+                            <div class="day-info">
+                                <img src="${CDN_BASE}/data/icons/${d[4] || '02'}.png" class="day-icon" title="${d[1]}">
+                                <div class="day-temps">
+                                    <div class="day-max">${parseInt(d[2]) || 'N/A'}<span class="unit">°C</span></div>
+                                    <div class="day-min">${parseInt(d[3]) || 'N/A'}<span class="unit">°C</span></div>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                `;
+                    `;
+                }
             }
-        }
-        $('#forecastDays').html(daysHtml);
+            $('#forecastDays').html(daysHtml);
 
-        // --- 实时区（依赖 rainData，可能后到达）---
-        if (rainData) {
-            let temp = rainData.temp;
-            let hum = rainData.humidity;
-            let wind = rainData.wind;
-            $('#realtimeTemp').html(`${temp}<span class="unit">°C</span>`);
-            $('#observeTime').text(extractObserveTime(rainData.dataTime));
-            let appTemp = apparentTemperature(temp, hum, wind);
-            $('#apparentTemp').html(`体感值 ${appTemp}<span class="unit">°C</span>`);
-        } else {
-            // 保持 N/A 或上次状态，不覆盖预报区
-            $('#realtimeTemp').html(`N/A<span class="unit">°C</span>`);
-            $('#observeTime').text('--:--');
-            $('#apparentTemp').html(`体感值 N/A<span class="unit">°C</span>`);
+            if (rainData) {
+                let temp = rainData.temp;
+                let hum = rainData.humidity;
+                let wind = rainData.wind;
+                $('#realtimeTemp').html(`${temp}<span class="unit">°C</span>`);
+                $('#observeTime').text(extractObserveTime(rainData.dataTime));
+                let appTemp = apparentTemperature(temp, hum, wind);
+                $('#apparentTemp').html(`体感值 ${appTemp}<span class="unit">°C</span>`);
+            } else {
+                $('#realtimeTemp').html(`N/A<span class="unit">°C</span>`);
+                $('#observeTime').text('N/A');
+                $('#apparentTemp').html(`体感值 N/A<span class="unit">°C</span>`);
+            }
+        } catch (e) {
+            console.error("渲染主数据出错:", e);
         }
-    } catch (e) {
-        console.error("渲染主数据出错:", e);
     }
-}
 
     function renderAlarms(alarmData) {
         let count = 0;
@@ -212,56 +209,36 @@ function renderWeatherData(forecast, rainData) {
         return `${h}:${m}`;
     }
 
-function fetchAllData() {
-    const ts = new Date().getTime();
-    const URL_FORECAST = `${BASE_URL_FORECAST}?_=${ts}`;
-    const URL_ALARM = `${BASE_URL_ALARM}?_=${ts}`;
-    const URL_RAIN = CORS_PROXY + encodeURIComponent(BASE_URL_RAIN + "&_=" + ts);
+    function fetchAllData() {
+        const ts = new Date().getTime();
+        const URL_FORECAST = `${BASE_URL_FORECAST}?_=${ts}`;
+        const URL_ALARM = `${BASE_URL_ALARM}?_=${ts}`;
+// 确认是这一行（带 &_= 时间戳）
+const URL_RAIN = CORS_PROXY + encodeURIComponent(BASE_URL_RAIN + "&_=" + ts);
 
-    // 先清空/重置状态
-    $('#forecastDays').empty();
-    $('#warningIcons').empty();
-    $('#rainBars').empty();
-    $('#rainTimeLabels').empty();
-
-    // 1. 预报数据（script 标签加载，无超时控制，靠浏览器）
-    $.getScript(URL_FORECAST, function() {
-        let forecastData = window.SZ121_10dayWeather;
-        // 预报拿到后，先渲染能渲染的部分（今日天气、三日预报）
-        // 降雨数据可能还没回来，先传 null
-        renderWeatherData(forecastData, null);
-    }).fail(function() {
-        console.warn("预报数据获取失败");
-        $('#todayDesc').text("数据获取失败，请稍后重试");
-    });
-
-    // 2. 预警数据（独立请求）
-    $.getScript(URL_ALARM, function() {
-        let alarmData = window.SZ121_AlarmInfo;
-        renderAlarms(alarmData);
-    }).fail(function() {
-        renderAlarms(null);
-    });
-
-    // 3. 降雨数据（走 proxy，加 8 秒超时）
-    $.ajax({
-        url: URL_RAIN,
-        dataType: 'json',
-        timeout: 8000,
-        success: function(rainData) {
-            // 降雨回来时，如果预报数据已经渲染过，只更新降雨和体感温度
+        $.getScript(URL_FORECAST, function() {
             let forecastData = window.SZ121_10dayWeather;
-            renderWeatherData(forecastData, rainData);
-            renderRain(rainData);
-        },
-        error: function() {
-            // 超时也进这里
-            let forecastData = window.SZ121_10dayWeather;
-            renderWeatherData(forecastData, null);
-            renderRain(null);
-        }
-    });
-}
+            
+            $.getScript(URL_ALARM, function() {
+                let alarmData = window.SZ121_AlarmInfo;
+                renderAlarms(alarmData);
+
+                $.getJSON(URL_RAIN, function(rainData) {
+                    renderWeatherData(forecastData, rainData);
+                    renderRain(rainData);
+                }).fail(function() {
+                    renderWeatherData(forecastData, null);
+                    renderRain(null);
+                });
+                
+            }).fail(function() {
+                renderAlarms(null);
+            });
+            
+        }).fail(function() {
+            console.warn("预报数据获取失败");
+        });
+    }
 
     $('#refreshBtn').on('click', fetchAllData);
     fetchAllData();
