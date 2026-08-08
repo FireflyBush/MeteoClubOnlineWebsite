@@ -7,54 +7,23 @@
     <!-- 直接使用现有样式表 -->
     <link rel="stylesheet" href="style.css">
 	<link rel="icon" href="/favicon.ico" type="image/x-icon">
-<script>
-  // ==========================================
-  // 1. 定义全局 CDN 基础路径 (供 script.js 动态生成图片时使用)
-  // ==========================================
-  window.CDN_BASE = "https://cdn.jsdelivr.net/gh/FireflyBush/MeteoClubOnlineWebsite@2026.0808";
 
-  // ==========================================
-  // 2. 原生拦截器 (解决静态 HTML 图片加载竞态问题)
-  // ==========================================
-  (function() {
-    const originalSetter = Object.getOwnPropertyDescriptor(HTMLImageElement.prototype, 'src').set;
-    
-    Object.defineProperty(HTMLImageElement.prototype, 'src', {
-      set: function(value) {
-        if (typeof value === 'string') {
-          // 判断逻辑需与 script.js 保持一致
-          const isLocalPath = value.startsWith('/data/') || (value.startsWith('data/') && !value.startsWith('data:'));
-          
-          if (isLocalPath) {
-            // 拦截请求，强制替换为 CDN 地址
-            const newSrc = window.CDN_BASE + (value.startsWith('/') ? '' : '/') + value;
-            // 调用原生方法设置正确的地址
-            originalSetter.call(this, newSrc);
-            return;
-          }
-        }
-        // 如果不是本地路径，直接放行
-        originalSetter.call(this, value);
-      },
-      get: function() {
-        return this.getAttribute('src');
-      }
-    });
-  })();
-</script>
+    <script>
+      window.CDN_BASE = "https://cdn.jsdelivr.net/gh/FireflyBush/MeteoClubOnlineWebsite@2026.0808";
+    </script>
 </head>
 <body>
 
 <!-- 顶部导航条：照搬 index.html 代码片段 -->
 <nav class="top-nav">
     <div class="nav-left">
-        <img src="/data/icons/logo.png" alt="Logo" class="nav-logo">
+        <img src="https://cdn.jsdelivr.net/gh/FireflyBush/MeteoClubOnlineWebsite@2026.0808/data/icons/logo.png" alt="Logo" class="nav-logo">
         <span class="nav-title">气象深高Online</span>
     </div>
     <div class="nav-right">
         <!-- 修改点：主页链接改为SVG图标 -->
         <a href="/index.html" class="nav-link" title="返回主页">
-            <img src="/data/icons/home.svg" alt="主页" class="nav-icon">
+            <img src="https://cdn.jsdelivr.net/gh/FireflyBush/MeteoClubOnlineWebsite@2026.0808/data/icons/home.svg" alt="主页" class="nav-icon">
         </a>
     </div>
 </nav>
@@ -76,7 +45,7 @@
             <!-- 中央气象台 -->
             <div class="content-card">
                 <div class="card-image">
-                    <img class="card-img" src="/data/pictures/nmc.webp" alt="中央气象台">
+                    <img class="card-img" src="https://cdn.jsdelivr.net/gh/FireflyBush/MeteoClubOnlineWebsite@2026.0808/data/pictures/nmc.webp" alt="中央气象台">
                 </div>
                 <div class="card-content">
                     <div class="card-header">
@@ -99,7 +68,7 @@
             <!-- 广东气象网 -->
             <div class="content-card">
                 <div class="card-image">
-                    <img class="card-img" src="/data/pictures/gd121.webp" alt="广东气象网">
+                    <img class="card-img" src="https://cdn.jsdelivr.net/gh/FireflyBush/MeteoClubOnlineWebsite@2026.0808/data/pictures/gd121.webp" alt="广东气象网">
                 </div>
                 <div class="card-content">
                     <div class="card-header">
@@ -122,7 +91,7 @@
             <!-- 深圳市气象台 -->
             <div class="content-card">
                 <div class="card-image">
-                    <img class="card-img" src="/data/pictures/szmb.webp" alt="深圳市气象台">
+                    <img class="card-img" src="https://cdn.jsdelivr.net/gh/FireflyBush/MeteoClubOnlineWebsite@2026.0808/data/pictures/szmb.webp" alt="深圳市气象台">
                 </div>
                 <div class="card-content">
                     <div class="card-header">
@@ -145,7 +114,7 @@
             <!-- 香港天文台 -->
             <div class="content-card">
                 <div class="card-image">
-                    <img class="card-img" src="/data/pictures/hko.webp" alt="香港天文台">
+                    <img class="card-img" src="https://cdn.jsdelivr.net/gh/FireflyBush/MeteoClubOnlineWebsite@2026.0808/data/pictures/hko.webp" alt="香港天文台">
                 </div>
                 <div class="card-content">
                     <div class="card-header">
@@ -181,7 +150,7 @@
             <!-- 菜园子的天气栈 -->
             <div class="content-card">
                 <div class="card-image">
-                    <img class="card-img" src="/data/pictures/smca.webp" alt="菜园子的天气栈">
+                    <img class="card-img" src="https://cdn.jsdelivr.net/gh/FireflyBush/MeteoClubOnlineWebsite@2026.0808/data/pictures/smca.webp" alt="菜园子的天气栈">
                 </div>
                 <div class="card-content">
                     <div class="card-header">
@@ -204,7 +173,7 @@
             <!-- 大皮鸭 -->
             <div class="content-card">
                 <div class="card-image">
-                    <img class="card-img" src="/data/pictures/dapiya.webp" alt="大皮鸭">
+                    <img class="card-img" src="https://cdn.jsdelivr.net/gh/FireflyBush/MeteoClubOnlineWebsite@2026.0808/data/pictures/dapiya.webp" alt="大皮鸭">
                 </div>
                 <div class="card-content">
                     <div class="card-header">
@@ -227,7 +196,7 @@
             <!-- Meteologix -->
             <div class="content-card">
                 <div class="card-image">
-                    <img class="card-img" src="/data/pictures/meteologix.webp" alt="Meteologix">
+                    <img class="card-img" src="https://cdn.jsdelivr.net/gh/FireflyBush/MeteoClubOnlineWebsite@2026.0808/data/pictures/meteologix.webp" alt="Meteologix">
                 </div>
                 <div class="card-content">
                     <div class="card-header">
@@ -250,7 +219,7 @@
             <!-- Cirro Pisces -->
             <div class="content-card">
                 <div class="card-image">
-                    <img class="card-img" src="/data/pictures/yandoos.webp" alt="Cirro Pisces">
+                    <img class="card-img" src="https://cdn.jsdelivr.net/gh/FireflyBush/MeteoClubOnlineWebsite@2026.0808/data/pictures/yandoos.webp" alt="Cirro Pisces">
                 </div>
                 <div class="card-content">
                     <div class="card-header">
@@ -286,7 +255,7 @@
             <!-- 深中气象 -->
             <div class="content-card">
                 <div class="card-image">
-                    <img class="card-img" src="/data/pictures/shenzhong.webp" alt="深中气象">
+                    <img class="card-img" src="https://cdn.jsdelivr.net/gh/FireflyBush/MeteoClubOnlineWebsite@2026.0808/data/pictures/shenzhong.webp" alt="深中气象">
                 </div>
                 <div class="card-content">
                     <div class="card-header">
@@ -309,7 +278,7 @@
             <!-- 宝安中学气象社 -->
             <div class="content-card">
                 <div class="card-image">
-                    <img class="card-img" src="/data/pictures/baozhong.webp" alt="宝安中学气象社">
+                    <img class="card-img" src="https://cdn.jsdelivr.net/gh/FireflyBush/MeteoClubOnlineWebsite@2026.0808/data/pictures/baozhong.webp" alt="宝安中学气象社">
                 </div>
                 <div class="card-content">
                     <div class="card-header">
@@ -332,7 +301,7 @@
             <!-- 深圳学生气象社团联盟 -->
             <div class="content-card">
                 <div class="card-image">
-                    <img class="card-img" src="/data/pictures/shenqilian.webp" alt="深圳学生气象社团联盟">
+                    <img class="card-img" src="https://cdn.jsdelivr.net/gh/FireflyBush/MeteoClubOnlineWebsite@2026.0808/data/pictures/shenqilian.webp" alt="深圳学生气象社团联盟">
                 </div>
                 <div class="card-content">
                     <div class="card-header">
