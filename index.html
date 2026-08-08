@@ -7,13 +7,43 @@
     <link rel="stylesheet" href="style.css">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <link rel="icon" href="/favicon.ico" type="image/x-icon">
+
+<script>
+  // ==========================================
+  // 1. 定义全局 CDN 基础路径 (供 script.js 动态生成图片时使用)
+  // ==========================================
+  window.CDN_BASE = "https://cdn.jsdelivr.net/gh/FireflyBush/MeteoClubOnlineWebsite@2026.0808";
+
+  // ==========================================
+  // 2. 原生拦截器 (解决静态 HTML 图片加载竞态问题)
+  // ==========================================
+  (function() {
+    const originalSetter = Object.getOwnPropertyDescriptor(HTMLImageElement.prototype, 'src').set;
     
-    <!-- ==========================================
-         全局 CDN 配置：后续更新图片时只改这里
-         ========================================== -->
-    <script>
-        window.CDN_BASE = "https://cdn.jsdelivr.net/gh/FireflyBush/MeteoClubOnlineWebsite@2026.0808";
-    </script>
+    Object.defineProperty(HTMLImageElement.prototype, 'src', {
+      set: function(value) {
+        if (typeof value === 'string') {
+          // 判断逻辑需与 script.js 保持一致
+          const isLocalPath = value.startsWith('/data/') || (value.startsWith('data/') && !value.startsWith('data:'));
+          
+          if (isLocalPath) {
+            // 拦截请求，强制替换为 CDN 地址
+            const newSrc = window.CDN_BASE + (value.startsWith('/') ? '' : '/') + value;
+            // 调用原生方法设置正确的地址
+            originalSetter.call(this, newSrc);
+            return;
+          }
+        }
+        // 如果不是本地路径，直接放行
+        originalSetter.call(this, value);
+      },
+      get: function() {
+        return this.getAttribute('src');
+      }
+    });
+  })();
+</script>
+
 </head>
 <body>
 
