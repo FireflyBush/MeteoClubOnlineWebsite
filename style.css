@@ -278,14 +278,23 @@ body {
 
 .card-image { position: relative; width: 100%; height: 140px; background-color: #ddd; }
 .card-img { width: 100%; height: 100%; object-fit: cover; display: block;object-position: center top;}
-.image-overlay { position: absolute; top: 10px; right: 10px; }
-.category-badge { background: rgba(0, 0, 0, 0.6); color: #fff; padding: 4px 10px; border-radius: 12px; font-size: 12px; backdrop-filter: blur(4px); }
+.image-overlay { position: absolute; bottom: 10px; right: 10px; display: flex; gap: 5px;}
+.card-feature {
+    background: var(--blue-line);
+    color: white;
+	font-size: 12px;
+	font-weight: bold;
+    padding: 4px 10px;
+	max-width: 100px;
+    border-radius: 20px;
+    backdrop-filter: blur(5px);
+}
 
 .card-content { padding: 16px; display: flex; flex-direction: column; flex: 1; }
 .card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
 .card-title { font-size: 18px; font-weight: bold; color: var(--title-color); margin: 0; line-height: 1.4; }
-.card-date { font-size: 12px; color: var(--dim-color); white-space: nowrap; margin-left: 10px; }
 .card-description { font-size: 14px; color: var(--dim-color); line-height: 1.5; margin-bottom: 16px; flex: 1; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.articles-text{ font-size: 14px; color: var(--text-color); line-height: 1.5; margin-bottom: 16px; flex: 1; display: -webkit-box;  -webkit-box-orient: vertical; overflow: hidden;}
 .card-footer { margin-top: auto; }
 
 .read-more-btn {
@@ -301,6 +310,7 @@ body {
     gap: 6px;
     transition: all 0.2s;
     font-family: inherit;
+	font-weight: bold;
 }
 
 .read-more-btn:hover { background: var(--rain-blue); color: #fff; }
