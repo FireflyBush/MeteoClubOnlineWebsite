@@ -19,22 +19,21 @@
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
-@font-face {
-    font-family: 'GWM';
-/*    src: url('./ui_R.woff2') format('woff2'); */
-	src: url('https://hk.gh-proxy.org/https://raw.githubusercontent.com/FireflyBush/MeteoClubOnlineWebsite/main/ui_R.woff2') format('woff2');
-    font-weight: 400;
-    font-style: normal;
-    font-display: swap;
-}
-
 ::-webkit-scrollbar { width: 8px; border-radius: 4px; }
 ::-webkit-scrollbar-track { background: #0000001a; }
 ::-webkit-scrollbar-thumb { background: rgb(0 122 255 / 65%); border-radius: 4px; }
 
 body {
     background-color: #eef2f6;
-    font-family: "GWM", "Microsoft YaHei", "Segoe UI", sans-serif;
+    font-family: 
+        -apple-system,          /* iOS / macOS 优先使用苹方 (PingFang) */
+        BlinkMacSystemFont,     /* macOS Chrome */
+        "Segoe UI",             /* Windows 优先使用 Segoe UI */
+        Roboto,                 /* Android 优先使用 Roboto */
+        "Helvetica Neue",       /* 经典备用 */
+        "PingFang SC",          /* 明确指定苹果中文 */
+        "Microsoft YaHei",      /* 明确指定微软雅黑 */
+        sans-serif;             /* 最终兜底 */
     color: var(--text-color);
     min-height: 100vh;
     padding-top: calc(var(--nav-height) + 20px);
