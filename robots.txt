@@ -1,0 +1,12 @@
+# Allow search engines to crawl the site
+# This robots.txt file allows search engines to index public content
+
+User-agent: *
+Allow: /
+
+# Sitemap location (if you have a sitemap.xml file)
+Sitemap: https://smc-club.pages.dev/sitemap.xml
+
+# Optional: Disallow specific directories that should not be indexed
+Disallow: /data/
+Disallow: /api/
