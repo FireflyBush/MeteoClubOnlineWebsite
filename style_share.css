@@ -481,24 +481,1145 @@
 }
 
 /* 响应式适配 */
-@media (max-width: 1000px) {
+@media (max-width: 1200px) {
     .editor-container {
         flex-direction: column;
     }
-    
+
     .editor-panel,
     .preview-panel {
         min-width: 100%;
     }
-    
+
     .layout-horizontal .preview-container {
         flex-direction: column;
     }
-    
+
     .layout-horizontal .preview-card {
         min-width: 100%;
     }
 }
+
+@media (max-width: 768px) {
+    .main-container {
+        padding: 10px;
+    }
+
+    .editor-toolbar {
+        flex-wrap: wrap;
+    }
+
+    .toolbar-btn span:last-child {
+        display: none;
+    }
+
+    .toolbar-btn {
+        padding: 8px;
+    }
+
+    .preview-card-header {
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .realtime-preview {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .forecast-preview {
+        flex-wrap: wrap;
+    }
+
+    .markdown-editor {
+        min-height: 200px;
+    }
+
+    .preview-container {
+        min-height: 300px;
+    }
+}
+
+/* 响应式适配 */
+@media (max-width: 1200px) {
+    .editor-container {
+        flex-direction: column;
+    }
+
+    .editor-panel,
+    .preview-panel {
+        min-width: 100%;
+    }
+
+    .layout-horizontal .preview-container {
+        flex-direction: column;
+    }
+
+    .layout-horizontal .preview-card {
+        min-width: 100%;
+    }
+}
+
+@media (max-width: 768px) {
+    .main-container {
+        padding: 10px;
+    }
+
+    .editor-toolbar {
+        flex-wrap: wrap;
+    }
+
+    .toolbar-btn span:last-child {
+        display: none;
+    }
+
+    .toolbar-btn {
+        padding: 8px;
+    }
+
+    .preview-card-header {
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .realtime-preview {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .forecast-preview {
+        flex-wrap: wrap;
+    }
+
+    .markdown-editor {
+        min-height: 200px;
+    }
+
+    .preview-container {
+        min-height: 300px;
+    }
+}
+
+/* 响应式适配 */
+@media (max-width: 1200px) {
+    .editor-container {
+        flex-direction: column;
+    }
+
+    .editor-panel,
+    .preview-panel {
+        min-width: 100%;
+    }
+
+    .layout-horizontal .preview-container {
+        flex-direction: column;
+    }
+
+    .layout-horizontal .preview-card {
+        min-width: 100%;
+    }
+}
+
+@media (max-width: 768px) {
+    .main-container {
+        padding: 10px;
+    }
+
+    .editor-toolbar {
+        flex-wrap: wrap;
+    }
+
+    .toolbar-btn span:last-child {
+        display: none;
+    }
+
+    .toolbar-btn {
+        padding: 8px;
+    }
+
+    .preview-card-header {
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .realtime-preview {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .forecast-preview {
+        flex-wrap: wrap;
+    }
+
+    .markdown-editor {
+        min-height: 200px;
+    }
+
+    .preview-container {
+        min-height: 300px;
+    }
+}
+
+/* 响应式适配 */
+@media (max-width: 1200px) {
+    .editor-container {
+        flex-direction: column;
+    }
+
+    .editor-panel,
+    .preview-panel {
+        min-width: 100%;
+    }
+
+    .layout-horizontal .preview-container {
+        flex-direction: column;
+    }
+
+    .layout-horizontal .preview-card {
+        min-width: 100%;
+    }
+}
+
+@media (max-width: 768px) {
+    .main-container {
+        padding: 10px;
+    }
+
+    .editor-toolbar {
+        flex-wrap: wrap;
+    }
+
+    .toolbar-btn span:last-child {
+        display: none;
+    }
+
+    .toolbar-btn {
+        padding: 8px;
+    }
+
+    .preview-card-header {
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .realtime-preview {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .forecast-preview {
+        flex-wrap: wrap;
+    }
+
+    .markdown-editor {
+        min-height: 200px;
+    }
+
+    .preview-container {
+        min-height: 300px;
+    }
+}
+
+/* 响应式适配 */
+@media (max-width: 1200px) {
+    .editor-container {
+        flex-direction: column;
+    }
+
+    .editor-panel,
+    .preview-panel {
+        min-width: 100%;
+    }
+
+    .layout-horizontal .preview-container {
+        flex-direction: column;
+    }
+
+    .layout-horizontal .preview-card {
+        min-width: 100%;
+    }
+}
+
+@media (max-width: 768px) {
+    .main-container {
+        padding: 10px;
+    }
+
+    .editor-toolbar {
+        flex-wrap: wrap;
+    }
+
+    .toolbar-btn span:last-child {
+        display: none;
+    }
+
+    .toolbar-btn {
+        padding: 8px;
+    }
+
+    .preview-card-header {
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .realtime-preview {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .forecast-preview {
+        flex-wrap: wrap;
+    }
+
+    .markdown-editor {
+        min-height: 200px;
+    }
+
+    .preview-container {
+        min-height: 300px;
+    }
+}
+
+/* 响应式适配 */
+@media (max-width: 1200px) {
+    .editor-container {
+        flex-direction: column;
+    }
+
+    .editor-panel,
+    .preview-panel {
+        min-width: 100%;
+    }
+
+    .layout-horizontal .preview-container {
+        flex-direction: column;
+    }
+
+    .layout-horizontal .preview-card {
+        min-width: 100%;
+    }
+}
+
+@media (max-width: 768px) {
+    .main-container {
+        padding: 10px;
+    }
+
+    .editor-toolbar {
+        flex-wrap: wrap;
+    }
+
+    .toolbar-btn span:last-child {
+        display: none;
+    }
+
+    .toolbar-btn {
+        padding: 8px;
+    }
+
+    .preview-card-header {
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .realtime-preview {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .forecast-preview {
+        flex-wrap: wrap;
+    }
+
+    .markdown-editor {
+        min-height: 200px;
+    }
+
+    .preview-container {
+        min-height: 300px;
+    }
+}
+
+/* 响应式适配 */
+@media (max-width: 1200px) {
+    .editor-container {
+        flex-direction: column;
+    }
+
+    .editor-panel,
+    .preview-panel {
+        min-width: 100%;
+    }
+
+    .layout-horizontal .preview-container {
+        flex-direction: column;
+    }
+
+    .layout-horizontal .preview-card {
+        min-width: 100%;
+    }
+}
+
+@media (max-width: 768px) {
+    .main-container {
+        padding: 10px;
+    }
+
+    .editor-toolbar {
+        flex-wrap: wrap;
+    }
+
+    .toolbar-btn span:last-child {
+        display: none;
+    }
+
+    .toolbar-btn {
+        padding: 8px;
+    }
+
+    .preview-card-header {
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .realtime-preview {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .forecast-preview {
+        flex-wrap: wrap;
+    }
+
+    .markdown-editor {
+        min-height: 200px;
+    }
+
+    .preview-container {
+        min-height: 300px;
+    }
+}
+
+/* 响应式适配 */
+@media (max-width: 1200px) {
+    .editor-container {
+        flex-direction: column;
+    }
+
+    .editor-panel,
+    .preview-panel {
+        min-width: 100%;
+    }
+
+    .layout-horizontal .preview-container {
+        flex-direction: column;
+    }
+
+    .layout-horizontal .preview-card {
+        min-width: 100%;
+    }
+}
+
+@media (max-width: 768px) {
+    .main-container {
+        padding: 10px;
+    }
+
+    .editor-toolbar {
+        flex-wrap: wrap;
+    }
+
+    .toolbar-btn span:last-child {
+        display: none;
+    }
+
+    .toolbar-btn {
+        padding: 8px;
+    }
+
+    .preview-card-header {
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .realtime-preview {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .forecast-preview {
+        flex-wrap: wrap;
+    }
+
+    .markdown-editor {
+        min-height: 200px;
+    }
+
+    .preview-container {
+        min-height: 300px;
+    }
+}
+
+/* 响应式适配 */
+@media (max-width: 1200px) {
+    .editor-container {
+        flex-direction: column;
+    }
+
+    .editor-panel,
+    .preview-panel {
+        min-width: 100%;
+    }
+
+    .layout-horizontal .preview-container {
+        flex-direction: column;
+    }
+
+    .layout-horizontal .preview-card {
+        min-width: 100%;
+    }
+}
+
+@media (max-width: 768px) {
+    .main-container {
+        padding: 10px;
+    }
+
+    .editor-toolbar {
+        flex-wrap: wrap;
+    }
+
+    .toolbar-btn span:last-child {
+        display: none;
+    }
+
+    .toolbar-btn {
+        padding: 8px;
+    }
+
+    .preview-card-header {
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .realtime-preview {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .forecast-preview {
+        flex-wrap: wrap;
+    }
+
+    .markdown-editor {
+        min-height: 200px;
+    }
+
+    .preview-container {
+        min-height: 300px;
+    }
+}
+
+/* 响应式适配 */
+@media (max-width: 1200px) {
+    .editor-container {
+        flex-direction: column;
+    }
+
+    .editor-panel,
+    .preview-panel {
+        min-width: 100%;
+    }
+
+    .layout-horizontal .preview-container {
+        flex-direction: column;
+    }
+
+    .layout-horizontal .preview-card {
+        min-width: 100%;
+    }
+}
+
+@media (max-width: 768px) {
+    .main-container {
+        padding: 10px;
+    }
+
+    .editor-toolbar {
+        flex-wrap: wrap;
+    }
+
+    .toolbar-btn span:last-child {
+        display: none;
+    }
+
+    .toolbar-btn {
+        padding: 8px;
+    }
+
+    .preview-card-header {
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .realtime-preview {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .forecast-preview {
+        flex-wrap: wrap;
+    }
+
+    .markdown-editor {
+        min-height: 200px;
+    }
+
+    .preview-container {
+        min-height: 300px;
+    }
+}
+
+/* 响应式适配 */
+@media (max-width: 1200px) {
+    .editor-container {
+        flex-direction: column;
+    }
+
+    .editor-panel,
+    .preview-panel {
+        min-width: 100%;
+    }
+
+    .layout-horizontal .preview-container {
+        flex-direction: column;
+    }
+
+    .layout-horizontal .preview-card {
+        min-width: 100%;
+    }
+}
+
+@media (max-width: 768px) {
+    .main-container {
+        padding: 10px;
+    }
+
+    .editor-toolbar {
+        flex-wrap: wrap;
+    }
+
+    .toolbar-btn span:last-child {
+        display: none;
+    }
+
+    .toolbar-btn {
+        padding: 8px;
+    }
+
+    .preview-card-header {
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .realtime-preview {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .forecast-preview {
+        flex-wrap: wrap;
+    }
+
+    .markdown-editor {
+        min-height: 200px;
+    }
+
+    .preview-container {
+        min-height: 300px;
+    }
+}
+
+/* 响应式适配 */
+@media (max-width: 1200px) {
+    .editor-container {
+        flex-direction: column;
+    }
+
+    .editor-panel,
+    .preview-panel {
+        min-width: 100%;
+    }
+
+    .layout-horizontal .preview-container {
+        flex-direction: column;
+    }
+
+    .layout-horizontal .preview-card {
+        min-width: 100%;
+    }
+}
+
+@media (max-width: 768px) {
+    .main-container {
+        padding: 10px;
+    }
+
+    .editor-toolbar {
+        flex-wrap: wrap;
+    }
+
+    .toolbar-btn span:last-child {
+        display: none;
+    }
+
+    .toolbar-btn {
+        padding: 8px;
+    }
+
+    .preview-card-header {
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .realtime-preview {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .forecast-preview {
+        flex-wrap: wrap;
+    }
+
+    .markdown-editor {
+        min-height: 200px;
+    }
+
+    .preview-container {
+        min-height: 300px;
+    }
+}
+
+/* 响应式适配 */
+@media (max-width: 1200px) {
+    .editor-container {
+        flex-direction: column;
+    }
+
+    .editor-panel,
+    .preview-panel {
+        min-width: 100%;
+    }
+
+    .layout-horizontal .preview-container {
+        flex-direction: column;
+    }
+
+    .layout-horizontal .preview-card {
+        min-width: 100%;
+    }
+}
+
+@media (max-width: 768px) {
+    .main-container {
+        padding: 10px;
+    }
+
+    .editor-toolbar {
+        flex-wrap: wrap;
+    }
+
+    .toolbar-btn span:last-child {
+        display: none;
+    }
+
+    .toolbar-btn {
+        padding: 8px;
+    }
+
+    .preview-card-header {
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .realtime-preview {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .forecast-preview {
+        flex-wrap: wrap;
+    }
+
+    .markdown-editor {
+        min-height: 200px;
+    }
+
+    .preview-container {
+        min-height: 300px;
+    }
+}
+
+/* 响应式适配 */
+@media (max-width: 1200px) {
+    .editor-container {
+        flex-direction: column;
+    }
+
+    .editor-panel,
+    .preview-panel {
+        min-width: 100%;
+    }
+
+    .layout-horizontal .preview-container {
+        flex-direction: column;
+    }
+
+    .layout-horizontal .preview-card {
+        min-width: 100%;
+    }
+}
+
+@media (max-width: 768px) {
+    .main-container {
+        padding: 10px;
+    }
+
+    .editor-toolbar {
+        flex-wrap: wrap;
+    }
+
+    .toolbar-btn span:last-child {
+        display: none;
+    }
+
+    .toolbar-btn {
+        padding: 8px;
+    }
+
+    .preview-card-header {
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .realtime-preview {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .forecast-preview {
+        flex-wrap: wrap;
+    }
+
+    .markdown-editor {
+        min-height: 200px;
+    }
+
+    .preview-container {
+        min-height: 300px;
+    }
+}
+
+/* 响应式适配 */
+@media (max-width: 1200px) {
+    .editor-container {
+        flex-direction: column;
+    }
+
+    .editor-panel,
+    .preview-panel {
+        min-width: 100%;
+    }
+
+    .layout-horizontal .preview-container {
+        flex-direction: column;
+    }
+
+    .layout-horizontal .preview-card {
+        min-width: 100%;
+    }
+}
+
+@media (max-width: 768px) {
+    .main-container {
+        padding: 10px;
+    }
+
+    .editor-toolbar {
+        flex-wrap: wrap;
+    }
+
+    .toolbar-btn span:last-child {
+        display: none;
+    }
+
+    .toolbar-btn {
+        padding: 8px;
+    }
+
+    .preview-card-header {
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .realtime-preview {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .forecast-preview {
+        flex-wrap: wrap;
+    }
+
+    .markdown-editor {
+        min-height: 200px;
+    }
+
+    .preview-container {
+        min-height: 300px;
+    }
+}
+
+/* 响应式适配 */
+@media (max-width: 1200px) {
+    .editor-container {
+        flex-direction: column;
+    }
+
+    .editor-panel,
+    .preview-panel {
+        min-width: 100%;
+    }
+
+    .layout-horizontal .preview-container {
+        flex-direction: column;
+    }
+
+    .layout-horizontal .preview-card {
+        min-width: 100%;
+    }
+}
+
+@media (max-width: 768px) {
+    .main-container {
+        padding: 10px;
+    }
+
+    .editor-toolbar {
+        flex-wrap: wrap;
+    }
+
+    .toolbar-btn span:last-child {
+        display: none;
+    }
+
+    .toolbar-btn {
+        padding: 8px;
+    }
+
+    .preview-card-header {
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .realtime-preview {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .forecast-preview {
+        flex-wrap: wrap;
+    }
+
+    .markdown-editor {
+        min-height: 200px;
+    }
+
+    .preview-container {
+        min-height: 300px;
+    }
+}
+
+/* 响应式适配 */
+@media (max-width: 1200px) {
+    .editor-container {
+        flex-direction: column;
+    }
+
+    .editor-panel,
+    .preview-panel {
+        min-width: 100%;
+    }
+
+    .layout-horizontal .preview-container {
+        flex-direction: column;
+    }
+
+    .layout-horizontal .preview-card {
+        min-width: 100%;
+    }
+}
+
+@media (max-width: 768px) {
+    .main-container {
+        padding: 10px;
+    }
+
+    .editor-toolbar {
+        flex-wrap: wrap;
+    }
+
+    .toolbar-btn span:last-child {
+        display: none;
+    }
+
+    .toolbar-btn {
+        padding: 8px;
+    }
+
+    .preview-card-header {
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .realtime-preview {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .forecast-preview {
+        flex-wrap: wrap;
+    }
+
+    .markdown-editor {
+        min-height: 200px;
+    }
+
+    .preview-container {
+        min-height: 300px;
+    }
+}
+
+/* 响应式适配 */
+@media (max-width: 1200px) {
+    .editor-container {
+        flex-direction: column;
+    }
+
+    .editor-panel,
+    .preview-panel {
+        min-width: 100%;
+    }
+
+    .layout-horizontal .preview-container {
+        flex-direction: column;
+    }
+
+    .layout-horizontal .preview-card {
+        min-width: 100%;
+    }
+}
+
+@media (max-width: 768px) {
+    .main-container {
+        padding: 10px;
+    }
+
+    .editor-toolbar {
+        flex-wrap: wrap;
+    }
+
+    .toolbar-btn span:last-child {
+        display: none;
+    }
+
+    .toolbar-btn {
+        padding: 8px;
+    }
+
+    .preview-card-header {
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .realtime-preview {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .forecast-preview {
+        flex-wrap: wrap;
+    }
+
+    .markdown-editor {
+        min-height: 200px;
+    }
+
+    .preview-container {
+        min-height: 300px;
+    }
+}
+
+/* 响应式适配 */
+@media (max-width: 1200px) {
+    .editor-container {
+        flex-direction: column;
+    }
+
+    .editor-panel,
+    .preview-panel {
+        min-width: 100%;
+    }
+
+    .layout-horizontal .preview-container {
+        flex-direction: column;
+    }
+
+    .layout-horizontal .preview-card {
+        min-width: 100%;
+    }
+}
+
+@media (max-width: 768px) {
+    .main-container {
+        padding: 10px;
+    }
+
+    .editor-toolbar {
+        flex-wrap: wrap;
+    }
+
+    .toolbar-btn span:last-child {
+        display: none;
+    }
+
+    .toolbar-btn {
+        padding: 8px;
+    }
+
+    .preview-card-header {
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .realtime-preview {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .forecast-preview {
+        flex-wrap: wrap;
+    }
+
+    .markdown-editor {
+        min-height: 200px;
+    }
+
+    .preview-container {
+        min-height: 300px;
+    }
+}
+
 
 /* 使用指南网格 */
 .guide-grid {
@@ -587,4 +1708,64 @@
 
 .example-rendered {
     color: var(--text-color);
+}
+
+/* 响应式适配 */
+@media (max-width: 1200px) {
+    .editor-container {
+        flex-direction: column;
+    }
+
+    .editor-panel,
+    .preview-panel {
+        min-width: 100%;
+    }
+
+    .layout-horizontal .preview-container {
+        flex-direction: column;
+    }
+
+    .layout-horizontal .preview-card {
+        min-width: 100%;
+    }
+}
+
+@media (max-width: 768px) {
+    .main-container {
+        padding: 10px;
+    }
+
+    .editor-toolbar {
+        flex-wrap: wrap;
+    }
+
+    .toolbar-btn span:last-child {
+        display: none;
+    }
+
+    .toolbar-btn {
+        padding: 8px;
+    }
+
+    .preview-card-header {
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .realtime-preview {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .forecast-preview {
+        flex-wrap: wrap;
+    }
+
+    .markdown-editor {
+        min-height: 200px;
+    }
+
+    .preview-container {
+        min-height: 300px;
+    }
 }
