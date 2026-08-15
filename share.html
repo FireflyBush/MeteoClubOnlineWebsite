@@ -5,17 +5,298 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>气象深高 - 定制分享</title>
     <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="style_share.css">
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <link rel="icon" href="/favicon.ico" type="image/x-icon">
-    <meta name="description" content="像编辑 Markdown 一样创作专属天气卡片，自由组合数据模块，自定义标题和样式。">
+    <meta name="description" content="像《我的世界》一样搭建专属天气卡片，自由涂色、放置元素、插入数据变量。">
     <script>
       window.CDN_BASE = "https://cdn.jsdelivr.net/gh/FireflyBush/MeteoClubOnlineWebsite@2026.0809";
     </script>
+    <style>
+        :root {
+            --grid-cell-size: 30px;
+        }
+        .builder-container {
+            display: flex;
+            height: calc(100vh - 50px);
+            overflow: hidden;
+        }
+        .builder-sidebar {
+            width: 280px;
+            background: #f5f5f5;
+            border-right: 1px solid #ddd;
+            padding: 10px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            flex-shrink: 0;
+        }
+        .builder-workspace {
+            flex: 1;
+            background: #e0e5ec;
+            position: relative;
+            overflow: auto;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 30px;
+        }
+        .grid-canvas {
+            position: relative;
+            background: #fff;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            image-rendering: pixelated;
+        }
+        .grid-bg-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            display: grid;
+            grid-template-columns: repeat(16, var(--grid-cell-size));
+            grid-template-rows: repeat(var(--grid-h, 16), var(--grid-cell-size));
+        }
+        .grid-cell {
+            width: var(--grid-cell-size);
+            height: var(--grid-cell-size);
+            box-sizing: border-box;
+            cursor: pointer;
+            border: 1px solid transparent;
+        }
+        .grid-cell:hover {
+            border-color: rgba(0,123,255,0.6);
+            z-index: 1;
+        }
+        .elements-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+        .placed-element {
+            position: absolute;
+            box-sizing: border-box;
+            background: rgba(255,255,255,0.9);
+            border: 2px dashed #666;
+            padding: 4px;
+            font-size: 13px;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            cursor: grab;
+            pointer-events: auto;
+            z-index: 10;
+            white-space: pre-wrap;
+            word-break: break-word;
+            line-height: 1.3;
+        }
+        .placed-element.selected {
+            border-color: #007bff;
+            border-style: solid;
+            z-index: 20;
+            box-shadow: 0 0 10px rgba(0,123,255,0.4);
+        }
+        .placed-element .var-tag {
+            background: #e3f2fd;
+            color: #0d47a1;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: bold;
+            font-family: monospace;
+            font-size: 11px;
+        }
+        .tool-panel {
+            background: #fff;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            padding: 10px;
+        }
+        .tool-panel h4 {
+            margin: 0 0 8px 0;
+            font-size: 13px;
+            color: #444;
+            font-weight: 600;
+        }
+        .color-palette {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 6px;
+        }
+        .color-swatch {
+            width: 100%;
+            aspect-ratio: 1;
+            border-radius: 4px;
+            cursor: pointer;
+            border: 2px solid #ddd;
+            transition: transform 0.15s;
+        }
+        .color-swatch:hover {
+            transform: scale(1.1);
+        }
+        .color-swatch.active {
+            border-color: #333;
+            transform: scale(1.15);
+            box-shadow: 0 0 8px rgba(0,0,0,0.2);
+        }
+        .var-list button {
+            display: block;
+            width: 100%;
+            text-align: left;
+            padding: 6px 8px;
+            margin-bottom: 4px;
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            font-size: 11px;
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+        .var-list button:hover {
+            background: #e9ecef;
+        }
+        .control-group {
+            margin-bottom: 8px;
+        }
+        .control-group label {
+            display: block;
+            font-size: 11px;
+            margin-bottom: 3px;
+            color: #666;
+            font-weight: 500;
+        }
+        .control-group input[type="number"],
+        .control-group input[type="text"],
+        .control-group select {
+            width: 100%;
+            padding: 5px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 12px;
+            box-sizing: border-box;
+        }
+        .control-group input[type="color"] {
+            width: 100%;
+            height: 32px;
+            padding: 2px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .control-group input[type="range"] {
+            width: 100%;
+        }
+        .mode-switch {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 8px;
+            flex-wrap: wrap;
+        }
+        .mode-btn {
+            flex: 1;
+            min-width: 45px;
+            padding: 6px 4px;
+            border: 1px solid #ddd;
+            background: #fff;
+            cursor: pointer;
+            font-size: 11px;
+            border-radius: 4px;
+            transition: all 0.15s;
+        }
+        .mode-btn:hover {
+            background: #f0f0f0;
+        }
+        .mode-btn.active {
+            background: #007bff;
+            color: #fff;
+            border-color: #007bff;
+        }
+        .action-btn {
+            width: 100%;
+            padding: 8px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+            margin-top: 6px;
+            transition: opacity 0.15s;
+        }
+        .action-btn.primary {
+            background: #007bff;
+            color: #fff;
+        }
+        .action-btn.secondary {
+            background: #6c757d;
+            color: #fff;
+        }
+        .action-btn.danger {
+            background: #dc3545;
+            color: #fff;
+        }
+        .action-btn:hover {
+            opacity: 0.9;
+        }
+        
+        /* 预览模态框 */
+        .preview-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.85);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        .preview-modal.show {
+            display: flex;
+        }
+        .preview-modal-content {
+            background: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            max-width: 95%;
+            max-height: 95%;
+            overflow: auto;
+            position: relative;
+        }
+        .preview-close-btn {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            background: none;
+            border: none;
+            font-size: 28px;
+            cursor: pointer;
+            color: #666;
+        }
+
+        /* 响应式 */
+        @media (max-width: 900px) {
+            .builder-container {
+                flex-direction: column;
+                height: auto;
+            }
+            .builder-sidebar {
+                width: 100%;
+                max-height: 400px;
+                border-right: none;
+                border-bottom: 1px solid #ddd;
+            }
+            .builder-workspace {
+                min-height: 500px;
+                padding: 15px;
+            }
+        }
+    </style>
 </head>
 <body>
 
-    <!-- 顶部导航条 -->
+    <!-- 顶部导航条 (与其他页面统一) -->
     <nav class="top-nav">
         <div class="nav-left">
             <img src="https://cdn.jsdelivr.net/gh/FireflyBush/MeteoClubOnlineWebsite@2026.0809/data/icons/logo.png" alt="Logo" class="nav-logo">
@@ -37,205 +318,108 @@
         </div>
     </nav>
 
-    <!-- 主内容容器 -->
-    <div class="main-container">
-        
-        <!-- 版块一：定制分享编辑器 -->
-        <section class="content-section">
-            <div class="section-header">
-                <div class="section-line"></div>
-                <div class="section-text">
-                    <h2 class="section-title">定制分享编辑器</h2>
-                    <p class="section-subtitle">像写 Markdown 一样创作专属天气卡片</p>
+    <div class="builder-container">
+        <!-- 左侧工具栏 -->
+        <aside class="builder-sidebar">
+            <div class="tool-panel">
+                <h4>🛠️ 操作模式</h4>
+                <div class="mode-switch">
+                    <button class="mode-btn active" data-mode="paint">🎨 涂色</button>
+                    <button class="mode-btn" data-mode="add-text">📝 文本</button>
+                    <button class="mode-btn" data-mode="add-var">📊 数据</button>
+                    <button class="mode-btn" data-mode="select">🖱️ 选择</button>
                 </div>
             </div>
 
-            <div class="editor-container">
-                <!-- 左侧编辑区 -->
-                <div class="editor-panel">
-                    <div class="editor-toolbar">
-                        <div class="toolbar-group">
-                            <button class="toolbar-btn" data-insert="heading" title="插入标题">
-                                <span>H</span>
-                            </button>
-                            <button class="toolbar-btn" data-insert="bold" title="加粗">
-                                <strong>B</strong>
-                            </button>
-                            <button class="toolbar-btn" data-insert="italic" title="斜体">
-                                <em>I</em>
-                            </button>
-                        </div>
-                        <div class="toolbar-divider"></div>
-                        <div class="toolbar-group">
-                            <button class="toolbar-btn" data-insert="link" title="插入链接">
-                                <span>🔗</span>
-                                <span>链接</span>
-                            </button>
-                            <button class="toolbar-btn" data-insert="image" title="插入图片">
-                                <span>🖼️</span>
-                                <span>图片</span>
-                            </button>
-                        </div>
-                        <div class="toolbar-divider"></div>
-                        <div class="toolbar-group">
-                            <button class="toolbar-btn" data-insert="realtime" title="插入实时天气">
-                                <img src="https://cdn.jsdelivr.net/gh/FireflyBush/MeteoClubOnlineWebsite@2026.0809/data/icons/02.png" alt="实时" style="width:16px;height:16px;">
-                                <span>实时</span>
-                            </button>
-                            <button class="toolbar-btn" data-insert="forecast" title="插入三日预报">
-                                <span>📅</span>
-                                <span>预报</span>
-                            </button>
-                            <button class="toolbar-btn" data-insert="warning" title="插入预警信息">
-                                <span>⚠️</span>
-                                <span>预警</span>
-                            </button>
-                            <button class="toolbar-btn" data-insert="rain" title="插入降雨预报">
-                                <span>🌧️</span>
-                                <span>降雨</span>
-                            </button>
-                        </div>
-                    </div>
-                    <textarea id="markdownEditor" class="markdown-editor" placeholder="在此输入内容...
-
-支持基本 Markdown 语法：
-# 标题
-**加粗** *斜体*
-- 列表项
-
-点击上方按钮插入天气数据模块"></textarea>
-                    <div class="editor-footer">
-                        <div class="custom-title-input">
-                            <label>卡片标题：</label>
-                            <input type="text" id="customCardTitle" placeholder="气象深高 · 定制天气" value="">
-                        </div>
-                        <div class="style-controls">
-                            <select id="themeSelect">
-                                <option value="light">浅色磨砂</option>
-                                <option value="dark">深色模式</option>
-                                <option value="blue">蓝色清新</option>
-                            </select>
-                            <select id="layoutSelect">
-                                <option value="vertical">垂直排列</option>
-                                <option value="horizontal">水平排列</option>
-                            </select>
-                        </div>
-                    </div>
+            <!-- 涂色工具 -->
+            <div class="tool-panel" id="panel-paint">
+                <h4>🎨 方块颜色</h4>
+                <div class="color-palette" id="colorPalette"></div>
+                <div class="control-group" style="margin-top:10px;">
+                    <label>网格高度 (行数 4-128)</label>
+                    <input type="number" id="gridHeightInput" value="16" min="4" max="128">
                 </div>
-
-                <!-- 右侧预览区 -->
-                <div class="preview-panel">
-                    <div class="preview-header">
-                        <h3 class="preview-title">实时预览</h3>
-                        <button class="refresh-btn" id="refreshPreviewBtn" title="刷新数据">
-                            <img src="https://cdn.jsdelivr.net/gh/FireflyBush/MeteoClubOnlineWebsite@2026.0809/data/icons/refresh.png" alt="刷新" style="width:18px;height:18px;">
-                        </button>
-                    </div>
-                    <div class="preview-container" id="previewContainer">
-                        <div class="preview-placeholder">
-                            <p>在左侧编辑内容或插入数据模块</p>
-                            <p>预览将在此处实时显示</p>
-                        </div>
-                    </div>
-                    <div class="preview-actions">
-                        <button class="action-btn primary-btn" id="generateLinkBtn">生成分享链接</button>
-                        <button class="action-btn secondary-btn" id="copyLinkBtn" disabled>复制链接</button>
-                    </div>
-                </div>
+                <button class="action-btn secondary" onclick="clearGrid()">🗑️ 清空画布</button>
             </div>
 
-            <!-- 生成的链接显示 -->
-            <div class="link-output-section" id="linkOutputSection" style="display: none;">
-                <div class="link-output">
-                    <input type="text" id="shareLinkInput" readonly>
-                    <button class="copy-btn" id="quickCopyBtn">复制</button>
+            <!-- 文本工具 -->
+            <div class="tool-panel" id="panel-text" style="display:none;">
+                <h4>📝 添加文本框</h4>
+                <div class="control-group">
+                    <label>内容 (支持 {变量})</label>
+                    <textarea id="textContent" rows="3" placeholder="例如：当前温度 {realtime.temp}°C"></textarea>
                 </div>
-                <p class="link-hint">复制此链接分享给他人，他们将看到您定制的天气卡片（数据会实时更新）</p>
+                <div class="control-group">
+                    <label>字号 (px)</label>
+                    <input type="number" id="textSize" value="14" min="8" max="48">
+                </div>
+                <div class="control-group">
+                    <label>文字颜色</label>
+                    <input type="color" id="textColor" value="#000000">
+                </div>
+                <div class="control-group">
+                    <label>尺寸 (格数)</label>
+                    <div style="display:flex; gap:5px;">
+                        <input type="number" id="textW" value="4" min="1" max="16" placeholder="宽">
+                        <input type="number" id="textH" value="1" min="1" max="20" placeholder="高">
+                    </div>
+                </div>
+                <button class="action-btn primary" onclick="confirmAddText()">✅ 放置文本</button>
             </div>
-        </section>
 
-        <!-- 使用说明 -->
-        <section class="content-section">
-            <div class="section-header">
-                <div class="section-line"></div>
-                <div class="section-text">
-                    <h2 class="section-title">使用指南</h2>
-                    <p class="section-subtitle">快速上手 Markdown 风格的天气卡片编辑</p>
+            <!-- 数据变量工具 -->
+            <div class="tool-panel" id="panel-var" style="display:none;">
+                <h4>📊 插入数据变量</h4>
+                <p style="font-size:11px; color:#666; margin-bottom:8px;">点击变量将其放置在网格中心</p>
+                
+                <h5 style="font-size:12px; margin:8px 0 4px 0; color:#555;">实况数据</h5>
+                <div class="var-list" id="varListRealtime"></div>
+                
+                <h5 style="font-size:12px; margin:10px 0 4px 0; color:#555;">预报数据 (相对日期)</h5>
+                <div class="control-group">
+                    <label>选择日期 (<span id="forecastDayLabel">今天</span>)</label>
+                    <input type="range" id="forecastDayRange" min="0" max="9" value="0" oninput="updateForecastVars()">
                 </div>
+                <div class="var-list" id="varListForecast"></div>
+            </div>
+
+            <!-- 属性编辑 (选中元素时显示) -->
+            <div class="tool-panel" id="panel-properties" style="display:none; border-left: 4px solid #007bff;">
+                <h4>⚙️ 属性编辑</h4>
+                <div id="propContent"></div>
+                <button class="action-btn danger" onclick="deleteSelected()">🗑️ 删除元素</button>
+            </div>
+
+            <div style="margin-top:auto;">
+                <button class="action-btn primary" onclick="generateShareLink()">🔗 生成分享链接</button>
+                <button class="action-btn secondary" onclick="togglePreview()">👁️ 预览模式</button>
             </div>
             
-            <div class="guide-grid">
-                <div class="guide-item">
-                    <div class="guide-icon">✏️</div>
-                    <h4>编辑文本</h4>
-                    <p>在左侧编辑区输入内容，支持 <code># 标题</code>、<code>**加粗**</code>、<code>*斜体*</code> 等基本 Markdown 语法</p>
-                </div>
-                <div class="guide-item">
-                    <div class="guide-icon">🔌</div>
-                    <h4>插入数据</h4>
-                    <p>点击工具栏按钮插入实时天气、三日预报、预警信息或降雨预报模块</p>
-                </div>
-                <div class="guide-item">
-                    <div class="guide-icon">🎨</div>
-                    <h4>自定义样式</h4>
-                    <p>设置卡片标题、选择主题风格和布局方式，打造个性化外观</p>
-                </div>
-                <div class="guide-item">
-                    <div class="guide-icon">🔗</div>
-                    <h4>生成分享</h4>
-                    <p>点击生成链接，分享给好友即可看到实时更新的定制天气卡片</p>
-                </div>
+            <div class="tool-panel" style="margin-top:10px; font-size:11px; color:#666;">
+                <strong>💡 提示：</strong><br>
+                1. 涂色模式：点击网格填色<br>
+                2. 文本/数据模式：设置后点网格放置<br>
+                3. 选择模式：拖动元素调整位置<br>
+                4. 变量格式：<code>{realtime.temp}</code>
             </div>
+        </aside>
 
-            <div class="markdown-syntax-help">
-                <h4>支持的 Markdown 语法</h4>
-                <div class="syntax-examples">
-                    <div class="syntax-example">
-                        <code># 一级标题</code>
-                        <span>→</span>
-                        <span class="example-rendered"><h1 style="font-size:18px;margin:0;">一级标题</h1></span>
-                    </div>
-                    <div class="syntax-example">
-                        <code>## 二级标题</code>
-                        <span>→</span>
-                        <span class="example-rendered"><h2 style="font-size:16px;margin:0;">二级标题</h2></span>
-                    </div>
-                    <div class="syntax-example">
-                        <code>**加粗文本**</code>
-                        <span>→</span>
-                        <span class="example-rendered"><strong>加粗文本</strong></span>
-                    </div>
-                    <div class="syntax-example">
-                        <code>*斜体文本*</code>
-                        <span>→</span>
-                        <span class="example-rendered"><em>斜体文本</em></span>
-                    </div>
-                    <div class="syntax-example">
-                        <code>- 列表项</code>
-                        <span>→</span>
-                        <span class="example-rendered"><ul style="margin:0;padding-left:20px;"><li>列表项</li></ul></span>
-                    </div>
-                </div>
+        <!-- 工作区 -->
+        <main class="builder-workspace">
+            <div id="gridCanvas" class="grid-canvas" style="width: calc(16 * var(--grid-cell-size)); height: calc(16 * var(--grid-cell-size));">
+                <div id="layer-bg" class="grid-bg-layer"></div>
+                <div id="layer-elements" class="elements-layer"></div>
             </div>
-        </section>
-
-        <!-- 页脚声明 -->
-        <div style="margin-top: 20px; margin-bottom: 0;">
-            <p class="card-description" style="-webkit-line-clamp: none; margin-bottom: 0;">我国《气象法》第二十二条规定，公众气象预报和灾害性天气警报实行统一发布制度。据此，<strong>本站不发布任何气象预报和气象灾害预警</strong>，相关数据来自官方渠道，发布主体为市气象台。</p>
-            <p class="card-description" style="-webkit-line-clamp: none; margin-bottom: 0;">除数据外<strong>本站</strong>内容 © 深圳市高级中学气象社 2026</p>
-        </div>
+        </main>
     </div>
 
-    <!-- 模态框 -->
-    <div id="infoModal" class="modal">
-        <div class="modal-content">
-            <span class="close-btn">&times;</span>
-            <p id="modalText">信息加载中...</p>
+    <!-- 预览模态框 -->
+    <div id="previewModal" class="preview-modal">
+        <div class="preview-modal-content">
+            <button class="preview-close-btn" onclick="togglePreview()">&times;</button>
+            <div id="previewContent"></div>
         </div>
     </div>
-
-    <!-- 成功提示 -->
-    <div id="toast" class="toast">链接已复制！</div>
 
     <script src="script_share.js"></script>
 </body>
