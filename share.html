@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>气象深高 - 定制分享</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style_share.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <link rel="icon" href="/favicon.ico" type="image/x-icon">
+    <meta name="description" content="定制专属天气分享卡片，自由选择数据模块和样式，生成分享链接。">
+    <script>
+      window.CDN_BASE = "https://cdn.jsdelivr.net/gh/FireflyBush/MeteoClubOnlineWebsite@2026.0809";
+    </script>
+</head>
+<body>
+
+    <!-- 顶部导航条 -->
+    <nav class="top-nav">
+        <div class="nav-left">
+            <img src="https://cdn.jsdelivr.net/gh/FireflyBush/MeteoClubOnlineWebsite@2026.0809/data/icons/logo.png" alt="Logo" class="nav-logo">
+            <span class="nav-title">气象深高</span>
+        </div>
+        <div class="nav-right">
+            <a href="/index.html" class="nav-link" title="返回主页">
+                <img src="https://cdn.jsdelivr.net/gh/FireflyBush/MeteoClubOnlineWebsite@2026.0809/data/icons/home.svg" alt="主页" class="nav-icon">
+            </a>
+        </div>
+    </nav>
+
+    <!-- 主内容容器 -->
+    <div class="main-container">
+        
+        <!-- 版块一：定制分享 -->
+        <section class="content-section">
+            <div class="section-header">
+                <div class="section-line"></div>
+                <div class="section-text">
+                    <h2 class="section-title">定制分享</h2>
+                    <p class="section-subtitle">选择数据模块，调整样式，生成专属分享卡片</p>
+                </div>
+            </div>
+
+            <div class="share-builder">
+                <!-- 左侧配置区 -->
+                <div class="config-panel">
+                    <!-- 数据模块选择 -->
+                    <div class="config-group">
+                        <h3 class="config-title">选择数据模块</h3>
+                        <div class="checkbox-group">
+                            <label class="checkbox-item">
+                                <input type="checkbox" id="selectRealtime" checked>
+                                <span>实时天气</span>
+                            </label>
+                            <label class="checkbox-item">
+                                <input type="checkbox" id="selectForecast" checked>
+                                <span>三日预报</span>
+                            </label>
+                            <label class="checkbox-item">
+                                <input type="checkbox" id="selectWarning" checked>
+                                <span>预警信息</span>
+                            </label>
+                            <label class="checkbox-item">
+                                <input type="checkbox" id="selectRain" checked>
+                                <span>降雨预报</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- 样式配置 -->
+                    <div class="config-group">
+                        <h3 class="config-title">样式设置</h3>
+                        <div class="style-options">
+                            <div class="style-row">
+                                <label>主题风格：</label>
+                                <select id="themeSelect">
+                                    <option value="light">浅色磨砂</option>
+                                    <option value="dark">深色模式</option>
+                                    <option value="blue">蓝色清新</option>
+                                </select>
+                            </div>
+                            <div class="style-row">
+                                <label>卡片布局：</label>
+                                <select id="layoutSelect">
+                                    <option value="vertical">垂直排列</option>
+                                    <option value="horizontal">水平排列</option>
+                                </select>
+                            </div>
+                            <div class="style-row">
+                                <label>显示标题：</label>
+                                <input type="checkbox" id="showTitle" checked>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 操作按钮 -->
+                    <div class="config-group">
+                        <button class="action-btn primary-btn" id="generateLinkBtn">生成分享链接</button>
+                        <button class="action-btn secondary-btn" id="copyLinkBtn" disabled>复制链接</button>
+                        <button class="action-btn secondary-btn" id="previewRefreshBtn">刷新预览</button>
+                    </div>
+
+                    <!-- 生成的链接显示 -->
+                    <div class="config-group" id="linkOutputGroup" style="display: none;">
+                        <h3 class="config-title">分享链接</h3>
+                        <div class="link-output">
+                            <input type="text" id="shareLinkInput" readonly>
+                        </div>
+                        <p class="link-hint">复制此链接分享给他人，他们将看到您定制的天气卡片</p>
+                    </div>
+                </div>
+
+                <!-- 右侧预览区 -->
+                <div class="preview-panel">
+                    <h3 class="preview-title">实时预览</h3>
+                    <div class="preview-container" id="previewContainer">
+                        <!-- 预览内容将动态生成 -->
+                        <div class="preview-placeholder">
+                            <p>请在左侧选择数据模块和样式</p>
+                            <p>预览将在此处显示</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 使用说明 -->
+        <section class="content-section">
+            <div class="section-header">
+                <div class="section-line"></div>
+                <div class="section-text">
+                    <h2 class="section-title">使用说明</h2>
+                    <p class="section-subtitle">如何制作您的专属天气分享卡片</p>
+                </div>
+            </div>
+            
+            <div class="instruction-cards">
+                <div class="instruction-card">
+                    <div class="instruction-number">1</div>
+                    <h4>选择数据</h4>
+                    <p>勾选您想要包含在分享卡片中的天气数据模块</p>
+                </div>
+                <div class="instruction-card">
+                    <div class="instruction-number">2</div>
+                    <h4>调整样式</h4>
+                    <p>选择主题风格、布局方式等个性化设置</p>
+                </div>
+                <div class="instruction-card">
+                    <div class="instruction-number">3</div>
+                    <h4>生成链接</h4>
+                    <p>点击生成按钮，获取专属分享链接并复制</p>
+                </div>
+                <div class="instruction-card">
+                    <div class="instruction-number">4</div>
+                    <h4>分享给好友</h4>
+                    <p>将链接发送给好友，他们即可查看定制天气</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- 页脚声明 -->
+        <div style="margin-top: 20px; margin-bottom: 0;">
+            <p class="card-description" style="-webkit-line-clamp: none; margin-bottom: 0;">我国《气象法》第二十二条规定，公众气象预报和灾害性天气警报实行统一发布制度。据此，<strong>本站不发布任何气象预报和气象灾害预警</strong>，相关数据来自官方渠道，发布主体为市气象台。</p>
+            <p class="card-description" style="-webkit-line-clamp: none; margin-bottom: 0;">除数据外<strong>本站</strong>内容 © 深圳市高级中学气象社 2026</p>
+        </div>
+    </div>
+
+    <!-- 模态框 -->
+    <div id="infoModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn">&times;</span>
+            <p id="modalText">信息加载中...</p>
+        </div>
+    </div>
+
+    <!-- 成功提示 -->
+    <div id="toast" class="toast">链接已复制！</div>
+
+    <script src="script_share.js"></script>
+</body>
+</html>

@@ -1,0 +1,447 @@
+/* style_share.css - 定制分享页面样式 */
+
+/* 分享构建器布局 */
+.share-builder {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+.config-panel {
+    flex: 1;
+    min-width: 300px;
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(20px);
+    border-radius: 16px;
+    padding: 20px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+}
+
+.preview-panel {
+    flex: 1.5;
+    min-width: 350px;
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(20px);
+    border-radius: 16px;
+    padding: 20px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+}
+
+.preview-title {
+    font-size: 18px;
+    font-weight: bold;
+    color: var(--title-color);
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.preview-title::before {
+    content: '';
+    width: 6px;
+    height: 24px;
+    background-color: var(--blue-line);
+    border-radius: 3px;
+}
+
+.preview-container {
+    min-height: 400px;
+    background: rgba(255, 255, 255, 0.5);
+    border-radius: 12px;
+    padding: 16px;
+    border: 1px solid var(--glass-border);
+}
+
+.preview-placeholder {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    height: 300px;
+    color: var(--dim-color);
+    text-align: center;
+}
+
+.preview-placeholder p {
+    margin: 8px 0;
+}
+
+/* 配置组 */
+.config-group {
+    margin-bottom: 24px;
+}
+
+.config-title {
+    font-size: 16px;
+    font-weight: bold;
+    color: var(--title-color);
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.config-title::before {
+    content: '';
+    width: 4px;
+    height: 18px;
+    background-color: var(--yellow-line);
+    border-radius: 2px;
+}
+
+/* 复选框组 */
+.checkbox-group {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.checkbox-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    padding: 8px 12px;
+    background: rgba(255, 255, 255, 0.5);
+    border-radius: 8px;
+    transition: all 0.2s;
+}
+
+.checkbox-item:hover {
+    background: rgba(0, 122, 255, 0.1);
+}
+
+.checkbox-item input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+    accent-color: var(--rain-blue);
+}
+
+.checkbox-item span {
+    font-size: 14px;
+    color: var(--text-color);
+}
+
+/* 样式选项 */
+.style-options {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.style-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.style-row label {
+    font-size: 14px;
+    color: var(--text-color);
+    min-width: 80px;
+}
+
+.style-row select {
+    flex: 1;
+    padding: 8px 12px;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.8);
+    font-size: 14px;
+    color: var(--text-color);
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.style-row select:hover {
+    border-color: var(--rain-blue);
+}
+
+.style-row input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+    accent-color: var(--rain-blue);
+}
+
+/* 操作按钮 */
+.action-btn {
+    width: 100%;
+    padding: 12px 20px;
+    border: none;
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-bottom: 10px;
+    font-family: inherit;
+}
+
+.primary-btn {
+    background: var(--rain-blue);
+    color: white;
+}
+
+.primary-btn:hover {
+    background: #0056b3;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 122, 255, 0.3);
+}
+
+.secondary-btn {
+    background: transparent;
+    border: 1px solid var(--rain-blue);
+    color: var(--rain-blue);
+}
+
+.secondary-btn:hover:not(:disabled) {
+    background: var(--rain-blue);
+    color: white;
+}
+
+.secondary-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* 链接输出 */
+.link-output {
+    margin-bottom: 10px;
+}
+
+#shareLinkInput {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.8);
+    font-size: 13px;
+    color: var(--text-color);
+    font-family: monospace;
+}
+
+.link-hint {
+    font-size: 12px;
+    color: var(--dim-color);
+    margin: 0;
+}
+
+/* 预览卡片样式 */
+.preview-card {
+    background-color: var(--bg-color);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--glass-shadow);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 12px;
+    transition: all .3s cubic-bezier(.25, .8, .25, 1);
+}
+
+.preview-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+}
+
+.preview-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.preview-card-title {
+    font-size: 18px;
+    font-weight: bold;
+    color: var(--title-color);
+}
+
+/* 实时天气预览 */
+.realtime-preview {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.realtime-temp-large {
+    font-size: 36px;
+    font-weight: bold;
+    color: var(--text-color);
+}
+
+.realtime-temp-large .unit {
+    font-size: 18px;
+    color: var(--dim-color);
+}
+
+.realtime-icon {
+    width: 60px;
+    height: 60px;
+}
+
+.realtime-desc {
+    font-size: 14px;
+    color: var(--dim-color);
+}
+
+/* 预报预览 */
+.forecast-preview {
+    display: flex;
+    justify-content: space-around;
+    gap: 10px;
+}
+
+.forecast-day-preview {
+    text-align: center;
+    flex: 1;
+}
+
+.forecast-date-preview {
+    font-size: 14px;
+    color: var(--dim-color);
+    font-weight: bold;
+    margin-bottom: 4px;
+}
+
+.forecast-icon-preview {
+    width: 40px;
+    height: 40px;
+    margin: 4px 0;
+}
+
+.forecast-temps-preview {
+    font-size: 14px;
+    font-weight: bold;
+    color: var(--text-color);
+}
+
+/* 预警预览 */
+.warning-preview {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.warning-icon-preview {
+    height: 36px;
+}
+
+.no-warning-text {
+    font-size: 14px;
+    color: var(--dim-color);
+}
+
+/* 降雨预览 */
+.rain-preview {
+    display: flex;
+    gap: 8px;
+    align-items: flex-end;
+    height: 80px;
+}
+
+.rain-bar-preview {
+    flex: 1;
+    background: rgba(0, 122, 255, 0.2);
+    border-radius: 3px;
+    position: relative;
+}
+
+.rain-bar-fill-preview {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background: var(--rain-blue);
+    border-radius: 3px;
+    transition: height 0.3s;
+}
+
+/* Toast 提示 */
+.toast {
+    visibility: hidden;
+    min-width: 200px;
+    background-color: rgba(0, 0, 0, 0.8);
+    color: white;
+    text-align: center;
+    border-radius: 8px;
+    padding: 12px;
+    position: fixed;
+    z-index: 3000;
+    left: 50%;
+    bottom: 30px;
+    transform: translateX(-50%);
+    font-size: 14px;
+    opacity: 0;
+    transition: opacity 0.3s, bottom 0.3s;
+}
+
+.toast.show {
+    visibility: visible;
+    opacity: 1;
+    bottom: 50px;
+}
+
+/* 深色主题 */
+.theme-dark {
+    --bg-color: rgba(30, 30, 30, 0.85);
+    --text-color: rgba(255, 255, 255, 0.9);
+    --dim-color: rgba(255, 255, 255, 0.6);
+    --title-color: #e0e0e0;
+    --glass-border: rgba(255, 255, 255, 0.1);
+}
+
+.theme-dark .preview-card {
+    background: rgba(40, 40, 40, 0.8);
+}
+
+/* 蓝色主题 */
+.theme-blue {
+    --bg-color: rgba(230, 240, 255, 0.7);
+    --text-color: rgba(0, 50, 100, 0.85);
+    --dim-color: rgba(0, 50, 100, 0.6);
+    --title-color: #003366;
+    --glass-border: rgba(0, 122, 255, 0.3);
+}
+
+.theme-blue .preview-card {
+    background: rgba(240, 248, 255, 0.8);
+}
+
+/* 水平布局 */
+.layout-horizontal .preview-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.layout-horizontal .preview-card {
+    flex: 1;
+    min-width: 200px;
+    margin-bottom: 0;
+}
+
+/* 响应式适配 */
+@media (max-width: 1000px) {
+    .share-builder {
+        flex-direction: column;
+    }
+    
+    .config-panel,
+    .preview-panel {
+        min-width: 100%;
+    }
+    
+    .layout-horizontal .preview-container {
+        flex-direction: column;
+    }
+    
+    .layout-horizontal .preview-card {
+        min-width: 100%;
+    }
+}
