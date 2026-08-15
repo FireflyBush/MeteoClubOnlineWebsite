@@ -13,26 +13,21 @@
         selectedColor: 0,
         currentMode: 'paint',
         selectedElementId: null,
+        // 12 色调色板：涵盖色环常用颜色 + 黑白灰 (索引 0 为透明)
         colors: [
             { name: '透明', value: 'transparent' },
             { name: '白色', value: '#ffffff' },
-            { name: '浅灰', value: '#e0e0e0' },
-            { name: '灰色', value: '#9e9e9e' },
-            { name: '深灰', value: '#616161' },
-            { name: '黑色', value: '#333333' },
-            { name: '红色', value: '#f44336' },
-            { name: '橙色', value: '#ff9800' },
-            { name: '黄色', value: '#ffeb3b' },
-            { name: '绿色', value: '#4caf50' },
-            { name: '青色', value: '#00bcd4' },
-            { name: '蓝色', value: '#2196f3' },
-            { name: '紫色', value: '#9c27b0' },
-            { name: '粉色', value: '#e91e63' },
-            { name: '棕色', value: '#795548' },
-            { name: '蓝天', value: '#87ceeb' },
-            { name: '草地', value: '#7cfc00' },
-            { name: '泥土', value: '#8b4513' },
-            { name: '石头', value: '#a9a9a9' }
+            { name: '浅灰', value: '#d3d3d3' },
+            { name: '灰色', value: '#808080' },
+            { name: '深灰', value: '#404040' },
+            { name: '黑色', value: '#000000' },
+            { name: '红色', value: '#ff0000' },
+            { name: '橙色', value: '#ffa500' },
+            { name: '黄色', value: '#ffff00' },
+            { name: '绿色', value: '#008000' },
+            { name: '青色', value: '#00ffff' },
+            { name: '蓝色', value: '#0000ff' },
+            { name: '紫色', value: '#800080' }
         ]
     };
 
@@ -564,7 +559,7 @@
         return content;
     }
 
-    // ==================== 分享链接生成 ====================
+    // ==================== 分享链接生成 (使用 Pako Gzip 压缩) ====================
     function generateShareLink() {
         const config = {
             w: state.gridWidth,
@@ -574,24 +569,25 @@
         };
         
         const jsonStr = JSON.stringify(config);
-        const encoder = new TextEncoder();
-        const uint8Array = encoder.encode(jsonStr);
         
-        // 使用更可靠的 Base64 编码方法
+        // 使用 Pako 进行 Gzip 压缩
+        const compressed = pako.gzip(jsonStr);
+        
+        // 转为 Base64
         let binary = '';
-        for (let i = 0; i < uint8Array.length; i++) {
-            binary += String.fromCharCode(uint8Array[i]);
+        for (let i = 0; i < compressed.length; i++) {
+            binary += String.fromCharCode(compressed[i]);
         }
-        const base64 = btoa(encodeURIComponent(binary).replace(/%([0-9A-F]{2})/g, (match, hex) => String.fromCharCode(parseInt(hex, 16))));
+        const base64 = btoa(binary);
         
         // URL 安全的 Base64
         const urlSafeBase64 = base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
         
-        const shareUrl = `${window.location.origin}${window.location.pathname}?share=${urlSafeBase64}`;
+        const shareUrl = `${window.location.origin}/share.html?share=${urlSafeBase64}`;
         
         // 复制链接
         navigator.clipboard.writeText(shareUrl).then(() => {
-            alert('分享链接已复制到剪贴板！\n\n' + shareUrl);
+            alert('分享链接已复制到剪贴板！\n\n链接长度：' + shareUrl.length + ' 字符\n(使用 Gzip 压缩，可支持复杂场景)');
         }).catch(() => {
             prompt('请手动复制以下链接:', shareUrl);
         });
@@ -607,8 +603,14 @@
             }
             
             const binary = atob(base64);
-            const percentDecoded = decodeURIComponent(binary.split('').map(c => '%' + c.charCodeAt(0).toString(16).padStart(2, '0')).join(''));
-            const config = JSON.parse(percentDecoded);
+            const compressed = new Uint8Array(binary.length);
+            for (let i = 0; i < binary.length; i++) {
+                compressed[i] = binary.charCodeAt(i);
+            }
+            
+            // 使用 Pako 解压
+            const jsonStr = pako.inflate(compressed, { to: 'string' });
+            const config = JSON.parse(jsonStr);
             
             state.gridWidth = config.w || 16;
             state.gridHeight = config.h || 16;
