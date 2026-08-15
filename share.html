@@ -9,7 +9,7 @@
     <link rel="icon" href="/favicon.ico" type="image/x-icon">
     <meta name="description" content="像《我的世界》一样搭建专属天气卡片，自由涂色、放置元素、插入数据变量。">
     <script>
-      window.CDN_BASE = "https://cdn.jsdelivr.net/gh/FireflyBush/MeteoClubOnlineWebsite@2026.0809";
+      window.CDN_BASE = "https://cdn.jsdelivr.net/gh/FireflyBush/MeteoClubOnlineWebsite@2026.0816";
     </script>
 </head>
 <body class="app-mode-preview">
@@ -17,12 +17,12 @@
     <!-- 顶部导航条 -->
     <nav class="top-nav">
         <div class="nav-left">
-            <img src="https://cdn.jsdelivr.net/gh/FireflyBush/MeteoClubOnlineWebsite@2026.0809/data/icons/logo.png" alt="Logo" class="nav-logo">
+            <img src="https://cdn.jsdelivr.net/gh/FireflyBush/MeteoClubOnlineWebsite@2026.0816/data/icons/logo.png" alt="Logo" class="nav-logo">
             <span class="nav-title">气象深高</span>
         </div>
         <div class="nav-right">
             <a href="/index.html" class="nav-link" title="返回主页">
-                <img src="https://cdn.jsdelivr.net/gh/FireflyBush/MeteoClubOnlineWebsite@2026.0809/data/icons/home.svg" alt="主页" class="nav-icon">
+                <img src="https://cdn.jsdelivr.net/gh/FireflyBush/MeteoClubOnlineWebsite@2026.0816/data/icons/home.svg" alt="主页" class="nav-icon">
             </a>
         </div>
     </nav>
@@ -30,6 +30,9 @@
     <!-- 悬浮模式切换按钮 -->
     <button id="btn-enter-edit" class="float-btn" onclick="setAppMode('edit')">🛠️ 进入编辑模式</button>
     <button id="btn-exit-edit" class="float-btn" onclick="setAppMode('preview')" style="display:none;">👁️ 退出编辑预览</button>
+
+    <!-- 作者署名显示 -->
+    <div id="authorDisplay" class="author-display"></div>
 
     <div class="builder-container">
         <!-- 左侧工具栏 -->
@@ -45,7 +48,7 @@
             </div>
 
             <div class="tool-panel" id="panel-paint">
-                <h4>🎨 方块颜色</h4>
+                <h4>🎨 选择方块</h4>
                 <div class="color-palette" id="colorPalette"></div>
                 <div class="control-group" style="margin-top:10px;">
                     <label>网格高度 (行数 16-64)</label>
@@ -111,6 +114,10 @@
             </div>
 
             <div style="margin-top:auto;">
+                <div class="control-group" style="margin-bottom: 10px;">
+                    <label>作者署名</label>
+                    <input type="text" id="authorName" placeholder="留下你的名字">
+                </div>
                 <button class="action-btn primary" onclick="generateShareLink()">🔗 生成分享链接</button>
             </div>
             

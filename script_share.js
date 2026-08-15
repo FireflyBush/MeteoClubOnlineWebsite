@@ -11,28 +11,20 @@
         gridHeight: 16,
         cells: [],
         elements: [],
-        selectedColor: 0,
+        selectedBlock: 0,
         currentMode: 'paint',
         selectedElementId: null,
         pendingBlockType: null,
         appMode: 'preview',
         realData: null,
-        colors: [
-            { name: '透明', value: 'transparent' },
-            { name: '白色', value: '#ffffff' },
-            { name: '浅灰', value: '#d3d3d3' },
-            { name: '灰色', value: '#808080' },
-            { name: '深灰', value: '#404040' },
-            { name: '黑色', value: '#000000' },
-            { name: '红色', value: '#ff0000' },
-            { name: '橙色', value: '#ffa500' },
-            { name: '黄色', value: '#ffff00' },
-            { name: '绿色', value: '#008000' },
-            { name: '青色', value: '#00ffff' },
-            { name: '蓝色', value: '#0000ff' },
-            { name: '紫色', value: '#800080' }
-        ]
+        author: '',
+        // 将 12 改为 32，从 01 开始计数，后缀改为 .png
+        blocks: Array.from({length: 32}, (_, i) => ({
+            name: `方块${i + 1}`,
+            file: `${(i + 1).toString().padStart(2, '0')}.png`
+        }))
     };
+
 
     const realtimeVars = [
         { key: 'realtime.temp', label: '温度 (°C)' },
@@ -189,6 +181,7 @@
 
         const editBtn = document.getElementById('btn-enter-edit');
         const exitBtn = document.getElementById('btn-exit-edit');
+        const authorDisplay = document.getElementById('authorDisplay');
 
         if (mode === 'preview') {
             editBtn.style.display = 'flex';
@@ -208,36 +201,52 @@
             if (!state.realData) loadRealData();
             renderElements();
         }
+
+        // 控制作者署名的显示
+        if (mode === 'edit') {
+            authorDisplay.style.display = 'none';
+        } else {
+            const author = state.author || document.getElementById('authorName').value || '';
+            if (author) {
+                authorDisplay.textContent = `✍️ 作者：${author}`;
+                authorDisplay.style.display = 'block';
+            } else {
+                authorDisplay.style.display = 'none';
+            }
+        }
     }
 
-    // ==================== 颜色面板 ====================
+    // ==================== 方块面板 ====================
     function initColorPalette() {
         const palette = document.getElementById('colorPalette');
         palette.innerHTML = '';
-        state.colors.forEach((color, index) => {
+        state.blocks.forEach((block, index) => {
             const swatch = document.createElement('div');
             swatch.className = 'color-swatch' + (index === 0 ? ' active' : '');
-            swatch.style.background = color.value;
-            if (color.value === 'transparent') {
-                swatch.style.backgroundImage = 'linear-gradient(45deg, #ccc 25%, transparent 25%), linear-gradient(-45deg, #ccc 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #ccc 75%), linear-gradient(-45deg, transparent 75%, #ccc 75%)';
-                swatch.style.backgroundSize = '8px 8px';
-                swatch.style.backgroundPosition = '0 0, 0 4px, 4px -4px, -4px 0px';
-            }
-            swatch.title = color.name;
-            swatch.onclick = () => selectColor(index);
+            // 这里的 block.svg 改为 block.file
+            swatch.style.backgroundImage = `url(${CDN_BASE}/data/blocks/${block.file})`;
+            swatch.title = block.name;
+            swatch.onclick = () => selectBlock(index);
             palette.appendChild(swatch);
         });
     }
 
-    function selectColor(index) {
-        state.selectedColor = index;
+
+    function selectBlock(index) {
+        state.selectedBlock = index;
         document.querySelectorAll('.color-swatch').forEach((el, i) => {
             el.classList.toggle('active', i === index);
         });
     }
 
     // ==================== 网格系统 ====================
-    function initGrid() { renderGrid(); }
+    function initGrid() { 
+        // 初始化全为 0 号方块
+        if (state.cells.length !== state.gridWidth * state.gridHeight) {
+            state.cells = new Array(state.gridWidth * state.gridHeight).fill(0);
+        }
+        renderGrid(); 
+    }
 
     function renderGrid() {
         const layerBg = document.getElementById('layer-bg');
@@ -253,10 +262,12 @@
             const cell = document.createElement('div');
             cell.className = 'grid-cell';
             cell.dataset.index = i;
-            const colorIndex = state.cells[i] || 0;
-            const color = state.colors[colorIndex]?.value || 'transparent';
-            if (color !== 'transparent') {
-                cell.style.background = color;
+            const blockIndex = state.cells[i] !== undefined ? state.cells[i] : 0;
+            const block = state.blocks[blockIndex];
+            if (block) {
+                // 这里的 block.svg 改为 block.file
+                cell.style.backgroundImage = `url(${CDN_BASE}/data/blocks/${block.file})`;
+                cell.style.backgroundSize = 'cover';
                 cell.classList.add('filled');
             }
             cell.onclick = () => handleCellClick(i);
@@ -268,9 +279,21 @@
     function handleCellClick(index) {
         if (state.appMode !== 'edit') return;
         if (state.currentMode === 'paint') {
-            state.cells[index] = state.selectedColor;
-            renderGrid();
-        } else if (state.currentMode === 'add-text') placeElementAtCell(index, 'text');
+            state.cells[index] = state.selectedBlock;
+            // 局部更新提升性能
+            const cells = document.querySelectorAll('.grid-cell');
+            const cell = cells[index];
+            if(cell) {
+                const block = state.blocks[state.selectedBlock];
+                if (block) {
+                    // 这里的 block.svg 改为 block.file
+                    cell.style.backgroundImage = `url(${CDN_BASE}/data/blocks/${block.file})`;
+                    cell.style.backgroundSize = 'cover';
+                    cell.classList.add('filled');
+                }
+            }
+        }
+ else if (state.currentMode === 'add-text') placeElementAtCell(index, 'text');
         else if (state.currentMode === 'add-var') {
             if (window.pendingVarKey) placeElementAtCell(index, 'var');
             else if (state.pendingBlockType) placeElementAtCell(index, 'block');
@@ -314,14 +337,11 @@
 
         if (element) {
             state.elements.push(element);
-            // 放置后自动切换回选择模式
             state.currentMode = 'select';
             updateModeButtons();
             updatePanels();
-            // 清除所有按钮的高亮状态
             document.querySelectorAll('.var-list button.active').forEach(btn => btn.classList.remove('active'));
             renderElements();
-            // 自动选中新放置的元素
             selectElement(element.id);
         }
     }
@@ -541,7 +561,6 @@
     function updatePanels() {
         document.getElementById('panel-paint').style.display = state.currentMode === 'paint' ? 'block' : 'none';
         document.getElementById('panel-text').style.display = state.currentMode === 'add-text' ? 'block' : 'none';
-        // 合并变量与板块面板
         document.getElementById('panel-var').style.display = state.currentMode === 'add-var' ? 'block' : 'none';
         if (state.currentMode !== 'select') document.getElementById('panel-properties').style.display = 'none';
     }
@@ -584,7 +603,7 @@
 
     function selectVar(key, event) {
         window.pendingVarKey = key;
-        state.pendingBlockType = null; // 清除板块选中状态
+        state.pendingBlockType = null;
         state.currentMode = 'add-var';
         updateModeButtons();
         updatePanels();
@@ -594,8 +613,8 @@
 
     function selectBlock(blockType, event) {
         state.pendingBlockType = blockType;
-        window.pendingVarKey = null; // 清除变量选中状态
-        state.currentMode = 'add-var'; // 复用同一模式
+        window.pendingVarKey = null;
+        state.currentMode = 'add-var';
         updateModeButtons();
         updatePanels();
         document.querySelectorAll('.var-list button').forEach(btn => btn.classList.remove('active'));
@@ -613,11 +632,21 @@
             state.elements = [];
             renderGrid();
         };
+
+        document.getElementById('authorName').addEventListener('input', function() {
+            state.author = this.value;
+        });
     }
 
     // ==================== 分享链接生成 ====================
     function generateShareLink() {
-        const config = { w: state.gridWidth, h: state.gridHeight, c: state.cells, e: state.elements };
+        const config = { 
+            w: state.gridWidth, 
+            h: state.gridHeight, 
+            c: state.cells, 
+            e: state.elements, 
+            a: state.author || '' 
+        };
         const jsonStr = JSON.stringify(config);
         const compressed = pako.gzip(jsonStr);
         let binary = '';
@@ -648,6 +677,11 @@
             state.gridHeight = config.h || 16;
             state.cells = config.c || [];
             state.elements = config.e || [];
+            state.author = config.a || '';
+            
+            // 回填到输入框（虽然查看模式看不到，但逻辑保持一致）
+            document.getElementById('authorName').value = state.author;
+            
             initGrid();
         } catch (e) {
             console.error('加载分享配置失败:', e);
