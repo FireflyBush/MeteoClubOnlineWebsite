@@ -15,8 +15,8 @@
         currentMode: 'paint',
         selectedElementId: null,
         pendingBlockType: null,
-        appMode: 'preview', // preview, edit, view
-        realData: null,     // 存储拉取到的真实数据
+        appMode: 'preview',
+        realData: null,
         colors: [
             { name: '透明', value: 'transparent' },
             { name: '白色', value: '#ffffff' },
@@ -34,7 +34,6 @@
         ]
     };
 
-    // 甄别后的变量列表 (与 script.js 实际获取的数据源统一)
     const realtimeVars = [
         { key: 'realtime.temp', label: '温度 (°C)' },
         { key: 'realtime.feelsLike', label: '体感温度' },
@@ -55,7 +54,7 @@
         { key: 'alertBlock', label: '⚠️ 预警信息板块' }
     ];
 
-    // ==================== API 与数据处理 (与 index.html 统一) ====================
+    // ==================== API 与数据处理 ====================
     const CDN_BASE = window.CDN_BASE || "";
     const CORS_PROXY = "/api/proxy?url=";
     const BASE_URL_FORECAST = "https://weather.121.com.cn/data_cache/szWeather/sz10day_new.js";
@@ -93,8 +92,7 @@
         let typeBestAlarm = {};
         alarms.forEach(alarm => {
             let icon = alarm.icon || '';
-            let level = 0;
-            let alarmType = 'unknown';
+            let level = 0, alarmType = 'unknown';
             for (let key in WARNING_LEVEL_PRIORITY) {
                 if (icon.includes(key)) {
                     level = WARNING_LEVEL_PRIORITY[key];
@@ -102,8 +100,7 @@
                     break;
                 }
             }
-            alarm._level = level;
-            alarm._type = alarmType;
+            alarm._level = level; alarm._type = alarmType;
             if (!typeBestAlarm[alarmType] || level > typeBestAlarm[alarmType]._level) {
                 typeBestAlarm[alarmType] = alarm;
             }
@@ -121,7 +118,6 @@
         return Math.round((rain_mm / MAX_RAIN_VALUE) * MAX_BAR_HEIGHT);
     }
 
-    // 加载真实数据
     function loadRealData() {
         const ts = new Date().getTime();
         const URL_FORECAST = `${BASE_URL_FORECAST}?_=${ts}`;
@@ -130,7 +126,6 @@
 
         state.realData = { realtime: {}, forecast: [], alarm: null, rain: null };
 
-        // 1. 获取预报
         $.getScript(URL_FORECAST, function() {
             let forecastData = window.SZ121_10dayWeather;
             let day10 = forecastData?.day10 || [];
@@ -148,13 +143,11 @@
             renderElements();
         }).fail(function() { console.warn("预报数据获取失败"); });
 
-        // 2. 获取预警
         $.getScript(URL_ALARM, function() {
             state.realData.alarm = window.SZ121_AlarmInfo;
             renderElements();
         }).fail(function() { console.warn("预警数据获取失败"); });
 
-        // 3. 获取实况与降雨
         $.getJSON(URL_RAIN, function(rainData) {
             let temp = rainData.temp;
             let hum = rainData.humidity;
@@ -244,18 +237,14 @@
     }
 
     // ==================== 网格系统 ====================
-    function initGrid() {
-        renderGrid();
-    }
+    function initGrid() { renderGrid(); }
 
     function renderGrid() {
         const layerBg = document.getElementById('layer-bg');
         const canvas = document.getElementById('gridCanvas');
-
         document.documentElement.style.setProperty('--grid-h', state.gridHeight);
         canvas.style.width = `calc(${state.gridWidth} * var(--grid-cell-size))`;
         canvas.style.height = `calc(${state.gridHeight} * var(--grid-cell-size))`;
-
         layerBg.style.gridTemplateColumns = `repeat(${state.gridWidth}, var(--grid-cell-size))`;
         layerBg.style.gridTemplateRows = `repeat(${state.gridHeight}, var(--grid-cell-size))`;
         layerBg.innerHTML = '';
@@ -281,13 +270,9 @@
         if (state.currentMode === 'paint') {
             state.cells[index] = state.selectedColor;
             renderGrid();
-        } else if (state.currentMode === 'add-text') {
-            placeElementAtCell(index, 'text');
-        } else if (state.currentMode === 'add-var') {
-            placeElementAtCell(index, 'var');
-        } else if (state.currentMode === 'add-block') {
-            placeElementAtCell(index, 'block');
-        }
+        } else if (state.currentMode === 'add-text') placeElementAtCell(index, 'text');
+        else if (state.currentMode === 'add-var') placeElementAtCell(index, 'var');
+        else if (state.currentMode === 'add-block') placeElementAtCell(index, 'block');
     }
 
     function clearGrid() {
@@ -310,16 +295,16 @@
             const color = document.getElementById('textColor').value;
             const w = parseInt(document.getElementById('textW').value) || 4;
             const h = parseInt(document.getElementById('textH').value) || 1;
-            if (!content.trim()) { showToast('请输入文本内容'); return; }
+            if (!content.trim()) { return; }
             element = { id: Date.now(), type: 'text', x, y, w, h, content, style: { fontSize: size, color } };
         } else if (type === 'var') {
             const varKey = window.pendingVarKey;
-            if (!varKey) { showToast('请先选择一个数据变量'); return; }
+            if (!varKey) { return; }
             element = { id: Date.now(), type: 'var', x, y, w: 3, h: 1, content: `{${varKey}}`, style: { fontSize: 12, color: '#0d47a1' } };
             window.pendingVarKey = null;
         } else if (type === 'block') {
             const blockType = state.pendingBlockType;
-            if (!blockType) { showToast('请先选择一个数据板块'); return; }
+            if (!blockType) { return; }
             element = { id: Date.now(), type: 'block', blockType, x, y, w: 8, h: 4, scale: 1.0, style: {} };
             state.pendingBlockType = null;
         }
@@ -328,6 +313,8 @@
             state.elements.push(element);
             state.currentMode = 'select';
             updateModeButtons();
+            // 清除所有按钮的高亮状态
+            document.querySelectorAll('.var-list button.active').forEach(btn => btn.classList.remove('active'));
             renderElements();
         }
     }
@@ -354,7 +341,6 @@
             };
             layer.appendChild(div);
 
-            // 如果是板块且非编辑模式，注入真实数据
             if (el.type === 'block' && state.appMode !== 'edit' && state.realData) {
                 renderBlockIntoElement(div, el);
             }
@@ -496,7 +482,6 @@
         }
     }
 
-    // 拖拽
     let dragEl = null, dragOffsetX = 0, dragOffsetY = 0;
     function startDrag(e, el) {
         if (state.appMode !== 'edit' || state.currentMode !== 'select') return;
@@ -554,7 +539,7 @@
         realtimeVars.forEach(v => {
             const btn = document.createElement('button');
             btn.textContent = v.label;
-            btn.onclick = () => selectVar(v.key);
+            btn.onclick = (e) => selectVar(v.key, e);
             realtimeList.appendChild(btn);
         });
 
@@ -563,7 +548,7 @@
         blockVars.forEach(v => {
             const btn = document.createElement('button');
             btn.textContent = v.label;
-            btn.onclick = () => selectBlock(v.key);
+            btn.onclick = (e) => selectBlock(v.key, e);
             blockList.appendChild(btn);
         });
         updateForecastVars();
@@ -578,25 +563,29 @@
         forecastVarDefs.forEach(v => {
             const btn = document.createElement('button');
             btn.textContent = `${v.label} (D+${day})`;
-            btn.onclick = () => selectVar(`forecast[${day}].${v.key}`);
+            btn.onclick = (e) => selectVar(`forecast[${day}].${v.key}`, e);
             forecastList.appendChild(btn);
         });
     }
 
-    function selectVar(key) {
+    function selectVar(key, event) {
         window.pendingVarKey = key;
         state.currentMode = 'add-var';
         updateModeButtons();
         updatePanels();
-        showToast(`已选择变量 {${key}}，请点击网格放置`);
+        // 直接给按钮加高亮状态
+        document.querySelectorAll('.var-list button').forEach(btn => btn.classList.remove('active'));
+        if(event && event.target) event.target.classList.add('active');
     }
 
-    function selectBlock(blockType) {
+    function selectBlock(blockType, event) {
         state.pendingBlockType = blockType;
         state.currentMode = 'add-block';
         updateModeButtons();
         updatePanels();
-        showToast(`已选择板块，请点击网格放置`);
+        // 直接给按钮加高亮状态
+        document.querySelectorAll('.var-list button').forEach(btn => btn.classList.remove('active'));
+        if(event && event.target) event.target.classList.add('active');
     }
 
     // ==================== 事件监听 ====================
@@ -612,14 +601,6 @@
         };
     }
 
-    // ==================== Toast ====================
-    function showToast(msg) {
-        const toast = document.getElementById("toast");
-        toast.textContent = msg;
-        toast.className = "show";
-        setTimeout(() => { toast.className = toast.className.replace("show", ""); }, 2000);
-    }
-
     // ==================== 分享链接生成 ====================
     function generateShareLink() {
         const config = { w: state.gridWidth, h: state.gridHeight, c: state.cells, e: state.elements };
@@ -630,11 +611,10 @@
         const base64 = btoa(binary);
         const urlSafeBase64 = base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
         
-        // 使用相对路径适配子目录部署
         const shareUrl = `${location.origin}${location.pathname}?share=${urlSafeBase64}`;
         
         navigator.clipboard.writeText(shareUrl).then(() => {
-            showToast('分享链接已复制到剪贴板！');
+            alert('分享链接已复制到剪贴板！');
         }).catch(() => {
             prompt('请手动复制以下链接:', shareUrl);
         });
@@ -654,11 +634,10 @@
             state.gridHeight = config.h || 16;
             state.cells = config.c || [];
             state.elements = config.e || [];
-            
             initGrid();
         } catch (e) {
             console.error('加载分享配置失败:', e);
-            showToast('无效的分享链接');
+            alert('无效的分享链接');
         }
     }
 
@@ -673,6 +652,7 @@
     window.updateElementContent = updateElementContent;
     window.updateElementStyle = updateElementStyle;
     window.updateForecastVars = updateForecastVars;
+    window.loadRealData = loadRealData; // 暴露给测试脚本调用
     
     window.confirmAddText = function() {
         const centerX = Math.floor(state.gridWidth / 2);
