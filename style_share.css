@@ -1,40 +1,181 @@
-/* style_share.css - 定制分享页面样式 */
+/* style_share.css - 定制分享编辑器样式 */
 
-/* 分享构建器布局 */
-.share-builder {
+/* 编辑器主容器 */
+.editor-container {
     display: flex;
     gap: 20px;
     flex-wrap: wrap;
 }
 
-.config-panel {
+/* 左侧编辑面板 */
+.editor-panel {
     flex: 1;
-    min-width: 300px;
-    background: rgba(255, 255, 255, 0.7);
-    backdrop-filter: blur(20px);
-    border-radius: 16px;
-    padding: 20px;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
-}
-
-.preview-panel {
-    flex: 1.5;
     min-width: 350px;
     background: rgba(255, 255, 255, 0.7);
     backdrop-filter: blur(20px);
     border-radius: 16px;
     padding: 20px;
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+    display: flex;
+    flex-direction: column;
+}
+
+/* 工具栏 */
+.editor-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    background: rgba(255, 255, 255, 0.5);
+    border-radius: 12px;
+    margin-bottom: 12px;
+    border: 1px solid var(--glass-border);
+}
+
+.toolbar-group {
+    display: flex;
+    gap: 6px;
+}
+
+.toolbar-divider {
+    width: 1px;
+    height: 28px;
+    background: rgba(0, 0, 0, 0.1);
+    margin: 0 8px;
+}
+
+.toolbar-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.8);
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 13px;
+    color: var(--text-color);
+}
+
+.toolbar-btn:hover {
+    background: rgba(0, 122, 255, 0.1);
+    border-color: var(--rain-blue);
+}
+
+.toolbar-btn img {
+    width: 16px;
+    height: 16px;
+}
+
+.toolbar-btn strong, .toolbar-btn em {
+    font-style: normal;
+    font-weight: bold;
+}
+
+/* Markdown 编辑器 */
+.markdown-editor {
+    flex: 1;
+    min-height: 300px;
+    padding: 16px;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.8);
+    font-size: 14px;
+    font-family: 'Consolas', 'Monaco', monospace;
+    line-height: 1.6;
+    color: var(--text-color);
+    resize: vertical;
+    transition: all 0.2s;
+}
+
+.markdown-editor:focus {
+    outline: none;
+    border-color: var(--rain-blue);
+    box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.1);
+}
+
+.markdown-editor::placeholder {
+    color: var(--dim-color);
+}
+
+/* 编辑器底部 */
+.editor-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.custom-title-input {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+}
+
+.custom-title-input label {
+    font-size: 13px;
+    color: var(--text-color);
+    white-space: nowrap;
+}
+
+.custom-title-input input {
+    flex: 1;
+    padding: 8px 12px;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.8);
+    font-size: 13px;
+    color: var(--text-color);
+}
+
+.style-controls {
+    display: flex;
+    gap: 8px;
+}
+
+.style-controls select {
+    padding: 8px 12px;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.8);
+    font-size: 13px;
+    color: var(--text-color);
+    cursor: pointer;
+}
+
+/* 预览面板 */
+.preview-panel {
+    flex: 1.5;
+    min-width: 400px;
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(20px);
+    border-radius: 16px;
+    padding: 20px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+    display: flex;
+    flex-direction: column;
+}
+
+.preview-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
 }
 
 .preview-title {
     font-size: 18px;
     font-weight: bold;
     color: var(--title-color);
-    margin-bottom: 16px;
     display: flex;
     align-items: center;
     gap: 10px;
+    margin: 0;
 }
 
 .preview-title::before {
@@ -45,12 +186,32 @@
     border-radius: 3px;
 }
 
+.refresh-btn {
+    padding: 8px;
+    border: none;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.5);
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.refresh-btn:hover {
+    background: rgba(0, 122, 255, 0.1);
+}
+
+.refresh-btn img {
+    width: 18px;
+    height: 18px;
+}
+
 .preview-container {
+    flex: 1;
     min-height: 400px;
     background: rgba(255, 255, 255, 0.5);
     border-radius: 12px;
     padding: 16px;
     border: 1px solid var(--glass-border);
+    overflow-y: auto;
 }
 
 .preview-placeholder {
@@ -67,153 +228,30 @@
     margin: 8px 0;
 }
 
-/* 配置组 */
-.config-group {
-    margin-bottom: 24px;
-}
-
-.config-title {
-    font-size: 16px;
-    font-weight: bold;
-    color: var(--title-color);
-    margin-bottom: 12px;
+.preview-actions {
     display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.config-title::before {
-    content: '';
-    width: 4px;
-    height: 18px;
-    background-color: var(--yellow-line);
-    border-radius: 2px;
-}
-
-/* 复选框组 */
-.checkbox-group {
-    display: flex;
-    flex-direction: column;
     gap: 10px;
+    margin-top: 16px;
 }
 
-.checkbox-item {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    cursor: pointer;
-    padding: 8px 12px;
-    background: rgba(255, 255, 255, 0.5);
-    border-radius: 8px;
-    transition: all 0.2s;
+/* 链接输出区域 */
+.link-output-section {
+    margin-top: 20px;
+    padding: 20px;
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(20px);
+    border-radius: 16px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
 }
 
-.checkbox-item:hover {
-    background: rgba(0, 122, 255, 0.1);
-}
-
-.checkbox-item input[type="checkbox"] {
-    width: 18px;
-    height: 18px;
-    cursor: pointer;
-    accent-color: var(--rain-blue);
-}
-
-.checkbox-item span {
-    font-size: 14px;
-    color: var(--text-color);
-}
-
-/* 样式选项 */
-.style-options {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-}
-
-.style-row {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-}
-
-.style-row label {
-    font-size: 14px;
-    color: var(--text-color);
-    min-width: 80px;
-}
-
-.style-row select {
-    flex: 1;
-    padding: 8px 12px;
-    border: 1px solid rgba(0, 0, 0, 0.1);
-    border-radius: 8px;
-    background: rgba(255, 255, 255, 0.8);
-    font-size: 14px;
-    color: var(--text-color);
-    cursor: pointer;
-    transition: all 0.2s;
-}
-
-.style-row select:hover {
-    border-color: var(--rain-blue);
-}
-
-.style-row input[type="checkbox"] {
-    width: 18px;
-    height: 18px;
-    cursor: pointer;
-    accent-color: var(--rain-blue);
-}
-
-/* 操作按钮 */
-.action-btn {
-    width: 100%;
-    padding: 12px 20px;
-    border: none;
-    border-radius: 20px;
-    font-size: 14px;
-    font-weight: bold;
-    cursor: pointer;
-    transition: all 0.2s;
-    margin-bottom: 10px;
-    font-family: inherit;
-}
-
-.primary-btn {
-    background: var(--rain-blue);
-    color: white;
-}
-
-.primary-btn:hover {
-    background: #0056b3;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 122, 255, 0.3);
-}
-
-.secondary-btn {
-    background: transparent;
-    border: 1px solid var(--rain-blue);
-    color: var(--rain-blue);
-}
-
-.secondary-btn:hover:not(:disabled) {
-    background: var(--rain-blue);
-    color: white;
-}
-
-.secondary-btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-}
-
-/* 链接输出 */
 .link-output {
+    display: flex;
+    gap: 10px;
     margin-bottom: 10px;
 }
 
-#shareLinkInput {
-    width: 100%;
+.link-output input {
+    flex: 1;
     padding: 12px;
     border: 1px solid rgba(0, 0, 0, 0.1);
     border-radius: 8px;
@@ -221,6 +259,22 @@
     font-size: 13px;
     color: var(--text-color);
     font-family: monospace;
+}
+
+.copy-btn {
+    padding: 12px 24px;
+    border: none;
+    border-radius: 8px;
+    background: var(--rain-blue);
+    color: white;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+}
+
+.copy-btn:hover {
+    background: #0056b3;
 }
 
 .link-hint {
@@ -428,11 +482,11 @@
 
 /* 响应式适配 */
 @media (max-width: 1000px) {
-    .share-builder {
+    .editor-container {
         flex-direction: column;
     }
     
-    .config-panel,
+    .editor-panel,
     .preview-panel {
         min-width: 100%;
     }
@@ -444,4 +498,93 @@
     .layout-horizontal .preview-card {
         min-width: 100%;
     }
+}
+
+/* 使用指南网格 */
+.guide-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+    margin-bottom: 30px;
+}
+
+.guide-item {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(20px);
+    border-radius: 16px;
+    padding: 24px;
+    text-align: center;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+    transition: all 0.3s;
+}
+
+.guide-item:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+}
+
+.guide-icon {
+    font-size: 48px;
+    margin-bottom: 12px;
+}
+
+.guide-item h4 {
+    font-size: 18px;
+    color: var(--title-color);
+    margin: 0 0 8px 0;
+}
+
+.guide-item p {
+    font-size: 14px;
+    color: var(--dim-color);
+    margin: 0;
+    line-height: 1.6;
+}
+
+/* Markdown 语法帮助 */
+.markdown-syntax-help {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(20px);
+    border-radius: 16px;
+    padding: 24px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+}
+
+.markdown-syntax-help h4 {
+    font-size: 18px;
+    color: var(--title-color);
+    margin: 0 0 16px 0;
+}
+
+.syntax-examples {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.syntax-example {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 12px;
+    background: rgba(255, 255, 255, 0.5);
+    border-radius: 8px;
+}
+
+.syntax-example code {
+    padding: 4px 8px;
+    background: rgba(0, 0, 0, 0.05);
+    border-radius: 4px;
+    font-family: 'Consolas', 'Monaco', monospace;
+    font-size: 13px;
+    color: var(--text-color);
+}
+
+.syntax-example span:first-of-type {
+    color: var(--dim-color);
+    font-size: 18px;
+}
+
+.example-rendered {
+    color: var(--text-color);
 }

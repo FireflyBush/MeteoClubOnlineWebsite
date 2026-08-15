@@ -1,4 +1,4 @@
-// script_share.js - 定制分享功能脚本
+// script_share.js - 定制分享编辑器功能脚本
 
 $(document).ready(function() {
     const CDN_BASE = window.CDN_BASE || "";
@@ -25,47 +25,83 @@ $(document).ready(function() {
     }
 
     // 初始化构建器模式
-    initBuilder();
+    initEditor();
 
-    // 初始化构建器
-    function initBuilder() {
-        // 绑定事件
+    // 初始化编辑器
+    function initEditor() {
+        $('.toolbar-btn').on('click', function() {
+            const action = $(this).data('insert');
+            insertMarkdownAction(action);
+        });
+
+        $('#markdownEditor').on('input', debounce(updatePreview, 300));
+        $('#customCardTitle').on('input', debounce(updatePreview, 300));
+        $('#themeSelect, #layoutSelect').on('change', updatePreview);
+
         $('#generateLinkBtn').on('click', generateShareLink);
         $('#copyLinkBtn').on('click', copyShareLink);
-        $('#previewRefreshBtn').on('click', fetchAllData);
-        
-        // 监听配置变化
-        $('input[type="checkbox"], select').on('change', updatePreview);
-        
-        // 初始获取数据
+        $('#quickCopyBtn').on('click', copyShareLink);
+        $('#refreshPreviewBtn').on('click', fetchAllData);
+
         fetchAllData();
     }
 
-    // 从 URL 初始化（查看分享链接模式）
+    // 从 URL 初始化
     function initFromURL() {
         try {
             const config = JSON.parse(atob(urlParams.get('share')));
-            
-            // 应用配置
             $('#themeSelect').val(config.theme || 'light');
             $('#layoutSelect').val(config.layout || 'vertical');
-            $('#showTitle').prop('checked', config.showTitle !== false);
-            $('#selectRealtime').prop('checked', config.modules.realtime !== false);
-            $('#selectForecast').prop('checked', config.modules.forecast !== false);
-            $('#selectWarning').prop('checked', config.modules.warning !== false);
-            $('#selectRain').prop('checked', config.modules.rain !== false);
+            $('#customCardTitle').val(config.customTitle || '');
+            $('#markdownEditor').val(config.content || '');
             
-            // 隐藏生成按钮，显示提示
-            $('.config-panel').hide();
+            $('.editor-panel').hide();
             $('.preview-title').text('定制天气卡片');
+            $('.preview-actions').hide();
+            $('.link-output-section').hide();
             
-            // 获取数据并渲染
             fetchAllData(true);
         } catch (e) {
             console.error('解析分享配置失败:', e);
             alert('分享链接无效或已过期');
             window.location.href = '/index.html';
         }
+    }
+
+    // 插入 Markdown 动作
+    function insertMarkdownAction(action) {
+        const editor = $('#markdownEditor')[0];
+        const start = editor.selectionStart;
+        const end = editor.selectionEnd;
+        const text = $(editor).val();
+        
+        let insertText = '';
+        let cursorOffset = 0;
+        
+        switch(action) {
+            case 'heading': insertText = '\n# 标题\n'; cursorOffset = 3; break;
+            case 'bold': insertText = '**加粗文本**'; cursorOffset = 2; break;
+            case 'italic': insertText = '*斜体文本*'; cursorOffset = 1; break;
+            case 'realtime': insertText = '\n{{WEATHER_REALTIME}}\n'; cursorOffset = 0; break;
+            case 'forecast': insertText = '\n{{WEATHER_FORECAST}}\n'; cursorOffset = 0; break;
+            case 'warning': insertText = '\n{{WEATHER_WARNING}}\n'; cursorOffset = 0; break;
+            case 'rain': insertText = '\n{{WEATHER_RAIN}}\n'; cursorOffset = 0; break;
+        }
+        
+        const newText = text.substring(0, start) + insertText + text.substring(end);
+        $(editor).val(newText);
+        editor.selectionStart = editor.selectionEnd = start + cursorOffset;
+        $(editor).focus();
+        updatePreview();
+    }
+
+    // 防抖函数
+    function debounce(func, wait) {
+        let timeout;
+        return function(...args) {
+            clearTimeout(timeout);
+            timeout = setTimeout(() => func(...args), wait);
+        };
     }
 
     // 获取所有天气数据
@@ -77,151 +113,123 @@ $(document).ready(function() {
 
         $.getScript(URL_FORECAST, function() {
             currentWeatherData.forecast = window.SZ121_10dayWeather;
-            
             $.getScript(URL_ALARM, function() {
                 currentWeatherData.alarm = window.SZ121_AlarmInfo;
-
                 $.getJSON(URL_RAIN, function(rainData) {
                     currentWeatherData.rain = rainData;
-                    if (isViewMode) {
-                        renderViewMode();
-                    } else {
-                        updatePreview();
-                    }
+                    isViewMode ? renderViewMode() : updatePreview();
                 }).fail(function() {
                     currentWeatherData.rain = null;
-                    if (isViewMode) {
-                        renderViewMode();
-                    } else {
-                        updatePreview();
-                    }
+                    isViewMode ? renderViewMode() : updatePreview();
                 });
             }).fail(function() {
                 currentWeatherData.alarm = null;
-                if (isViewMode) {
-                    renderViewMode();
-                } else {
-                    updatePreview();
-                }
+                isViewMode ? renderViewMode() : updatePreview();
             });
-        }).fail(function() {
-            console.warn("预报数据获取失败");
-        });
+        }).fail(function() { console.warn("预报数据获取失败"); });
     }
 
     // 更新预览
     function updatePreview() {
         if (!currentWeatherData.forecast) {
-            $('#previewContainer').html(`
-                <div class="preview-placeholder">
-                    <p>数据加载中...</p>
-                    <p>请稍候或点击"刷新预览"</p>
-                </div>
-            `);
+            $('#previewContainer').html('<div class="preview-placeholder"><p>数据加载中...</p></div>');
             return;
         }
 
-        const config = getConfig();
-        applyTheme(config.theme);
-        applyLayout(config.layout);
+        const content = $('#markdownEditor').val();
+        const customTitle = $('#customCardTitle').val().trim();
+        const theme = $('#themeSelect').val();
+        const layout = $('#layoutSelect').val();
+        
+        applyTheme(theme);
+        applyLayout(layout);
         
         let html = '';
-        
-        if (config.showTitle) {
-            html += `
-                <div class="preview-card-header">
-                    <span class="preview-card-title">气象深高 · 定制天气</span>
-                    <span style="font-size: 12px; color: var(--dim-color);">${new Date().toLocaleDateString('zh-CN')}</span>
-                </div>
-            `;
+        if (customTitle) {
+            html += `<div class="preview-card-header"><span class="preview-card-title">${escapeHtml(customTitle)}</span><span style="font-size:12px;color:var(--dim-color);">${new Date().toLocaleDateString('zh-CN')}</span></div>`;
         }
-
-        if (config.modules.realtime) {
-            html += renderRealtimePreview();
-        }
-
-        if (config.modules.forecast) {
-            html += renderForecastPreview();
-        }
-
-        if (config.modules.warning) {
-            html += renderWarningPreview();
-        }
-
-        if (config.modules.rain) {
-            html += renderRainPreview();
-        }
-
+        html += parseMarkdownContent(content);
         $('#previewContainer').html(html);
     }
 
-    // 获取当前配置
-    function getConfig() {
-        return {
-            modules: {
-                realtime: $('#selectRealtime').is(':checked'),
-                forecast: $('#selectForecast').is(':checked'),
-                warning: $('#selectWarning').is(':checked'),
-                rain: $('#selectRain').is(':checked')
-            },
-            theme: $('#themeSelect').val(),
-            layout: $('#layoutSelect').val(),
-            showTitle: $('#showTitle').is(':checked')
-        };
+    // 解析 Markdown 内容
+    function parseMarkdownContent(content) {
+        let html = '';
+        const lines = content.split('\n');
+        let inList = false;
+        let listItems = [];
+        
+        for (let line of lines) {
+            if (line.includes('{{WEATHER_REALTIME}}')) { html += renderRealtimeCard(); continue; }
+            if (line.includes('{{WEATHER_FORECAST}}')) { html += renderForecastCard(); continue; }
+            if (line.includes('{{WEATHER_WARNING}}')) { html += renderWarningCard(); continue; }
+            if (line.includes('{{WEATHER_RAIN}}')) { html += renderRainCard(); continue; }
+            
+            if (line.trim().startsWith('- ')) {
+                if (!inList) { inList = true; listItems = []; }
+                listItems.push(line.trim().substring(2));
+                continue;
+            } else if (inList) {
+                html += '<ul style="margin:8px 0;padding-left:20px;">';
+                listItems.forEach(item => html += `<li style="color:var(--dim-color);">${parseInlineMarkdown(item)}</li>`);
+                html += '</ul>';
+                inList = false;
+                listItems = [];
+            }
+            
+            if (line.startsWith('### ')) html += `<h3 style="font-size:16px;margin:12px 0 8px 0;color:var(--title-color);">${parseInlineMarkdown(line.substring(4))}</h3>`;
+            else if (line.startsWith('## ')) html += `<h2 style="font-size:18px;margin:12px 0 8px 0;color:var(--title-color);">${parseInlineMarkdown(line.substring(3))}</h2>`;
+            else if (line.startsWith('# ')) html += `<h1 style="font-size:20px;margin:12px 0 8px 0;color:var(--title-color);">${parseInlineMarkdown(line.substring(2))}</h1>`;
+            else if (line.trim() === '') continue;
+            else html += `<p style="margin:8px 0;color:var(--text-color);line-height:1.6;">${parseInlineMarkdown(line)}</p>`;
+        }
+        
+        if (inList) {
+            html += '<ul style="margin:8px 0;padding-left:20px;">';
+            listItems.forEach(item => html += `<li style="color:var(--dim-color);">${parseInlineMarkdown(item)}</li>`);
+            html += '</ul>';
+        }
+        return html;
     }
 
-    // 应用主题
+    function parseInlineMarkdown(text) {
+        text = text.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+        text = text.replace(/\*(.+?)\*/g, '<em>$1</em>');
+        text = text.replace(/`(.+?)`/g, '<code style="padding:2px 6px;background:rgba(0,0,0,0.05);border-radius:4px;font-family:monospace;">$1</code>');
+        return escapeHtml(text);
+    }
+
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
     function applyTheme(theme) {
         $('#previewContainer').removeClass('theme-dark theme-blue');
-        if (theme === 'dark') {
-            $('#previewContainer').addClass('theme-dark');
-        } else if (theme === 'blue') {
-            $('#previewContainer').addClass('theme-blue');
-        }
+        if (theme === 'dark') $('#previewContainer').addClass('theme-dark');
+        else if (theme === 'blue') $('#previewContainer').addClass('theme-blue');
     }
 
-    // 应用布局
     function applyLayout(layout) {
         $('#previewContainer').removeClass('layout-horizontal');
-        if (layout === 'horizontal') {
-            $('#previewContainer').addClass('layout-horizontal');
-        }
+        if (layout === 'horizontal') $('#previewContainer').addClass('layout-horizontal');
     }
 
-    // 渲染实时天气预览
-    function renderRealtimePreview() {
+    function renderRealtimeCard() {
         const forecast = currentWeatherData.forecast;
         const rain = currentWeatherData.rain;
-        
         if (!forecast || !forecast.today) return '';
-        
         const today = forecast.today;
         const temp = rain ? rain.temp : 'N/A';
         const desc = today.report || 'N/A';
         const icon = today.icon || '02';
-        
-        return `
-            <div class="preview-card">
-                <div class="preview-card-header">
-                    <span class="preview-card-title">实时天气</span>
-                </div>
-                <div class="realtime-preview">
-                    <div>
-                        <div class="realtime-temp-large">${temp !== 'N/A' ? temp : '--'}<span class="unit">°C</span></div>
-                        <div class="realtime-desc">${cleanDesc(desc)}</div>
-                    </div>
-                    <img src="${CDN_BASE}/data/icons/${icon}.png" alt="天气" class="realtime-icon">
-                </div>
-            </div>
-        `;
+        return `<div class="preview-card"><div class="preview-card-header"><span class="preview-card-title">实时天气</span></div><div class="realtime-preview"><div><div class="realtime-temp-large">${temp !== 'N/A' ? temp : '--'}<span class="unit">°C</span></div><div class="realtime-desc">${cleanDesc(desc)}</div></div><img src="${CDN_BASE}/data/icons/${icon}.png" alt="天气" class="realtime-icon"></div></div>`;
     }
 
-    // 渲染三日预报预览
-    function renderForecastPreview() {
+    function renderForecastCard() {
         const forecast = currentWeatherData.forecast;
-        
         if (!forecast || !forecast.day10 || forecast.day10.length === 0) return '';
-        
         let daysHtml = '';
         for (let i = 0; i < 3 && i < forecast.day10.length; i++) {
             const day = forecast.day10[i];
@@ -229,231 +237,109 @@ $(document).ready(function() {
             const icon = day[4] || '02';
             const maxT = parseInt(day[2]) || '--';
             const minT = parseInt(day[3]) || '--';
-            
-            daysHtml += `
-                <div class="forecast-day-preview">
-                    <div class="forecast-date-preview">${dateStr}</div>
-                    <img src="${CDN_BASE}/data/icons/${icon}.png" alt="天气" class="forecast-icon-preview">
-                    <div class="forecast-temps-preview">${maxT}° / ${minT}°</div>
-                </div>
-            `;
+            daysHtml += `<div class="forecast-day-preview"><div class="forecast-date-preview">${dateStr}</div><img src="${CDN_BASE}/data/icons/${icon}.png" alt="天气" class="forecast-icon-preview"><div class="forecast-temps-preview">${maxT}° / ${minT}°</div></div>`;
         }
-        
-        return `
-            <div class="preview-card">
-                <div class="preview-card-header">
-                    <span class="preview-card-title">三日预报</span>
-                </div>
-                <div class="forecast-preview">
-                    ${daysHtml}
-                </div>
-            </div>
-        `;
+        return `<div class="preview-card"><div class="preview-card-header"><span class="preview-card-title">三日预报</span></div><div class="forecast-preview">${daysHtml}</div></div>`;
     }
 
-    // 渲染预警信息预览
-    function renderWarningPreview() {
+    function renderWarningCard() {
         const alarm = currentWeatherData.alarm;
-        
         if (!alarm || !alarm.subAlarm || alarm.subAlarm.length === 0) {
-            return `
-                <div class="preview-card">
-                    <div class="preview-card-header">
-                        <span class="preview-card-title">预警信息</span>
-                    </div>
-                    <div class="warning-preview">
-                        <span class="no-warning-text">当前无预警信号</span>
-                    </div>
-                </div>
-            `;
+            return `<div class="preview-card"><div class="preview-card-header"><span class="preview-card-title">预警信息</span></div><div class="warning-preview"><span class="no-warning-text">当前无预警信号</span></div></div>`;
         }
-        
         const WARNING_LEVEL_PRIORITY = { 'hongse': 5, 'chengse': 4, 'huangse': 3, 'leidian': 3, 'ganhan': 3, 'lanse': 2, 'baisse': 1 };
         let typeBestAlarm = {};
-        
         alarm.subAlarm.forEach(alarmItem => {
             let icon = alarmItem.icon || '';
-            let level = 0;
-            let alarmType = 'unknown';
+            let level = 0, alarmType = 'unknown';
             for (let key in WARNING_LEVEL_PRIORITY) {
-                if (icon.includes(key)) {
-                    level = WARNING_LEVEL_PRIORITY[key];
-                    alarmType = icon.replace(key, '');
-                    break;
-                }
+                if (icon.includes(key)) { level = WARNING_LEVEL_PRIORITY[key]; alarmType = icon.replace(key, ''); break; }
             }
             alarmItem._level = level;
             alarmItem._type = alarmType;
-            if (!typeBestAlarm[alarmType] || level > typeBestAlarm[alarmType]._level) {
-                typeBestAlarm[alarmType] = alarmItem;
-            }
+            if (!typeBestAlarm[alarmType] || level > typeBestAlarm[alarmType]._level) typeBestAlarm[alarmType] = alarmItem;
         });
-        
         let deduped = Object.values(typeBestAlarm).sort((a, b) => b._level - a._level).slice(0, 6);
-        
         let iconsHtml = '';
-        deduped.forEach(alarmItem => {
-            iconsHtml += `<img src="${CDN_BASE}/data/warnings/${alarmItem.icon}.png" title="${alarmItem.str}" class="warning-icon-preview">`;
-        });
-        
-        return `
-            <div class="preview-card">
-                <div class="preview-card-header">
-                    <span class="preview-card-title">预警信息</span>
-                </div>
-                <div class="warning-preview">
-                    ${iconsHtml}
-                </div>
-            </div>
-        `;
+        deduped.forEach(alarmItem => iconsHtml += `<img src="${CDN_BASE}/data/warnings/${alarmItem.icon}.png" title="${escapeHtml(alarmItem.str)}" class="warning-icon-preview">`);
+        return `<div class="preview-card"><div class="preview-card-header"><span class="preview-card-title">预警信息</span></div><div class="warning-preview">${iconsHtml}</div></div>`;
     }
 
-    // 渲染降雨预报预览
-    function renderRainPreview() {
+    function renderRainCard() {
         const rain = currentWeatherData.rain;
-        
         if (!rain || !rain.rain) {
-            return `
-                <div class="preview-card">
-                    <div class="preview-card-header">
-                        <span class="preview-card-title">降雨预报</span>
-                    </div>
-                    <div style="text-align: center; color: var(--dim-color); padding: 20px;">
-                        无降雨数据
-                    </div>
-                </div>
-            `;
+            return `<div class="preview-card"><div class="preview-card-header"><span class="preview-card-title">未来 2 小时降雨</span></div><div style="text-align:center;color:var(--dim-color);padding:20px;">无降雨数据</div></div>`;
         }
-        
         const rainArr = rain.rain.split(',').map(Number);
-        const MAX_BAR_HEIGHT = 90;
-        const MAX_RAIN_VALUE = 40;
-        
+        const MAX_BAR_HEIGHT = 90, MAX_RAIN_VALUE = 40;
         let barsHtml = '';
         for (let i = 0; i < Math.min(10, rainArr.length); i++) {
             const rainMm = rainArr[i];
-            let height = 0;
-            if (rainMm > 0) {
-                if (rainMm >= MAX_RAIN_VALUE) {
-                    height = MAX_BAR_HEIGHT;
-                } else {
-                    height = Math.round((rainMm / MAX_RAIN_VALUE) * MAX_BAR_HEIGHT);
-                }
-            }
+            let height = rainMm > 0 ? (rainMm >= MAX_RAIN_VALUE ? MAX_BAR_HEIGHT : Math.round((rainMm / MAX_RAIN_VALUE) * MAX_BAR_HEIGHT)) : 0;
             const pct = (height / MAX_BAR_HEIGHT) * 100;
-            barsHtml += `
-                <div class="rain-bar-preview">
-                    <div class="rain-bar-fill-preview" style="height: ${pct}%;"></div>
-                </div>
-            `;
+            barsHtml += `<div class="rain-bar-preview"><div class="rain-bar-fill-preview" style="height:${pct}%;"></div></div>`;
         }
-        
-        return `
-            <div class="preview-card">
-                <div class="preview-card-header">
-                    <span class="preview-card-title">未来 2 小时降雨</span>
-                </div>
-                <div class="rain-preview">
-                    ${barsHtml}
-                </div>
-            </div>
-        `;
+        return `<div class="preview-card"><div class="preview-card-header"><span class="preview-card-title">未来 2 小时降雨</span></div><div class="rain-preview">${barsHtml}</div></div>`;
     }
 
-    // 清理天气描述
     function cleanDesc(desc) {
         if (!desc || desc === 'N/A') return 'N/A';
         return desc.replace(/气温[^；]*；/, '').replace(/；。/, '。').replace(/；$/, '').substring(0, 20);
     }
 
-    // 转换星期
     function convertWeekday(s) {
         if (!s || s === 'N/A') return s;
         return s.replace(/星期 ([一二三四五六日])/, '周$1');
     }
 
-    // 生成分享链接
     function generateShareLink() {
-        const config = getConfig();
+        const content = $('#markdownEditor').val();
+        const customTitle = $('#customCardTitle').val().trim();
+        const theme = $('#themeSelect').val();
+        const layout = $('#layoutSelect').val();
         
-        // 验证至少选择一个模块
-        if (!Object.values(config.modules).some(v => v)) {
-            alert('请至少选择一个数据模块');
-            return;
-        }
+        if (!content.trim() && !customTitle) { alert('请输入一些内容或设置卡片标题'); return; }
         
-        // 编码配置
+        const config = { content, customTitle, theme, layout };
         const configStr = JSON.stringify(config);
         const encodedConfig = btoa(unescape(encodeURIComponent(configStr)));
-        
-        // 生成完整 URL
         const baseUrl = window.location.origin + window.location.pathname;
         const shareUrl = `${baseUrl}?share=${encodedConfig}`;
         
-        // 显示链接
         $('#shareLinkInput').val(shareUrl);
-        $('#linkOutputGroup').slideDown();
+        $('#linkOutputSection').slideDown();
         $('#copyLinkBtn').prop('disabled', false);
-        
-        // 滚动到链接区域
-        $('html, body').animate({
-            scrollTop: $('#linkOutputGroup').offset().top - 100
-        }, 300);
+        $('html, body').animate({ scrollTop: $('#linkOutputSection').offset().top - 100 }, 300);
     }
 
-    // 复制链接
     function copyShareLink() {
         const linkInput = $('#shareLinkInput');
         linkInput.select();
         document.execCommand('copy');
-        
-        // 显示成功提示
         showToast('链接已复制！');
     }
 
-    // 显示 Toast 提示
     function showToast(message) {
         const toast = $('#toast');
         toast.text(message).addClass('show');
-        setTimeout(() => {
-            toast.removeClass('show');
-        }, 2000);
+        setTimeout(() => toast.removeClass('show'), 2000);
     }
 
-    // 查看模式渲染
-    function renderViewMode() {
-        updatePreview();
-    }
+    function renderViewMode() { updatePreview(); }
 
-    // 模态框功能（复用主页逻辑）
     const modal = $('#infoModal');
     const modalText = $('#modalText');
-
-    function showModal(text) {
-        if (!text || text === 'N/A') return;
-        modalText.text(text);
-        modal.css('display', 'flex');
-    }
-
-    function hideModal() {
-        modal.css('display', 'none');
-    }
-
+    function showModal(text) { if (!text || text === 'N/A') return; modalText.text(text); modal.css('display', 'flex'); }
+    function hideModal() { modal.css('display', 'none'); }
     $('.close-btn').on('click', hideModal);
-    $(window).on('click', function(event) {
-        if ($(event.target).is(modal)) hideModal();
-    });
+    $(window).on('click', function(event) { if ($(event.target).is(modal)) hideModal(); });
 
-    // CDN 路径处理
     if (CDN_BASE) {
         $('img').each(function() {
             var src = $(this).attr('src');
             if (!src) return;
-            if (src.startsWith('/data/')) {
-                $(this).attr('src', CDN_BASE + src);
-            } else if (src.startsWith('data/') && !src.startsWith('data:')) {
-                $(this).attr('src', CDN_BASE + '/' + src);
-            }
+            if (src.startsWith('/data/')) $(this).attr('src', CDN_BASE + src);
+            else if (src.startsWith('data/') && !src.startsWith('data:')) $(this).attr('src', CDN_BASE + '/' + src);
         });
     }
 });
