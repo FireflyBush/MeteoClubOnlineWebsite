@@ -17,6 +17,8 @@ body {
     display: flex;
     height: calc(100vh - var(--nav-height));
     overflow: hidden;
+    user-select: none; /* 新增：防止拖拽涂色时选中工具栏文字 */
+    -webkit-user-select: none;
 }
 
 .builder-sidebar {
@@ -47,6 +49,8 @@ body {
     background: #fff;
     box-shadow: 0 4px 20px rgba(0,0,0,0.15);
     image-rendering: pixelated;
+    user-select: none; /* 新增：防止拖拽涂色时选中蓝底 */
+    -webkit-user-select: none;
 }
 
 .grid-bg-layer {
@@ -149,6 +153,7 @@ body {
     transition: transform 0.15s;
     background-size: cover;
     background-position: center;
+	image-rendering: pixelated; 
 }
 
 .color-swatch:hover { transform: scale(1.1); }
@@ -233,6 +238,46 @@ body {
 
 .grid-canvas.view-only .grid-cell { outline: none !important; }
 .grid-canvas.view-only .placed-element { border: none !important; background: transparent !important; cursor: default; }
+
+/* 在文件末尾追加开关样式 */
+.switch {
+    position: relative;
+    display: inline-block;
+    width: 40px;
+    height: 22px;
+    flex-shrink: 0;
+}
+.switch input { display: none; }
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-color: #ccc;
+    transition: .3s;
+    border-radius: 22px;
+}
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 16px;
+    width: 16px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    transition: .3s;
+    border-radius: 50%;
+}
+input:checked + .slider {
+    background-color: #007bff;
+}
+input:checked + .slider:before {
+    transform: translateX(18px);
+}
+
+/* 动态控制滑动锁定的 class */
+.grid-canvas.locked-swipe {
+    touch-action: none;
+}
 
 /* 响应式适配：上编辑区，下工具栏 */
 @media (max-width: 900px) {

@@ -50,6 +50,19 @@
             <div class="tool-panel" id="panel-paint">
                 <h4>🎨 选择方块</h4>
                 <div class="color-palette" id="colorPalette"></div>
+				
+				                <!-- 新增：拖拽涂色开关 -->
+                <div class="control-group drag-paint-toggle" style="margin-top:12px; display:flex; align-items:center; justify-content:space-between;">
+                    <label style="margin-bottom:0; cursor:pointer;" for="dragPaintSwitch">🖌️ 拖拽涂色</label>
+                    <label class="switch">
+                        <input type="checkbox" id="dragPaintSwitch">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                <p style="font-size:11px; color:#888; margin-top:4px; line-height:1.4;">
+                    开启后可长按拖动连续涂色（手机端将锁定画布滑动）；关闭后可正常滑动挪动视角。
+                </p>
+				
                 <div class="control-group" style="margin-top:10px;">
                     <label>网格高度 (行数 16-64)</label>
                     <input type="number" id="gridHeightInput" value="16" min="16" max="64">

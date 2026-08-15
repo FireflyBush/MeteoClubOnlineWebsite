@@ -18,12 +18,14 @@
         appMode: 'preview',
         realData: null,
         author: '',
-        // 将 12 改为 32，从 01 开始计数，后缀改为 .png
+        isPainting: false,
+        dragPaintEnabled: false, // 新增：记录开关状态
         blocks: Array.from({length: 32}, (_, i) => ({
             name: `方块${i + 1}`,
             file: `${(i + 1).toString().padStart(2, '0')}.png`
         }))
     };
+
 
 
     const realtimeVars = [
@@ -226,13 +228,13 @@
             // 这里的 block.svg 改为 block.file
             swatch.style.backgroundImage = `url(${CDN_BASE}/data/blocks/${block.file})`;
             swatch.title = block.name;
-            swatch.onclick = () => selectBlock(index);
+            swatch.onclick = () => selectColor(index);
             palette.appendChild(swatch);
         });
     }
 
 
-    function selectBlock(index) {
+    function selectColor(index) {
         state.selectedBlock = index;
         document.querySelectorAll('.color-swatch').forEach((el, i) => {
             el.classList.toggle('active', i === index);
@@ -265,16 +267,56 @@
             const blockIndex = state.cells[i] !== undefined ? state.cells[i] : 0;
             const block = state.blocks[blockIndex];
             if (block) {
-                // 这里的 block.svg 改为 block.file
                 cell.style.backgroundImage = `url(${CDN_BASE}/data/blocks/${block.file})`;
                 cell.style.backgroundSize = 'cover';
                 cell.classList.add('filled');
             }
-            cell.onclick = () => handleCellClick(i);
+            
+            // 按下事件
+            cell.onpointerdown = (e) => {
+                if (state.appMode !== 'edit') return;
+                
+                if (state.currentMode === 'paint') {
+                    // 只有开启了拖拽涂色，才阻止默认行为并记录拖拽状态
+                    if (state.dragPaintEnabled) {
+                        e.preventDefault();
+                        state.isPainting = true;
+                    }
+                    paintCell(i); // 无论是否开启，单击都会涂色
+                } else {
+                    handleCellClick(i);
+                }
+            };
+
+            // 拖拽进入事件
+            cell.onpointerenter = () => {
+                // 只有开启了拖拽涂色且正在按压时，才连续涂色
+                if (state.dragPaintEnabled && state.isPainting && state.currentMode === 'paint') {
+                    paintCell(i);
+                }
+            };
+
             layerBg.appendChild(cell);
         }
+
         renderElements();
     }
+
+    // 新增：抽离的涂色执行函数
+    function paintCell(index) {
+        state.cells[index] = state.selectedBlock;
+        const cells = document.querySelectorAll('.grid-cell');
+        const cell = cells[index];
+        if(cell) {
+            const block = state.blocks[state.selectedBlock];
+            if (block) {
+                cell.style.backgroundImage = `url(${CDN_BASE}/data/blocks/${block.file})`;
+                cell.style.backgroundSize = 'cover';
+                cell.classList.add('filled');
+            }
+        }
+    }
+
 
     function handleCellClick(index) {
         if (state.appMode !== 'edit') return;
@@ -636,7 +678,21 @@
         document.getElementById('authorName').addEventListener('input', function() {
             state.author = this.value;
         });
+
+        window.addEventListener('pointerup', () => { state.isPainting = false; });
+        window.addEventListener('pointercancel', () => { state.isPainting = false; });
+
+        // 新增：监听拖拽涂色开关
+        const dragSwitch = document.getElementById('dragPaintSwitch');
+        dragSwitch.addEventListener('change', function() {
+            state.dragPaintEnabled = this.checked;
+            const canvas = document.getElementById('gridCanvas');
+            // 开启时给画布加上锁定滑动的 class
+            canvas.classList.toggle('locked-swipe', state.dragPaintEnabled);
+        });
     }
+
+
 
     // ==================== 分享链接生成 ====================
     function generateShareLink() {
