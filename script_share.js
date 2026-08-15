@@ -29,7 +29,11 @@ $(document).ready(function() {
         try {
             const encodedConfig = urlParams.get('share');
             if (!encodedConfig) throw new Error('无配置参数');
-            const configStr = decodeURIComponent(escape(atob(encodedConfig)));
+            // 处理 URL 安全的 Base64（替换 - 和 _）
+            let base64 = encodedConfig.replace(/-/g, '+').replace(/_/g, '/');
+            // 添加 padding
+            while (base64.length % 4) base64 += '=';
+            const configStr = decodeURIComponent(escape(atob(base64)));
             const config = JSON.parse(configStr);
             $('#themeSelect').val(config.theme || 'light');
             $('#layoutSelect').val(config.layout || 'vertical');
@@ -38,6 +42,7 @@ $(document).ready(function() {
             $('.editor-panel, .preview-actions, .link-output-section').hide();
             $('.guide-grid, .markdown-syntax-help').closest('section').hide();
             $('.preview-title').text('定制天气卡片');
+            $('body').addClass('view-mode');
             fetchAllData(true);
         } catch (e) {
             console.error('解析分享配置失败:', e);
@@ -59,6 +64,7 @@ $(document).ready(function() {
             case 'image': insertText = '![图片描述](https://example.com/image.jpg)'; cursorOffset = 2; break;
             case 'realtime': insertText = '\n{{WEATHER_REALTIME}}\n'; break;
             case 'forecast': insertText = '\n{{WEATHER_FORECAST}}\n'; break;
+            case 'forecast10': insertText = '\n{{WEATHER_FORECAST10}}\n'; break;
             case 'warning': insertText = '\n{{WEATHER_WARNING}}\n'; break;
             case 'rain': insertText = '\n{{WEATHER_RAIN}}\n'; break;
         }
@@ -100,7 +106,9 @@ $(document).ready(function() {
         applyLayout(layout);
         let html = '';
         if (customTitle) {
-            html += `<div class="preview-card-header"><span class="preview-card-title">${escapeHtml(customTitle)}</span><span style="font-size:12px;color:var(--dim-color);">${new Date().toLocaleDateString('zh-CN')}</span></div>`;
+            const today = new Date();
+            const dateStr = `${today.getFullYear()}年${today.getMonth() + 1}月${today.getDate()}日`;
+            html += `<div class="preview-card-header"><span class="preview-card-title">${escapeHtml(customTitle)}</span><span style="font-size:12px;color:var(--dim-color);">${dateStr}</span></div>`;
         }
         html += parseMarkdownContent(content);
         $('#previewContainer').html(html);
@@ -113,6 +121,7 @@ $(document).ready(function() {
         for (let line of lines) {
             if (line.includes('{{WEATHER_REALTIME}}')) { html += renderRealtimeCard(); continue; }
             if (line.includes('{{WEATHER_FORECAST}}')) { html += renderForecastCard(); continue; }
+            if (line.includes('{{WEATHER_FORECAST10}}')) { html += renderForecast10Card(); continue; }
             if (line.includes('{{WEATHER_WARNING}}')) { html += renderWarningCard(); continue; }
             if (line.includes('{{WEATHER_RAIN}}')) { html += renderRainCard(); continue; }
             if (line.trim().startsWith('- ')) {
@@ -140,12 +149,31 @@ $(document).ready(function() {
     }
 
     function parseInlineMarkdown(text) {
-        let result = escapeHtml(text);
-        result = result.replace(/!\[(.*?)\]\((.*?)\)/g, '<img src="$2" alt="$1" style="max-width:100%;height:auto;border-radius:8px;margin:8px 0;">');
-        result = result.replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" target="_blank" rel="noopener" style="color:var(--rain-blue);text-decoration:none;">$1</a>');
+        // 先处理图片和链接（在转义前，因为 URL 中包含特殊字符）
+        let result = text;
+        // 处理图片：![alt](url) - 先保护起来
+        const images = [];
+        result = result.replace(/!\[(.*?)\]\((.*?)\)/g, (match, alt, url) => {
+            images.push(`<img src="${url}" alt="${alt}" style="max-width:100%;height:auto;border-radius:8px;margin:8px 0;">`);
+            return `__IMG_${images.length - 1}__`;
+        });
+        // 处理链接：[text](url)
+        const links = [];
+        result = result.replace(/\[(.*?)\]\((.*?)\)/g, (match, text, url) => {
+            links.push(`<a href="${url}" target="_blank" rel="noopener" style="color:var(--rain-blue);text-decoration:none;">${text}</a>`);
+            return `__LINK_${links.length - 1}__`;
+        });
+        // 现在转义 HTML 特殊字符
+        result = escapeHtml(result);
+        // 处理加粗：**text**
         result = result.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+        // 处理斜体：*text*
         result = result.replace(/\*(.+?)\*/g, '<em>$1</em>');
+        // 处理行内代码：`code`
         result = result.replace(/`(.+?)`/g, '<code style="padding:2px 6px;background:rgba(0,0,0,0.05);border-radius:4px;font-family:monospace;font-size:0.9em;">$1</code>');
+        // 恢复图片和链接
+        images.forEach((img, i) => result = result.replace(`__IMG_${i}__`, img));
+        links.forEach((link, i) => result = result.replace(`__LINK_${i}__`, link));
         return result;
     }
 
@@ -184,6 +212,19 @@ $(document).ready(function() {
             daysHtml += `<div class="forecast-day-preview"><div class="forecast-date-preview">${dateStr}</div><img src="${CDN_BASE}/data/icons/${icon}.png" alt="天气" class="forecast-icon-preview"><div class="forecast-temps-preview">${maxT}° / ${minT}°</div></div>`;
         }
         return `<div class="preview-card"><div class="preview-card-header"><span class="preview-card-title">三日预报</span></div><div class="forecast-preview">${daysHtml}</div></div>`;
+    }
+
+    function renderForecast10Card() {
+        const forecast = currentWeatherData.forecast;
+        if (!forecast || !forecast.day10 || forecast.day10.length === 0) return '';
+        let daysHtml = '';
+        // 十天预报使用竖版卡片横向排列
+        for (let i = 0; i < 10 && i < forecast.day10.length; i++) {
+            const day = forecast.day10[i], dateStr = convertWeekday(day[0]), icon = day[4] || '02';
+            const maxT = parseInt(day[2]) || '--', minT = parseInt(day[3]) || '--';
+            daysHtml += `<div class="forecast10-day-card"><div class="f10-date">${dateStr}</div><img src="${CDN_BASE}/data/icons/${icon}.png" alt="天气" class="f10-icon"><div class="f10-temps"><span class="f10-max">${maxT}°</span><span class="f10-min">${minT}°</span></div></div>`;
+        }
+        return `<div class="preview-card preview-card-wide"><div class="preview-card-header"><span class="preview-card-title">十天预报</span></div><div class="forecast10-preview">${daysHtml}</div></div>`;
     }
 
     function renderWarningCard() {
@@ -239,10 +280,14 @@ $(document).ready(function() {
         if (!content.trim() && !customTitle) { alert('请输入一些内容或设置卡片标题'); return; }
         const config = { content, customTitle, theme, layout };
         const configStr = JSON.stringify(config);
-        const encodedConfig = btoa(unescape(encodeURIComponent(configStr)));
-        const baseUrl = window.location.origin + window.location.pathname.replace(/\/share\.html$/, '').replace(/\/$/, '');
-        const shareUrl = `${baseUrl}/share.html?share=${encodedConfig}`;
-        $('#shareLinkInput').val(shareUrl);
+        // 使用 URL 安全的 Base64 编码
+        const encodedConfig = btoa(unescape(encodeURIComponent(configStr)))
+            .replace(/\+/g, '-')
+            .replace(/\//g, '_')
+            .replace(/=/g, '');
+        // 构建绝对路径，确保在 Cloudflare Pages 上正确工作
+        const shareUrl = `/share.html?share=${encodedConfig}`;
+        $('#shareLinkInput').val(window.location.origin + shareUrl);
         $('#linkOutputSection').slideDown();
         $('#copyLinkBtn').prop('disabled', false);
         $('html, body').animate({ scrollTop: $('#linkOutputSection').offset().top - 100 }, 300);

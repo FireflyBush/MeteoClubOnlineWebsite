@@ -1769,3 +1769,118 @@
         min-height: 300px;
     }
 }
+
+/* 十天预报卡片样式 */
+.preview-card-wide {
+    min-width: 100%;
+}
+
+.forecast10-preview {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding: 8px 0;
+    scrollbar-width: thin;
+    scrollbar-color: var(--accent-blue) rgba(0,0,0,0.1);
+}
+
+.forecast10-preview::-webkit-scrollbar {
+    height: 6px;
+}
+
+.forecast10-preview::-webkit-scrollbar-track {
+    background: rgba(0,0,0,0.05);
+    border-radius: 3px;
+}
+
+.forecast10-preview::-webkit-scrollbar-thumb {
+    background: var(--accent-blue);
+    border-radius: 3px;
+}
+
+.forecast10-day-card {
+    flex: 0 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 12px 8px;
+    background: rgba(255,255,255,0.5);
+    border-radius: 8px;
+    min-width: 60px;
+    border: 1px solid rgba(0,0,0,0.05);
+}
+
+.f10-date {
+    font-size: 12px;
+    color: var(--dim-color);
+    margin-bottom: 4px;
+    white-space: nowrap;
+}
+
+.f10-icon {
+    width: 32px;
+    height: 32px;
+    margin: 4px 0;
+}
+
+.f10-temps {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    font-size: 11px;
+}
+
+.f10-max {
+    color: var(--title-color);
+    font-weight: 600;
+}
+
+.f10-min {
+    color: var(--dim-color);
+}
+
+/* 视图模式样式 */
+body.view-mode .editor-panel,
+body.view-mode .preview-actions,
+body.view-mode .link-output-section,
+body.view-mode .guide-grid,
+body.view-mode .markdown-syntax-help {
+    display: none !important;
+}
+
+body.view-mode .preview-panel {
+    width: 100%;
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+body.view-mode .preview-container {
+    min-height: auto;
+}
+
+/* 窄屏优化 */
+@media (max-width: 1200px) {
+    .forecast10-preview {
+        flex-wrap: nowrap;
+    }
+}
+
+@media (max-width: 768px) {
+    .forecast10-day-card {
+        min-width: 50px;
+        padding: 8px 4px;
+    }
+    
+    .f10-icon {
+        width: 24px;
+        height: 24px;
+    }
+    
+    .f10-date {
+        font-size: 10px;
+    }
+    
+    .f10-temps {
+        font-size: 9px;
+    }
+}
