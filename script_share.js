@@ -569,17 +569,140 @@
         } else {
             // 渲染预览
             content.innerHTML = generatePreviewHTML();
+            // 如果是真实数据模式，加载数据
+            if (!content.dataset.useMockData) {
+                loadRealDataForPreview();
+            }
             modal.classList.add('show');
         }
+    }
+    
+    // 加载真实数据用于预览（分享页面使用）
+    function loadRealDataForPreview() {
+        const content = document.getElementById('previewContent');
+        if (!content) return;
+        
+        const CORS_PROXY = "/api/proxy?url=";
+        const BASE_URL_ALARM = "https://weather.121.com.cn/data_cache/szWeather/alarm/szAlarm.js";
+        const BASE_URL_RAIN = "https://wx.121.com.cn/Mobile/LdService/position?latitude=22.552188&longitude=114.025106&sign=1e86faea84f8574f155c9e485ed4710e";
+        const ts = new Date().getTime();
+        const URL_ALARM = `${BASE_URL_ALARM}?_=${ts}`;
+        const URL_RAIN = CORS_PROXY + encodeURIComponent(BASE_URL_RAIN + "&_=" + ts);
+        
+        // 加载预警数据
+        $.getScript(URL_ALARM, function() {
+            const alarmData = window.SZ121_AlarmInfo;
+            renderBlocksInPreview(alarmData, null);
+        }).fail(function() {
+            renderBlocksInPreview(null, null);
+        });
+        
+        // 加载降雨数据
+        $.getJSON(URL_RAIN, function(rainData) {
+            const container = document.querySelector('#previewContent .preview-card-container');
+            if (container) {
+                container.dataset.rainData = JSON.stringify(rainData);
+            }
+            const alarmData = window.SZ121_AlarmInfo;
+            renderBlocksInPreview(alarmData, rainData);
+        }).fail(function() {
+            renderBlocksInPreview(window.SZ121_AlarmInfo, null);
+        });
+    }
+    
+    // 渲染板块到预览区
+    function renderBlocksInPreview(alarmData, rainData) {
+        const content = document.getElementById('previewContent');
+        if (!content) return;
+        
+        // 渲染所有板块元素
+        state.elements.forEach(el => {
+            if (el.type !== 'block') return;
+            
+            const blockEl = content.querySelector(`[data-block-id=\"${el.id}\"]`);
+            if (!blockEl) return;
+            
+            if (el.blockType === 'alertBlock') {
+                // 渲染预警板块
+                let iconsHtml = '';
+                if (alarmData && alarmData.subAlarm && alarmData.subAlarm.length > 0) {
+                    // 去重逻辑复用 script.js 的 deduplicateAlarms
+                    const deduped = deduplicateAlarms(alarmData.subAlarm);
+                    deduped.forEach((alarm) => {
+                        iconsHtml += `<img src=\"/data/warnings/${alarm.icon}.png\" title=\"${alarm.str}\" style=\"height:30px;margin:2px;\">`;
+                    });
+                }
+                if (iconsHtml) {
+                    blockEl.innerHTML = `<div class=\"warning-icons\" style=\"display:flex;flex-wrap:wrap;justify-content:center;\">${iconsHtml}</div>`;
+                } else {
+                    blockEl.innerHTML = `<div style=\"text-align:center;color:#666;\">⚠️ 暂无预警</div>`;
+                }
+            } else if (el.blockType === 'rainBlock') {
+                // 渲染降雨板块
+                if (rainData && rainData.rain) {
+                    const rainArr = rainData.rain.split(',').map(Number);
+                    const MAX_RAIN_VALUE = 10;
+                    const MAX_BAR_HEIGHT = 90;
+                    
+                    function calcHeight(rain_mm) {
+                        if (rain_mm <= 0) return 0;
+                        if (rain_mm >= MAX_RAIN_VALUE) return MAX_BAR_HEIGHT;
+                        return Math.round((rain_mm / MAX_RAIN_VALUE) * MAX_BAR_HEIGHT);
+                    }
+                    
+                    const heights = rainArr.map(calcHeight);
+                    const hasRain = Math.max(...heights) > 3;
+                    
+                    if (hasRain) {
+                        let barsHtml = '<div style=\"display:flex;align-items:flex-end;height:100px;gap:2px;\">';
+                        for (let i = 0; i < 30; i++) {
+                            const h = heights[i];
+                            barsHtml += `<div style=\"width:8px;background:linear-gradient(to top, #2196f3, #64b5f6);border-radius:2px 2px 0 0;height:${h}px;\"></div>`;
+                        }
+                        barsHtml += '</div>';
+                        blockEl.innerHTML = barsHtml;
+                    } else {
+                        blockEl.innerHTML = `<div style=\"text-align:center;color:#666;\">🌧️ 无降雨</div>`;
+                    }
+                } else {
+                    blockEl.innerHTML = `<div style=\"text-align:center;color:#666;\">🌧️ 无降雨数据</div>`;
+                }
+            }
+        });
+    }
+    
+    // 去重预警（复用 script.js 逻辑）
+    function deduplicateAlarms(alarms) {
+        if (!alarms) return [];
+        const WARNING_LEVEL_PRIORITY = { 'hongse': 5, 'chengse': 4, 'huangse': 3, 'leidian': 3, 'ganhan': 3, 'lanse': 2, 'baisse': 1 };
+        let typeBestAlarm = {};
+        alarms.forEach(alarm => {
+            let icon = alarm.icon || '';
+            let level = 0;
+            let alarmType = 'unknown';
+            for (let key in WARNING_LEVEL_PRIORITY) {
+                if (icon.includes(key)) {
+                    level = WARNING_LEVEL_PRIORITY[key];
+                    alarmType = icon.replace(key, '');
+                    break;
+                }
+            }
+            alarm._level = level;
+            alarm._type = alarmType;
+            if (!typeBestAlarm[alarmType] || level > typeBestAlarm[alarmType]._level) {
+                typeBestAlarm[alarmType] = alarm;
+            }
+        });
+        return Object.values(typeBestAlarm);
     }
 
     function generatePreviewHTML() {
         const cellSize = 30;
         const width = state.gridWidth * cellSize;
         const height = state.gridHeight * cellSize;
-        
-        let html = `<div style="position:relative; width:${width}px; height:${height}px; background:#fff; box-shadow:0 4px 20px rgba(0,0,0,0.15);">`;
-        
+
+        let html = `<div class="preview-card-container" style="position:relative; width:${width}px; height:${height}px; background:#fff; box-shadow:0 4px 20px rgba(0,0,0,0.15);">`;
+
         // 背景层
         state.cells.forEach((colorIndex, i) => {
             const color = state.colors[colorIndex]?.value || 'transparent';
@@ -589,12 +712,13 @@
                 html += `<div style="position:absolute; left:${x}px; top:${y}px; width:${cellSize}px; height:${cellSize}px; background:${color};"></div>`;
             }
         });
-        
+
         // 元素层 (实时数据渲染)
         state.elements.forEach(el => {
             const renderedContent = renderElementWithRealData(el);
+            const blockAttr = el.type === 'block' ? `data-block-id="${el.id}"` : '';
             html += `
-                <div style="
+                <div ${blockAttr} style="
                     position:absolute;
                     left:${el.x * cellSize}px;
                     top:${el.y * cellSize}px;
@@ -613,7 +737,7 @@
                 ">${renderedContent}</div>
             `;
         });
-        
+
         html += '</div>';
         return html;
     }
@@ -748,8 +872,18 @@
 
     // 暴露到全局作用域供 HTML onclick 调用
     window.togglePreview = togglePreview;
+    window.loadRealDataForPreview = loadRealDataForPreview;
+    window.renderBlocksInPreview = renderBlocksInPreview;
     window.generateShareLink = generateShareLink;
     window.updateBlockScale = updateBlockScale;
+    window.deleteSelected = deleteSelected;
+    window.updateElementPos = updateElementPos;
+    window.updateElementSize = updateElementSize;
+    window.updateElementContent = updateElementContent;
+    window.updateElementStyle = updateElementStyle;
+    window.selectVar = selectVar;
+    window.selectBlock = selectBlock;
+    window.updateForecastVars = updateForecastVars;
     window.confirmAddText = function() {
         const centerX = Math.floor(state.gridWidth / 2);
         const centerY = Math.floor(state.gridHeight / 2);
