@@ -153,6 +153,7 @@ body {
     transition: transform 0.15s;
     background-size: cover;
     background-position: center;
+	image-rendering: pixelated; 
 }
 
 .color-swatch:hover { transform: scale(1.1); }
