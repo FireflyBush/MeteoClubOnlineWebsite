@@ -632,6 +632,10 @@
         }
     }
 
+    // 暴露到全局作用域供 HTML onclick 调用
+    window.togglePreview = togglePreview;
+    window.generateShareLink = generateShareLink;
+
     // 启动
     init();
 
