@@ -1,0 +1,1886 @@
+/* style_share.css - 定制分享编辑器样式 */
+
+/* 编辑器主容器 */
+.editor-container {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+/* 左侧编辑面板 */
+.editor-panel {
+    flex: 1;
+    min-width: 350px;
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(20px);
+    border-radius: 16px;
+    padding: 20px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+    display: flex;
+    flex-direction: column;
+}
+
+/* 工具栏 */
+.editor-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    background: rgba(255, 255, 255, 0.5);
+    border-radius: 12px;
+    margin-bottom: 12px;
+    border: 1px solid var(--glass-border);
+}
+
+.toolbar-group {
+    display: flex;
+    gap: 6px;
+}
+
+.toolbar-divider {
+    width: 1px;
+    height: 28px;
+    background: rgba(0, 0, 0, 0.1);
+    margin: 0 8px;
+}
+
+.toolbar-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.8);
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 13px;
+    color: var(--text-color);
+}
+
+.toolbar-btn:hover {
+    background: rgba(0, 122, 255, 0.1);
+    border-color: var(--rain-blue);
+}
+
+.toolbar-btn img {
+    width: 16px;
+    height: 16px;
+}
+
+.toolbar-btn strong, .toolbar-btn em {
+    font-style: normal;
+    font-weight: bold;
+}
+
+/* Markdown 编辑器 */
+.markdown-editor {
+    flex: 1;
+    min-height: 300px;
+    padding: 16px;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.8);
+    font-size: 14px;
+    font-family: 'Consolas', 'Monaco', monospace;
+    line-height: 1.6;
+    color: var(--text-color);
+    resize: vertical;
+    transition: all 0.2s;
+}
+
+.markdown-editor:focus {
+    outline: none;
+    border-color: var(--rain-blue);
+    box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.1);
+}
+
+.markdown-editor::placeholder {
+    color: var(--dim-color);
+}
+
+/* 编辑器底部 */
+.editor-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.custom-title-input {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+}
+
+.custom-title-input label {
+    font-size: 13px;
+    color: var(--text-color);
+    white-space: nowrap;
+}
+
+.custom-title-input input {
+    flex: 1;
+    padding: 8px 12px;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.8);
+    font-size: 13px;
+    color: var(--text-color);
+}
+
+.style-controls {
+    display: flex;
+    gap: 8px;
+}
+
+.style-controls select {
+    padding: 8px 12px;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.8);
+    font-size: 13px;
+    color: var(--text-color);
+    cursor: pointer;
+}
+
+/* 预览面板 */
+.preview-panel {
+    flex: 1.5;
+    min-width: 400px;
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(20px);
+    border-radius: 16px;
+    padding: 20px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+    display: flex;
+    flex-direction: column;
+}
+
+.preview-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.preview-title {
+    font-size: 18px;
+    font-weight: bold;
+    color: var(--title-color);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0;
+}
+
+.preview-title::before {
+    content: '';
+    width: 6px;
+    height: 24px;
+    background-color: var(--blue-line);
+    border-radius: 3px;
+}
+
+.refresh-btn {
+    padding: 8px;
+    border: none;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.5);
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.refresh-btn:hover {
+    background: rgba(0, 122, 255, 0.1);
+}
+
+.refresh-btn img {
+    width: 18px;
+    height: 18px;
+}
+
+.preview-container {
+    flex: 1;
+    min-height: 400px;
+    background: rgba(255, 255, 255, 0.5);
+    border-radius: 12px;
+    padding: 16px;
+    border: 1px solid var(--glass-border);
+    overflow-y: auto;
+}
+
+.preview-placeholder {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    height: 300px;
+    color: var(--dim-color);
+    text-align: center;
+}
+
+.preview-placeholder p {
+    margin: 8px 0;
+}
+
+.preview-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 16px;
+}
+
+/* 链接输出区域 */
+.link-output-section {
+    margin-top: 20px;
+    padding: 20px;
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(20px);
+    border-radius: 16px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+}
+
+.link-output {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.link-output input {
+    flex: 1;
+    padding: 12px;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.8);
+    font-size: 13px;
+    color: var(--text-color);
+    font-family: monospace;
+}
+
+.copy-btn {
+    padding: 12px 24px;
+    border: none;
+    border-radius: 8px;
+    background: var(--rain-blue);
+    color: white;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+}
+
+.copy-btn:hover {
+    background: #0056b3;
+}
+
+.link-hint {
+    font-size: 12px;
+    color: var(--dim-color);
+    margin: 0;
+}
+
+/* 预览卡片样式 */
+.preview-card {
+    background-color: var(--bg-color);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--glass-shadow);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 12px;
+    transition: all .3s cubic-bezier(.25, .8, .25, 1);
+}
+
+.preview-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+}
+
+.preview-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.preview-card-title {
+    font-size: 18px;
+    font-weight: bold;
+    color: var(--title-color);
+}
+
+/* 实时天气预览 */
+.realtime-preview {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.realtime-temp-large {
+    font-size: 36px;
+    font-weight: bold;
+    color: var(--text-color);
+}
+
+.realtime-temp-large .unit {
+    font-size: 18px;
+    color: var(--dim-color);
+}
+
+.realtime-icon {
+    width: 60px;
+    height: 60px;
+}
+
+.realtime-desc {
+    font-size: 14px;
+    color: var(--dim-color);
+}
+
+/* 预报预览 */
+.forecast-preview {
+    display: flex;
+    justify-content: space-around;
+    gap: 10px;
+}
+
+.forecast-day-preview {
+    text-align: center;
+    flex: 1;
+}
+
+.forecast-date-preview {
+    font-size: 14px;
+    color: var(--dim-color);
+    font-weight: bold;
+    margin-bottom: 4px;
+}
+
+.forecast-icon-preview {
+    width: 40px;
+    height: 40px;
+    margin: 4px 0;
+}
+
+.forecast-temps-preview {
+    font-size: 14px;
+    font-weight: bold;
+    color: var(--text-color);
+}
+
+/* 预警预览 */
+.warning-preview {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.warning-icon-preview {
+    height: 36px;
+}
+
+.no-warning-text {
+    font-size: 14px;
+    color: var(--dim-color);
+}
+
+/* 降雨预览 */
+.rain-preview {
+    display: flex;
+    gap: 8px;
+    align-items: flex-end;
+    height: 80px;
+}
+
+.rain-bar-preview {
+    flex: 1;
+    background: rgba(0, 122, 255, 0.2);
+    border-radius: 3px;
+    position: relative;
+}
+
+.rain-bar-fill-preview {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background: var(--rain-blue);
+    border-radius: 3px;
+    transition: height 0.3s;
+}
+
+/* Toast 提示 */
+.toast {
+    visibility: hidden;
+    min-width: 200px;
+    background-color: rgba(0, 0, 0, 0.8);
+    color: white;
+    text-align: center;
+    border-radius: 8px;
+    padding: 12px;
+    position: fixed;
+    z-index: 3000;
+    left: 50%;
+    bottom: 30px;
+    transform: translateX(-50%);
+    font-size: 14px;
+    opacity: 0;
+    transition: opacity 0.3s, bottom 0.3s;
+}
+
+.toast.show {
+    visibility: visible;
+    opacity: 1;
+    bottom: 50px;
+}
+
+/* 深色主题 */
+.theme-dark {
+    --bg-color: rgba(30, 30, 30, 0.85);
+    --text-color: rgba(255, 255, 255, 0.9);
+    --dim-color: rgba(255, 255, 255, 0.6);
+    --title-color: #e0e0e0;
+    --glass-border: rgba(255, 255, 255, 0.1);
+}
+
+.theme-dark .preview-card {
+    background: rgba(40, 40, 40, 0.8);
+}
+
+/* 蓝色主题 */
+.theme-blue {
+    --bg-color: rgba(230, 240, 255, 0.7);
+    --text-color: rgba(0, 50, 100, 0.85);
+    --dim-color: rgba(0, 50, 100, 0.6);
+    --title-color: #003366;
+    --glass-border: rgba(0, 122, 255, 0.3);
+}
+
+.theme-blue .preview-card {
+    background: rgba(240, 248, 255, 0.8);
+}
+
+/* 水平布局 */
+.layout-horizontal .preview-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.layout-horizontal .preview-card {
+    flex: 1;
+    min-width: 200px;
+    margin-bottom: 0;
+}
+
+/* 响应式适配 */
+@media (max-width: 1200px) {
+    .editor-container {
+        flex-direction: column;
+    }
+
+    .editor-panel,
+    .preview-panel {
+        min-width: 100%;
+    }
+
+    .layout-horizontal .preview-container {
+        flex-direction: column;
+    }
+
+    .layout-horizontal .preview-card {
+        min-width: 100%;
+    }
+}
+
+@media (max-width: 768px) {
+    .main-container {
+        padding: 10px;
+    }
+
+    .editor-toolbar {
+        flex-wrap: wrap;
+    }
+
+    .toolbar-btn span:last-child {
+        display: none;
+    }
+
+    .toolbar-btn {
+        padding: 8px;
+    }
+
+    .preview-card-header {
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .realtime-preview {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .forecast-preview {
+        flex-wrap: wrap;
+    }
+
+    .markdown-editor {
+        min-height: 200px;
+    }
+
+    .preview-container {
+        min-height: 300px;
+    }
+}
+
+/* 响应式适配 */
+@media (max-width: 1200px) {
+    .editor-container {
+        flex-direction: column;
+    }
+
+    .editor-panel,
+    .preview-panel {
+        min-width: 100%;
+    }
+
+    .layout-horizontal .preview-container {
+        flex-direction: column;
+    }
+
+    .layout-horizontal .preview-card {
+        min-width: 100%;
+    }
+}
+
+@media (max-width: 768px) {
+    .main-container {
+        padding: 10px;
+    }
+
+    .editor-toolbar {
+        flex-wrap: wrap;
+    }
+
+    .toolbar-btn span:last-child {
+        display: none;
+    }
+
+    .toolbar-btn {
+        padding: 8px;
+    }
+
+    .preview-card-header {
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .realtime-preview {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .forecast-preview {
+        flex-wrap: wrap;
+    }
+
+    .markdown-editor {
+        min-height: 200px;
+    }
+
+    .preview-container {
+        min-height: 300px;
+    }
+}
+
+/* 响应式适配 */
+@media (max-width: 1200px) {
+    .editor-container {
+        flex-direction: column;
+    }
+
+    .editor-panel,
+    .preview-panel {
+        min-width: 100%;
+    }
+
+    .layout-horizontal .preview-container {
+        flex-direction: column;
+    }
+
+    .layout-horizontal .preview-card {
+        min-width: 100%;
+    }
+}
+
+@media (max-width: 768px) {
+    .main-container {
+        padding: 10px;
+    }
+
+    .editor-toolbar {
+        flex-wrap: wrap;
+    }
+
+    .toolbar-btn span:last-child {
+        display: none;
+    }
+
+    .toolbar-btn {
+        padding: 8px;
+    }
+
+    .preview-card-header {
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .realtime-preview {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .forecast-preview {
+        flex-wrap: wrap;
+    }
+
+    .markdown-editor {
+        min-height: 200px;
+    }
+
+    .preview-container {
+        min-height: 300px;
+    }
+}
+
+/* 响应式适配 */
+@media (max-width: 1200px) {
+    .editor-container {
+        flex-direction: column;
+    }
+
+    .editor-panel,
+    .preview-panel {
+        min-width: 100%;
+    }
+
+    .layout-horizontal .preview-container {
+        flex-direction: column;
+    }
+
+    .layout-horizontal .preview-card {
+        min-width: 100%;
+    }
+}
+
+@media (max-width: 768px) {
+    .main-container {
+        padding: 10px;
+    }
+
+    .editor-toolbar {
+        flex-wrap: wrap;
+    }
+
+    .toolbar-btn span:last-child {
+        display: none;
+    }
+
+    .toolbar-btn {
+        padding: 8px;
+    }
+
+    .preview-card-header {
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .realtime-preview {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .forecast-preview {
+        flex-wrap: wrap;
+    }
+
+    .markdown-editor {
+        min-height: 200px;
+    }
+
+    .preview-container {
+        min-height: 300px;
+    }
+}
+
+/* 响应式适配 */
+@media (max-width: 1200px) {
+    .editor-container {
+        flex-direction: column;
+    }
+
+    .editor-panel,
+    .preview-panel {
+        min-width: 100%;
+    }
+
+    .layout-horizontal .preview-container {
+        flex-direction: column;
+    }
+
+    .layout-horizontal .preview-card {
+        min-width: 100%;
+    }
+}
+
+@media (max-width: 768px) {
+    .main-container {
+        padding: 10px;
+    }
+
+    .editor-toolbar {
+        flex-wrap: wrap;
+    }
+
+    .toolbar-btn span:last-child {
+        display: none;
+    }
+
+    .toolbar-btn {
+        padding: 8px;
+    }
+
+    .preview-card-header {
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .realtime-preview {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .forecast-preview {
+        flex-wrap: wrap;
+    }
+
+    .markdown-editor {
+        min-height: 200px;
+    }
+
+    .preview-container {
+        min-height: 300px;
+    }
+}
+
+/* 响应式适配 */
+@media (max-width: 1200px) {
+    .editor-container {
+        flex-direction: column;
+    }
+
+    .editor-panel,
+    .preview-panel {
+        min-width: 100%;
+    }
+
+    .layout-horizontal .preview-container {
+        flex-direction: column;
+    }
+
+    .layout-horizontal .preview-card {
+        min-width: 100%;
+    }
+}
+
+@media (max-width: 768px) {
+    .main-container {
+        padding: 10px;
+    }
+
+    .editor-toolbar {
+        flex-wrap: wrap;
+    }
+
+    .toolbar-btn span:last-child {
+        display: none;
+    }
+
+    .toolbar-btn {
+        padding: 8px;
+    }
+
+    .preview-card-header {
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .realtime-preview {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .forecast-preview {
+        flex-wrap: wrap;
+    }
+
+    .markdown-editor {
+        min-height: 200px;
+    }
+
+    .preview-container {
+        min-height: 300px;
+    }
+}
+
+/* 响应式适配 */
+@media (max-width: 1200px) {
+    .editor-container {
+        flex-direction: column;
+    }
+
+    .editor-panel,
+    .preview-panel {
+        min-width: 100%;
+    }
+
+    .layout-horizontal .preview-container {
+        flex-direction: column;
+    }
+
+    .layout-horizontal .preview-card {
+        min-width: 100%;
+    }
+}
+
+@media (max-width: 768px) {
+    .main-container {
+        padding: 10px;
+    }
+
+    .editor-toolbar {
+        flex-wrap: wrap;
+    }
+
+    .toolbar-btn span:last-child {
+        display: none;
+    }
+
+    .toolbar-btn {
+        padding: 8px;
+    }
+
+    .preview-card-header {
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .realtime-preview {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .forecast-preview {
+        flex-wrap: wrap;
+    }
+
+    .markdown-editor {
+        min-height: 200px;
+    }
+
+    .preview-container {
+        min-height: 300px;
+    }
+}
+
+/* 响应式适配 */
+@media (max-width: 1200px) {
+    .editor-container {
+        flex-direction: column;
+    }
+
+    .editor-panel,
+    .preview-panel {
+        min-width: 100%;
+    }
+
+    .layout-horizontal .preview-container {
+        flex-direction: column;
+    }
+
+    .layout-horizontal .preview-card {
+        min-width: 100%;
+    }
+}
+
+@media (max-width: 768px) {
+    .main-container {
+        padding: 10px;
+    }
+
+    .editor-toolbar {
+        flex-wrap: wrap;
+    }
+
+    .toolbar-btn span:last-child {
+        display: none;
+    }
+
+    .toolbar-btn {
+        padding: 8px;
+    }
+
+    .preview-card-header {
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .realtime-preview {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .forecast-preview {
+        flex-wrap: wrap;
+    }
+
+    .markdown-editor {
+        min-height: 200px;
+    }
+
+    .preview-container {
+        min-height: 300px;
+    }
+}
+
+/* 响应式适配 */
+@media (max-width: 1200px) {
+    .editor-container {
+        flex-direction: column;
+    }
+
+    .editor-panel,
+    .preview-panel {
+        min-width: 100%;
+    }
+
+    .layout-horizontal .preview-container {
+        flex-direction: column;
+    }
+
+    .layout-horizontal .preview-card {
+        min-width: 100%;
+    }
+}
+
+@media (max-width: 768px) {
+    .main-container {
+        padding: 10px;
+    }
+
+    .editor-toolbar {
+        flex-wrap: wrap;
+    }
+
+    .toolbar-btn span:last-child {
+        display: none;
+    }
+
+    .toolbar-btn {
+        padding: 8px;
+    }
+
+    .preview-card-header {
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .realtime-preview {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .forecast-preview {
+        flex-wrap: wrap;
+    }
+
+    .markdown-editor {
+        min-height: 200px;
+    }
+
+    .preview-container {
+        min-height: 300px;
+    }
+}
+
+/* 响应式适配 */
+@media (max-width: 1200px) {
+    .editor-container {
+        flex-direction: column;
+    }
+
+    .editor-panel,
+    .preview-panel {
+        min-width: 100%;
+    }
+
+    .layout-horizontal .preview-container {
+        flex-direction: column;
+    }
+
+    .layout-horizontal .preview-card {
+        min-width: 100%;
+    }
+}
+
+@media (max-width: 768px) {
+    .main-container {
+        padding: 10px;
+    }
+
+    .editor-toolbar {
+        flex-wrap: wrap;
+    }
+
+    .toolbar-btn span:last-child {
+        display: none;
+    }
+
+    .toolbar-btn {
+        padding: 8px;
+    }
+
+    .preview-card-header {
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .realtime-preview {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .forecast-preview {
+        flex-wrap: wrap;
+    }
+
+    .markdown-editor {
+        min-height: 200px;
+    }
+
+    .preview-container {
+        min-height: 300px;
+    }
+}
+
+/* 响应式适配 */
+@media (max-width: 1200px) {
+    .editor-container {
+        flex-direction: column;
+    }
+
+    .editor-panel,
+    .preview-panel {
+        min-width: 100%;
+    }
+
+    .layout-horizontal .preview-container {
+        flex-direction: column;
+    }
+
+    .layout-horizontal .preview-card {
+        min-width: 100%;
+    }
+}
+
+@media (max-width: 768px) {
+    .main-container {
+        padding: 10px;
+    }
+
+    .editor-toolbar {
+        flex-wrap: wrap;
+    }
+
+    .toolbar-btn span:last-child {
+        display: none;
+    }
+
+    .toolbar-btn {
+        padding: 8px;
+    }
+
+    .preview-card-header {
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .realtime-preview {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .forecast-preview {
+        flex-wrap: wrap;
+    }
+
+    .markdown-editor {
+        min-height: 200px;
+    }
+
+    .preview-container {
+        min-height: 300px;
+    }
+}
+
+/* 响应式适配 */
+@media (max-width: 1200px) {
+    .editor-container {
+        flex-direction: column;
+    }
+
+    .editor-panel,
+    .preview-panel {
+        min-width: 100%;
+    }
+
+    .layout-horizontal .preview-container {
+        flex-direction: column;
+    }
+
+    .layout-horizontal .preview-card {
+        min-width: 100%;
+    }
+}
+
+@media (max-width: 768px) {
+    .main-container {
+        padding: 10px;
+    }
+
+    .editor-toolbar {
+        flex-wrap: wrap;
+    }
+
+    .toolbar-btn span:last-child {
+        display: none;
+    }
+
+    .toolbar-btn {
+        padding: 8px;
+    }
+
+    .preview-card-header {
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .realtime-preview {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .forecast-preview {
+        flex-wrap: wrap;
+    }
+
+    .markdown-editor {
+        min-height: 200px;
+    }
+
+    .preview-container {
+        min-height: 300px;
+    }
+}
+
+/* 响应式适配 */
+@media (max-width: 1200px) {
+    .editor-container {
+        flex-direction: column;
+    }
+
+    .editor-panel,
+    .preview-panel {
+        min-width: 100%;
+    }
+
+    .layout-horizontal .preview-container {
+        flex-direction: column;
+    }
+
+    .layout-horizontal .preview-card {
+        min-width: 100%;
+    }
+}
+
+@media (max-width: 768px) {
+    .main-container {
+        padding: 10px;
+    }
+
+    .editor-toolbar {
+        flex-wrap: wrap;
+    }
+
+    .toolbar-btn span:last-child {
+        display: none;
+    }
+
+    .toolbar-btn {
+        padding: 8px;
+    }
+
+    .preview-card-header {
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .realtime-preview {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .forecast-preview {
+        flex-wrap: wrap;
+    }
+
+    .markdown-editor {
+        min-height: 200px;
+    }
+
+    .preview-container {
+        min-height: 300px;
+    }
+}
+
+/* 响应式适配 */
+@media (max-width: 1200px) {
+    .editor-container {
+        flex-direction: column;
+    }
+
+    .editor-panel,
+    .preview-panel {
+        min-width: 100%;
+    }
+
+    .layout-horizontal .preview-container {
+        flex-direction: column;
+    }
+
+    .layout-horizontal .preview-card {
+        min-width: 100%;
+    }
+}
+
+@media (max-width: 768px) {
+    .main-container {
+        padding: 10px;
+    }
+
+    .editor-toolbar {
+        flex-wrap: wrap;
+    }
+
+    .toolbar-btn span:last-child {
+        display: none;
+    }
+
+    .toolbar-btn {
+        padding: 8px;
+    }
+
+    .preview-card-header {
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .realtime-preview {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .forecast-preview {
+        flex-wrap: wrap;
+    }
+
+    .markdown-editor {
+        min-height: 200px;
+    }
+
+    .preview-container {
+        min-height: 300px;
+    }
+}
+
+/* 响应式适配 */
+@media (max-width: 1200px) {
+    .editor-container {
+        flex-direction: column;
+    }
+
+    .editor-panel,
+    .preview-panel {
+        min-width: 100%;
+    }
+
+    .layout-horizontal .preview-container {
+        flex-direction: column;
+    }
+
+    .layout-horizontal .preview-card {
+        min-width: 100%;
+    }
+}
+
+@media (max-width: 768px) {
+    .main-container {
+        padding: 10px;
+    }
+
+    .editor-toolbar {
+        flex-wrap: wrap;
+    }
+
+    .toolbar-btn span:last-child {
+        display: none;
+    }
+
+    .toolbar-btn {
+        padding: 8px;
+    }
+
+    .preview-card-header {
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .realtime-preview {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .forecast-preview {
+        flex-wrap: wrap;
+    }
+
+    .markdown-editor {
+        min-height: 200px;
+    }
+
+    .preview-container {
+        min-height: 300px;
+    }
+}
+
+/* 响应式适配 */
+@media (max-width: 1200px) {
+    .editor-container {
+        flex-direction: column;
+    }
+
+    .editor-panel,
+    .preview-panel {
+        min-width: 100%;
+    }
+
+    .layout-horizontal .preview-container {
+        flex-direction: column;
+    }
+
+    .layout-horizontal .preview-card {
+        min-width: 100%;
+    }
+}
+
+@media (max-width: 768px) {
+    .main-container {
+        padding: 10px;
+    }
+
+    .editor-toolbar {
+        flex-wrap: wrap;
+    }
+
+    .toolbar-btn span:last-child {
+        display: none;
+    }
+
+    .toolbar-btn {
+        padding: 8px;
+    }
+
+    .preview-card-header {
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .realtime-preview {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .forecast-preview {
+        flex-wrap: wrap;
+    }
+
+    .markdown-editor {
+        min-height: 200px;
+    }
+
+    .preview-container {
+        min-height: 300px;
+    }
+}
+
+/* 响应式适配 */
+@media (max-width: 1200px) {
+    .editor-container {
+        flex-direction: column;
+    }
+
+    .editor-panel,
+    .preview-panel {
+        min-width: 100%;
+    }
+
+    .layout-horizontal .preview-container {
+        flex-direction: column;
+    }
+
+    .layout-horizontal .preview-card {
+        min-width: 100%;
+    }
+}
+
+@media (max-width: 768px) {
+    .main-container {
+        padding: 10px;
+    }
+
+    .editor-toolbar {
+        flex-wrap: wrap;
+    }
+
+    .toolbar-btn span:last-child {
+        display: none;
+    }
+
+    .toolbar-btn {
+        padding: 8px;
+    }
+
+    .preview-card-header {
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .realtime-preview {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .forecast-preview {
+        flex-wrap: wrap;
+    }
+
+    .markdown-editor {
+        min-height: 200px;
+    }
+
+    .preview-container {
+        min-height: 300px;
+    }
+}
+
+/* 响应式适配 */
+@media (max-width: 1200px) {
+    .editor-container {
+        flex-direction: column;
+    }
+
+    .editor-panel,
+    .preview-panel {
+        min-width: 100%;
+    }
+
+    .layout-horizontal .preview-container {
+        flex-direction: column;
+    }
+
+    .layout-horizontal .preview-card {
+        min-width: 100%;
+    }
+}
+
+@media (max-width: 768px) {
+    .main-container {
+        padding: 10px;
+    }
+
+    .editor-toolbar {
+        flex-wrap: wrap;
+    }
+
+    .toolbar-btn span:last-child {
+        display: none;
+    }
+
+    .toolbar-btn {
+        padding: 8px;
+    }
+
+    .preview-card-header {
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .realtime-preview {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .forecast-preview {
+        flex-wrap: wrap;
+    }
+
+    .markdown-editor {
+        min-height: 200px;
+    }
+
+    .preview-container {
+        min-height: 300px;
+    }
+}
+
+/* 响应式适配 */
+@media (max-width: 1200px) {
+    .editor-container {
+        flex-direction: column;
+    }
+
+    .editor-panel,
+    .preview-panel {
+        min-width: 100%;
+    }
+
+    .layout-horizontal .preview-container {
+        flex-direction: column;
+    }
+
+    .layout-horizontal .preview-card {
+        min-width: 100%;
+    }
+}
+
+@media (max-width: 768px) {
+    .main-container {
+        padding: 10px;
+    }
+
+    .editor-toolbar {
+        flex-wrap: wrap;
+    }
+
+    .toolbar-btn span:last-child {
+        display: none;
+    }
+
+    .toolbar-btn {
+        padding: 8px;
+    }
+
+    .preview-card-header {
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .realtime-preview {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .forecast-preview {
+        flex-wrap: wrap;
+    }
+
+    .markdown-editor {
+        min-height: 200px;
+    }
+
+    .preview-container {
+        min-height: 300px;
+    }
+}
+
+
+/* 使用指南网格 */
+.guide-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+    margin-bottom: 30px;
+}
+
+.guide-item {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(20px);
+    border-radius: 16px;
+    padding: 24px;
+    text-align: center;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+    transition: all 0.3s;
+}
+
+.guide-item:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+}
+
+.guide-icon {
+    font-size: 48px;
+    margin-bottom: 12px;
+}
+
+.guide-item h4 {
+    font-size: 18px;
+    color: var(--title-color);
+    margin: 0 0 8px 0;
+}
+
+.guide-item p {
+    font-size: 14px;
+    color: var(--dim-color);
+    margin: 0;
+    line-height: 1.6;
+}
+
+/* Markdown 语法帮助 */
+.markdown-syntax-help {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(20px);
+    border-radius: 16px;
+    padding: 24px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+}
+
+.markdown-syntax-help h4 {
+    font-size: 18px;
+    color: var(--title-color);
+    margin: 0 0 16px 0;
+}
+
+.syntax-examples {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.syntax-example {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 12px;
+    background: rgba(255, 255, 255, 0.5);
+    border-radius: 8px;
+}
+
+.syntax-example code {
+    padding: 4px 8px;
+    background: rgba(0, 0, 0, 0.05);
+    border-radius: 4px;
+    font-family: 'Consolas', 'Monaco', monospace;
+    font-size: 13px;
+    color: var(--text-color);
+}
+
+.syntax-example span:first-of-type {
+    color: var(--dim-color);
+    font-size: 18px;
+}
+
+.example-rendered {
+    color: var(--text-color);
+}
+
+/* 响应式适配 */
+@media (max-width: 1200px) {
+    .editor-container {
+        flex-direction: column;
+    }
+
+    .editor-panel,
+    .preview-panel {
+        min-width: 100%;
+    }
+
+    .layout-horizontal .preview-container {
+        flex-direction: column;
+    }
+
+    .layout-horizontal .preview-card {
+        min-width: 100%;
+    }
+}
+
+@media (max-width: 768px) {
+    .main-container {
+        padding: 10px;
+    }
+
+    .editor-toolbar {
+        flex-wrap: wrap;
+    }
+
+    .toolbar-btn span:last-child {
+        display: none;
+    }
+
+    .toolbar-btn {
+        padding: 8px;
+    }
+
+    .preview-card-header {
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .realtime-preview {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .forecast-preview {
+        flex-wrap: wrap;
+    }
+
+    .markdown-editor {
+        min-height: 200px;
+    }
+
+    .preview-container {
+        min-height: 300px;
+    }
+}
+
+/* 十天预报卡片样式 */
+.preview-card-wide {
+    min-width: 100%;
+}
+
+.forecast10-preview {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding: 8px 0;
+    scrollbar-width: thin;
+    scrollbar-color: var(--accent-blue) rgba(0,0,0,0.1);
+}
+
+.forecast10-preview::-webkit-scrollbar {
+    height: 6px;
+}
+
+.forecast10-preview::-webkit-scrollbar-track {
+    background: rgba(0,0,0,0.05);
+    border-radius: 3px;
+}
+
+.forecast10-preview::-webkit-scrollbar-thumb {
+    background: var(--accent-blue);
+    border-radius: 3px;
+}
+
+.forecast10-day-card {
+    flex: 0 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 12px 8px;
+    background: rgba(255,255,255,0.5);
+    border-radius: 8px;
+    min-width: 60px;
+    border: 1px solid rgba(0,0,0,0.05);
+}
+
+.f10-date {
+    font-size: 12px;
+    color: var(--dim-color);
+    margin-bottom: 4px;
+    white-space: nowrap;
+}
+
+.f10-icon {
+    width: 32px;
+    height: 32px;
+    margin: 4px 0;
+}
+
+.f10-temps {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    font-size: 11px;
+}
+
+.f10-max {
+    color: var(--title-color);
+    font-weight: 600;
+}
+
+.f10-min {
+    color: var(--dim-color);
+}
+
+/* 视图模式样式 */
+body.view-mode .editor-panel,
+body.view-mode .preview-actions,
+body.view-mode .link-output-section,
+body.view-mode .guide-grid,
+body.view-mode .markdown-syntax-help {
+    display: none !important;
+}
+
+body.view-mode .preview-panel {
+    width: 100%;
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+body.view-mode .preview-container {
+    min-height: auto;
+}
+
+/* 窄屏优化 */
+@media (max-width: 1200px) {
+    .forecast10-preview {
+        flex-wrap: nowrap;
+    }
+}
+
+@media (max-width: 768px) {
+    .forecast10-day-card {
+        min-width: 50px;
+        padding: 8px 4px;
+    }
+    
+    .f10-icon {
+        width: 24px;
+        height: 24px;
+    }
+    
+    .f10-date {
+        font-size: 10px;
+    }
+    
+    .f10-temps {
+        font-size: 9px;
+    }
+}
