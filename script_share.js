@@ -1,5 +1,5 @@
 // 气象深高 - 定制分享构建器脚本
-// 仿 Minecraft 方块编辑模式
+// 仿 Minecraft 方块编辑模式，支持三数据源变量系统
 
 (function() {
     'use strict';
@@ -9,10 +9,11 @@
         gridWidth: 16,
         gridHeight: 16,
         cells: [], // 每个单元格的颜色索引
-        elements: [], // 放置的元素 [{id, type, x, y, w, h, content, style}]
+        elements: [], // 放置的元素 [{id, type, x, y, w, h, content, style, blockType, scale}]
         selectedColor: 0,
         currentMode: 'paint',
         selectedElementId: null,
+        pendingBlockType: null, // 待放置的板块类型
         // 12 色调色板：涵盖色环常用颜色 + 黑白灰 (索引 0 为透明)
         colors: [
             { name: '透明', value: 'transparent' },
@@ -31,7 +32,8 @@
         ]
     };
 
-    // 变量定义
+    // 变量定义 - 三数据源系统
+    // 实况数据源
     const realtimeVars = [
         { key: 'realtime.temp', label: '温度 (°C)' },
         { key: 'realtime.feelsLike', label: '体感温度' },
@@ -44,13 +46,20 @@
         { key: 'realtime.updateTime', label: '更新时间' }
     ];
 
-    const forecastVars = [
-        { key: 'forecast.date', label: '日期' },
-        { key: 'forecast.highTemp', label: '最高温 (°C)' },
-        { key: 'forecast.lowTemp', label: '最低温 (°C)' },
-        { key: 'forecast.weather', label: '天气描述' },
-        { key: 'forecast.windDir', label: '风向' },
-        { key: 'forecast.windScale', label: '风力' }
+    // 预报数据源 (相对日期 D+0~D+9)
+    const forecastVarDefs = [
+        { key: 'date', label: '日期' },
+        { key: 'highTemp', label: '最高温 (°C)' },
+        { key: 'lowTemp', label: '最低温 (°C)' },
+        { key: 'weather', label: '天气描述' },
+        { key: 'windDir', label: '风向' },
+        { key: 'windScale', label: '风力' }
+    ];
+
+    // 板块数据源
+    const blockVars = [
+        { key: 'rainBlock', label: '🌧️ 降雨预报板块' },
+        { key: 'alertBlock', label: '⚠️ 预警信息板块' }
     ];
 
     // ==================== 初始化 ====================
@@ -143,6 +152,8 @@
             placeElementAtCell(index, 'text');
         } else if (state.currentMode === 'add-var') {
             placeElementAtCell(index, 'var');
+        } else if (state.currentMode === 'add-block') {
+            placeElementAtCell(index, 'block');
         }
     }
 
@@ -201,6 +212,25 @@
                 style: { fontSize: 12, color: '#0d47a1' }
             };
             window.pendingVarKey = null;
+        } else if (type === 'block') {
+            const blockType = state.pendingBlockType;
+            if (!blockType) {
+                alert('请先选择一个数据板块');
+                return;
+            }
+            
+            element = {
+                id: Date.now(),
+                type: 'block',
+                blockType: blockType,
+                x: x,
+                y: y,
+                w: 8,
+                h: 4,
+                scale: 1.0,
+                style: {}
+            };
+            state.pendingBlockType = null;
         }
         
         if (element) {
@@ -243,6 +273,9 @@
         if (el.type === 'text' || el.type === 'var') {
             // 解析变量标记
             return el.content.replace(/\{([^}]+)\}/g, '<span class="var-tag">{$1}</span>');
+        } else if (el.type === 'block') {
+            const blockName = el.blockType === 'rainBlock' ? '🌧️ 降雨预报' : '⚠️ 预警信息';
+            return `<div style="font-size:11px; color:#666;">${blockName}<br><small>缩放：${el.scale}x</small></div>`;
         }
         return el.content || '';
     }
@@ -261,10 +294,12 @@
         const content = document.getElementById('propContent');
         panel.style.display = 'block';
         
-        content.innerHTML = `
+        let propHtml = `
             <div class="control-group">
                 <label>类型</label>
-                <div style="font-size:12px; padding:4px; background:#f0f0f0; border-radius:4px;">${el.type === 'text' ? '📝 文本框' : '📊 数据变量'}</div>
+                <div style="font-size:12px; padding:4px; background:#f0f0f0; border-radius:4px;">
+                    ${el.type === 'text' ? '📝 文本框' : (el.type === 'var' ? '📊 数据变量' : '📦 数据板块')}
+                </div>
             </div>
             <div class="control-group">
                 <label>位置 (格)</label>
@@ -273,28 +308,59 @@
                     <input type="number" value="${el.y}" min="0" max="${state.gridHeight-1}" onchange="updateElementPos(${el.id}, 'y', this.value)">
                 </div>
             </div>
-            ${el.type === 'text' ? `
-            <div class="control-group">
-                <label>尺寸 (格)</label>
-                <div style="display:flex; gap:5px;">
-                    <input type="number" value="${el.w}" min="1" max="${state.gridWidth}" onchange="updateElementSize(${el.id}, 'w', this.value)">
-                    <input type="number" value="${el.h}" min="1" max="${state.gridHeight}" onchange="updateElementSize(${el.id}, 'h', this.value)">
-                </div>
-            </div>
-            <div class="control-group">
-                <label>内容</label>
-                <textarea rows="3" onchange="updateElementContent(${el.id}, this.value)">${el.content}</textarea>
-            </div>
-            <div class="control-group">
-                <label>字号</label>
-                <input type="number" value="${el.style?.fontSize || 12}" onchange="updateElementStyle(${el.id}, 'fontSize', this.value)">
-            </div>
-            <div class="control-group">
-                <label>颜色</label>
-                <input type="color" value="${el.style?.color || '#000000'}" onchange="updateElementStyle(${el.id}, 'color', this.value)">
-            </div>
-            ` : ''}
         `;
+        
+        if (el.type === 'block') {
+            propHtml += `
+                <div class="control-group">
+                    <label>缩放比例 (0.5x - 2x)</label>
+                    <input type="range" min="0.5" max="2" step="0.1" value="${el.scale || 1}" oninput="updateBlockScale(${el.id}, this.value)">
+                    <div style="font-size:11px; color:#666; margin-top:2px;">当前：${(el.scale || 1).toFixed(1)}x</div>
+                </div>
+            `;
+        } else if (el.type === 'text') {
+            propHtml += `
+                <div class="control-group">
+                    <label>尺寸 (格)</label>
+                    <div style="display:flex; gap:5px;">
+                        <input type="number" value="${el.w}" min="1" max="${state.gridWidth}" onchange="updateElementSize(${el.id}, 'w', this.value)">
+                        <input type="number" value="${el.h}" min="1" max="${state.gridHeight}" onchange="updateElementSize(${el.id}, 'h', this.value)">
+                    </div>
+                </div>
+                <div class="control-group">
+                    <label>内容</label>
+                    <textarea rows="3" onchange="updateElementContent(${el.id}, this.value)">${el.content}</textarea>
+                </div>
+                <div class="control-group">
+                    <label>字号</label>
+                    <input type="number" value="${el.style?.fontSize || 12}" onchange="updateElementStyle(${el.id}, 'fontSize', this.value)">
+                </div>
+                <div class="control-group">
+                    <label>颜色</label>
+                    <input type="color" value="${el.style?.color || '#000000'}" onchange="updateElementStyle(${el.id}, 'color', this.value)">
+                </div>
+            `;
+        } else if (el.type === 'var') {
+            propHtml += `
+                <div class="control-group">
+                    <label>尺寸 (格)</label>
+                    <div style="display:flex; gap:5px;">
+                        <input type="number" value="${el.w}" min="1" max="${state.gridWidth}" onchange="updateElementSize(${el.id}, 'w', this.value)">
+                        <input type="number" value="${el.h}" min="1" max="${state.gridHeight}" onchange="updateElementSize(${el.id}, 'h', this.value)">
+                    </div>
+                </div>
+                <div class="control-group">
+                    <label>字号</label>
+                    <input type="number" value="${el.style?.fontSize || 12}" onchange="updateElementStyle(${el.id}, 'fontSize', this.value)">
+                </div>
+                <div class="control-group">
+                    <label>颜色</label>
+                    <input type="color" value="${el.style?.color || '#0d47a1'}" onchange="updateElementStyle(${el.id}, 'color', this.value)">
+                </div>
+            `;
+        }
+        
+        content.innerHTML = propHtml;
     }
 
     function updateElementPos(id, axis, value) {
@@ -327,6 +393,16 @@
             if (!el.style) el.style = {};
             el.style[prop] = prop === 'fontSize' ? parseInt(value) : value;
             renderElements();
+        }
+    }
+
+    function updateBlockScale(id, scaleValue) {
+        const el = state.elements.find(e => e.id === id);
+        if (el && el.type === 'block') {
+            el.scale = parseFloat(scaleValue);
+            renderElements();
+            // 更新面板显示
+            showPropertiesPanel(id);
         }
     }
 
@@ -400,7 +476,8 @@
     function updatePanels() {
         document.getElementById('panel-paint').style.display = state.currentMode === 'paint' ? 'block' : 'none';
         document.getElementById('panel-text').style.display = state.currentMode === 'add-text' ? 'block' : 'none';
-        document.getElementById('panel-var').style.display = state.currentMode === 'add-var' ? 'block' : 'none';
+        document.getElementById('panel-var').style.display = 
+            (state.currentMode === 'add-var' || state.currentMode === 'add-block') ? 'block' : 'none';
         if (state.currentMode !== 'select') {
             document.getElementById('panel-properties').style.display = 'none';
         }
@@ -410,31 +487,47 @@
     function initVarLists() {
         // 实况变量
         const realtimeList = document.getElementById('varListRealtime');
-        realtimeList.innerHTML = '';
-        realtimeVars.forEach(v => {
-            const btn = document.createElement('button');
-            btn.textContent = v.label;
-            btn.onclick = () => selectVar(v.key);
-            realtimeList.appendChild(btn);
-        });
+        if (realtimeList) {
+            realtimeList.innerHTML = '';
+            realtimeVars.forEach(v => {
+                const btn = document.createElement('button');
+                btn.textContent = v.label;
+                btn.onclick = () => selectVar(v.key);
+                realtimeList.appendChild(btn);
+            });
+        }
+        
+        // 板块变量
+        const blockList = document.getElementById('varListBlock');
+        if (blockList) {
+            blockList.innerHTML = '';
+            blockVars.forEach(v => {
+                const btn = document.createElement('button');
+                btn.textContent = v.label;
+                btn.onclick = () => selectBlock(v.key);
+                blockList.appendChild(btn);
+            });
+        }
         
         updateForecastVars();
     }
 
     function updateForecastVars() {
         const day = parseInt(document.getElementById('forecastDayRange').value);
-        const labels = ['今天', '明天', '后天', '第 4 天', '第 5 天', '第 6 天', '第 7 天', '第 8 天', '第 9 天', '第 10 天'];
+        const labels = ['今天', '明天', '后天', 'D+3', 'D+4', 'D+5', 'D+6', 'D+7', 'D+8', 'D+9'];
         document.getElementById('forecastDayLabel').textContent = labels[day];
         
         const forecastList = document.getElementById('varListForecast');
-        forecastList.innerHTML = '';
-        
-        forecastVars.forEach(v => {
-            const btn = document.createElement('button');
-            btn.textContent = `${v.label} (+${day}天)`;
-            btn.onclick = () => selectVar(`forecast[${day}].${v.key.split('.')[1]}`);
-            forecastList.appendChild(btn);
-        });
+        if (forecastList) {
+            forecastList.innerHTML = '';
+            
+            forecastVarDefs.forEach(v => {
+                const btn = document.createElement('button');
+                btn.textContent = `${v.label} (D+${day})`;
+                btn.onclick = () => selectVar(`forecast[${day}].${v.key}`);
+                forecastList.appendChild(btn);
+            });
+        }
     }
 
     function selectVar(key) {
@@ -443,6 +536,14 @@
         updateModeButtons();
         updatePanels();
         alert(`已选择变量 {${key}}，请点击网格放置`);
+    }
+
+    function selectBlock(blockType) {
+        state.pendingBlockType = blockType;
+        state.currentMode = 'add-block';
+        updateModeButtons();
+        updatePanels();
+        alert(`已选择${blockType === 'rainBlock' ? '降雨预报' : '预警信息'}板块，请点击网格放置`);
     }
 
     // ==================== 事件监听 ====================
@@ -517,10 +618,23 @@
         return html;
     }
 
-    function renderElementWithRealData(el) {
-        let content = el.content;
+    function renderElementWithRealData(el, useRealData = false) {
+        // 板块类型渲染
+        if (el.type === 'block') {
+            if (useRealData) {
+                // 实际分享页面会调用真实 API 渲染板块
+                return `<div data-block-type="${el.blockType}" data-scale="${el.scale || 1}"></div>`;
+            } else {
+                // 预览模式显示模拟板块
+                const blockName = el.blockType === 'rainBlock' ? '🌧️ 降雨预报' : '⚠️ 预警信息';
+                return `<div style="font-size:11px; color:#666; padding:8px; background:#f5f5f5; border-radius:4px;">
+                    ${blockName}<br><small>缩放：${(el.scale || 1).toFixed(1)}x<br>(预览模式)</small></div>`;
+            }
+        }
         
-        // 替换变量为实际数据 (这里使用模拟数据，实际应从 API 获取)
+        let content = el.content || '';
+        
+        // 替换变量为实际数据
         const mockData = {
             realtime: {
                 temp: '25',
@@ -635,6 +749,13 @@
     // 暴露到全局作用域供 HTML onclick 调用
     window.togglePreview = togglePreview;
     window.generateShareLink = generateShareLink;
+    window.updateBlockScale = updateBlockScale;
+    window.confirmAddText = function() {
+        const centerX = Math.floor(state.gridWidth / 2);
+        const centerY = Math.floor(state.gridHeight / 2);
+        const centerIndex = centerY * state.gridWidth + centerX;
+        placeElementAtCell(centerIndex, 'text');
+    };
 
     // 启动
     init();

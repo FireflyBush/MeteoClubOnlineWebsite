@@ -326,7 +326,8 @@
                 <div class="mode-switch">
                     <button class="mode-btn active" data-mode="paint">🎨 涂色</button>
                     <button class="mode-btn" data-mode="add-text">📝 文本</button>
-                    <button class="mode-btn" data-mode="add-var">📊 数据</button>
+                    <button class="mode-btn" data-mode="add-var">📊 变量</button>
+                    <button class="mode-btn" data-mode="add-block">📦 板块</button>
                     <button class="mode-btn" data-mode="select">🖱️ 选择</button>
                 </div>
             </div>
@@ -381,6 +382,9 @@
                     <input type="range" id="forecastDayRange" min="0" max="9" value="0" oninput="updateForecastVars()">
                 </div>
                 <div class="var-list" id="varListForecast"></div>
+
+                <h5 style="font-size:12px; margin:10px 0 4px 0; color:#555;">数据板块</h5>
+                <div class="var-list" id="varListBlock"></div>
             </div>
 
             <!-- 属性编辑 (选中元素时显示) -->
