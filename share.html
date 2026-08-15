@@ -39,8 +39,7 @@
                 <div class="mode-switch">
                     <button class="mode-btn active" data-mode="paint">🎨 涂色</button>
                     <button class="mode-btn" data-mode="add-text">📝 文本</button>
-                    <button class="mode-btn" data-mode="add-var">📊 变量</button>
-                    <button class="mode-btn" data-mode="add-block">📦 板块</button>
+                    <button class="mode-btn" data-mode="add-var">📊 数据</button>
                     <button class="mode-btn" data-mode="select">🖱️ 选择</button>
                 </div>
             </div>
@@ -70,6 +69,14 @@
                     <input type="color" id="textColor" value="#000000">
                 </div>
                 <div class="control-group">
+                    <label>对齐方式</label>
+                    <select id="textAlign">
+                        <option value="left">左对齐</option>
+                        <option value="center" selected>居中</option>
+                        <option value="right">右对齐</option>
+                    </select>
+                </div>
+                <div class="control-group">
                     <label>尺寸 (格数)</label>
                     <div style="display:flex; gap:5px;">
                         <input type="number" id="textW" value="4" min="1" max="16" placeholder="宽">
@@ -80,8 +87,8 @@
             </div>
 
             <div class="tool-panel" id="panel-var" style="display:none;">
-                <h4>📊 插入数据变量</h4>
-                <p style="font-size:11px; color:#666; margin-bottom:8px;">点击变量将其放置在网格中心</p>
+                <h4>📊 插入数据元素</h4>
+                <p style="font-size:11px; color:#666; margin-bottom:8px;">点击变量或板块将其放置在网格中</p>
                 
                 <h5 style="font-size:12px; margin:8px 0 4px 0; color:#555;">实况数据</h5>
                 <div class="var-list" id="varListRealtime"></div>

@@ -271,8 +271,10 @@
             state.cells[index] = state.selectedColor;
             renderGrid();
         } else if (state.currentMode === 'add-text') placeElementAtCell(index, 'text');
-        else if (state.currentMode === 'add-var') placeElementAtCell(index, 'var');
-        else if (state.currentMode === 'add-block') placeElementAtCell(index, 'block');
+        else if (state.currentMode === 'add-var') {
+            if (window.pendingVarKey) placeElementAtCell(index, 'var');
+            else if (state.pendingBlockType) placeElementAtCell(index, 'block');
+        }
     }
 
     function clearGrid() {
@@ -293,14 +295,15 @@
             const content = document.getElementById('textContent').value;
             const size = parseInt(document.getElementById('textSize').value) || 14;
             const color = document.getElementById('textColor').value;
+            const textAlign = document.getElementById('textAlign').value;
             const w = parseInt(document.getElementById('textW').value) || 4;
             const h = parseInt(document.getElementById('textH').value) || 1;
             if (!content.trim()) { return; }
-            element = { id: Date.now(), type: 'text', x, y, w, h, content, style: { fontSize: size, color } };
+            element = { id: Date.now(), type: 'text', x, y, w, h, content, style: { fontSize: size, color, textAlign } };
         } else if (type === 'var') {
             const varKey = window.pendingVarKey;
             if (!varKey) { return; }
-            element = { id: Date.now(), type: 'var', x, y, w: 3, h: 1, content: `{${varKey}}`, style: { fontSize: 12, color: '#0d47a1' } };
+            element = { id: Date.now(), type: 'var', x, y, w: 3, h: 1, content: `{${varKey}}`, style: { fontSize: 12, color: '#0d47a1', textAlign: 'center' } };
             window.pendingVarKey = null;
         } else if (type === 'block') {
             const blockType = state.pendingBlockType;
@@ -311,11 +314,15 @@
 
         if (element) {
             state.elements.push(element);
+            // 放置后自动切换回选择模式
             state.currentMode = 'select';
             updateModeButtons();
+            updatePanels();
             // 清除所有按钮的高亮状态
             document.querySelectorAll('.var-list button.active').forEach(btn => btn.classList.remove('active'));
             renderElements();
+            // 自动选中新放置的元素
+            selectElement(element.id);
         }
     }
 
@@ -331,6 +338,7 @@
             div.style.height = `calc(${el.h} * var(--grid-cell-size))`;
             div.style.fontSize = `${el.style?.fontSize || 12}px`;
             div.style.color = el.style?.color || '#000';
+            div.style.textAlign = el.style?.textAlign || 'center';
 
             div.innerHTML = renderElementContent(el);
 
@@ -444,6 +452,11 @@
             }
             propHtml += `<div class="control-group"><label>字号</label><input type="number" value="${el.style?.fontSize || 12}" onchange="updateElementStyle(${el.id}, 'fontSize', this.value)"></div>`;
             propHtml += `<div class="control-group"><label>颜色</label><input type="color" value="${el.style?.color || '#000000'}" onchange="updateElementStyle(${el.id}, 'color', this.value)"></div>`;
+            propHtml += `<div class="control-group"><label>对齐方式</label><select onchange="updateElementStyle(${el.id}, 'textAlign', this.value)">
+                <option value="left" ${el.style?.textAlign === 'left' ? 'selected' : ''}>左对齐</option>
+                <option value="center" ${(!el.style?.textAlign || el.style?.textAlign === 'center') ? 'selected' : ''}>居中</option>
+                <option value="right" ${el.style?.textAlign === 'right' ? 'selected' : ''}>右对齐</option>
+            </select></div>`;
         }
         content.innerHTML = propHtml;
     }
@@ -528,7 +541,8 @@
     function updatePanels() {
         document.getElementById('panel-paint').style.display = state.currentMode === 'paint' ? 'block' : 'none';
         document.getElementById('panel-text').style.display = state.currentMode === 'add-text' ? 'block' : 'none';
-        document.getElementById('panel-var').style.display = (state.currentMode === 'add-var' || state.currentMode === 'add-block') ? 'block' : 'none';
+        // 合并变量与板块面板
+        document.getElementById('panel-var').style.display = state.currentMode === 'add-var' ? 'block' : 'none';
         if (state.currentMode !== 'select') document.getElementById('panel-properties').style.display = 'none';
     }
 
@@ -570,20 +584,20 @@
 
     function selectVar(key, event) {
         window.pendingVarKey = key;
+        state.pendingBlockType = null; // 清除板块选中状态
         state.currentMode = 'add-var';
         updateModeButtons();
         updatePanels();
-        // 直接给按钮加高亮状态
         document.querySelectorAll('.var-list button').forEach(btn => btn.classList.remove('active'));
         if(event && event.target) event.target.classList.add('active');
     }
 
     function selectBlock(blockType, event) {
         state.pendingBlockType = blockType;
-        state.currentMode = 'add-block';
+        window.pendingVarKey = null; // 清除变量选中状态
+        state.currentMode = 'add-var'; // 复用同一模式
         updateModeButtons();
         updatePanels();
-        // 直接给按钮加高亮状态
         document.querySelectorAll('.var-list button').forEach(btn => btn.classList.remove('active'));
         if(event && event.target) event.target.classList.add('active');
     }
@@ -652,7 +666,7 @@
     window.updateElementContent = updateElementContent;
     window.updateElementStyle = updateElementStyle;
     window.updateForecastVars = updateForecastVars;
-    window.loadRealData = loadRealData; // 暴露给测试脚本调用
+    window.loadRealData = loadRealData;
     
     window.confirmAddText = function() {
         const centerX = Math.floor(state.gridWidth / 2);

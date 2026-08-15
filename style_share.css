@@ -7,7 +7,7 @@
 /* 覆盖主页全局 body 限制 */
 html, body {
     height: 100%;
-    overflow: hidden; /* 防止双滚动条 */
+    overflow: hidden;
 }
 body {
     padding-top: var(--nav-height);
@@ -37,7 +37,8 @@ body {
     position: relative;
     overflow: auto;
     display: flex;
-    justify-content: center;
+    /* 取消居中对齐，改为从左上角开始排列，避免被限制宽度导致挤压 */
+    justify-content: flex-start;
     align-items: flex-start;
     padding: 30px;
 }
@@ -170,7 +171,6 @@ body {
 
 .var-list button:hover { background: #e9ecef; }
 
-/* 选中的变量/板块按钮直接高亮显示 */
 .var-list button.active {
     background: #007bff;
     color: #fff;
@@ -200,7 +200,6 @@ body {
 .action-btn.danger { background: #dc3545; color: #fff; }
 .action-btn:hover { opacity: 0.9; }
 
-/* 悬浮按钮 */
 .float-btn {
     position: fixed; top: 80px; right: 20px; z-index: 1000; background: #007bff; color: #fff; border: none; padding: 10px 15px; border-radius: 8px; cursor: pointer; font-size: 14px; box-shadow: 0 4px 12px rgba(0,0,0,0.2); display: flex; align-items: center; gap: 5px;
 }
@@ -224,13 +223,13 @@ body {
     .builder-workspace {
         order: 1;
         flex: 1;
-        min-height: 0; /* 修复 flex 溢出 */
+        min-height: 200px;
         padding: 15px;
     }
     .builder-sidebar {
         order: 2;
         width: 100%;
-        max-height: 45vh; /* 手机端占下方一半 */
+        max-height: 45vh;
         border-right: none;
         border-top: 1px solid #ddd;
     }
