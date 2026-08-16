@@ -34,12 +34,12 @@
         realData: null,
         author: '',
         isPainting: false,
-        paintModeEnabled: false, // 修改：原 dragPaintEnabled 改为 paintModeEnabled
+        paintModeEnabled: false,
         blocks: COLOR_MAP.map((hex, i) => ({
             id: i,
-            name: `颜色${i + 1}`, // 序号 1-32
+            name: `颜色${i + 1}`,
             color: hex,
-            file: '' // 移除文件映射
+            file: ''
         }))
     };
 
@@ -212,7 +212,6 @@
             editBtn.style.display = 'none';
             exitBtn.style.display = 'flex';
             document.getElementById('gridCanvas').classList.remove('view-only');
-            // 进入编辑模式时，默认关闭涂色开关，恢复滚动
             state.paintModeEnabled = false;
             document.getElementById('paintModeSwitch').checked = false;
             document.getElementById('gridCanvas').classList.remove('locked-swipe');
@@ -245,7 +244,6 @@
         state.blocks.forEach((block, index) => {
             const swatch = document.createElement('div');
             swatch.className = 'color-swatch' + (index === state.selectedBlock ? ' active' : '');
-            // 修改：使用 backgroundColor 替代 backgroundImage
             swatch.style.backgroundColor = block.color;
             swatch.title = block.name;
             swatch.onclick = () => selectColor(index);
@@ -262,7 +260,6 @@
 
     // ==================== 网格系统 ====================
     function initGrid() {
-        // 修改：初始化为默认白色 (索引 31)
         if (state.cells.length !== state.gridWidth * state.gridHeight) {
             state.cells = new Array(state.gridWidth * state.gridHeight).fill(DEFAULT_BLOCK_INDEX);
         }
@@ -286,15 +283,12 @@
             const blockIndex = state.cells[i] !== undefined ? state.cells[i] : DEFAULT_BLOCK_INDEX;
             const block = state.blocks[blockIndex];
             if (block) {
-                // 修改：使用 backgroundColor
                 cell.style.backgroundColor = block.color;
             }
 
-            // 按下事件
             cell.onpointerdown = (e) => {
                 if (state.appMode !== 'edit') return;
 
-                // 如果是添加文本或变量的模式
                 if (state.currentMode === 'add-text') {
                     handleCellClick(i);
                 } else if (state.currentMode === 'add-var') {
@@ -302,20 +296,16 @@
                         handleCellClick(i);
                     }
                 } else {
-                    // Select 模式 或 Palette 模式（本质也是 Select）
-                    // 修改：只有在 paintModeEnabled 开启时才响应涂色
+                    // Select 模式
                     if (state.paintModeEnabled) {
-                        e.preventDefault(); // 阻止默认滚动行为
+                        e.preventDefault();
                         state.isPainting = true;
                         paintCell(i);
                     }
-                    // 如果关闭涂色开关，这里不做任何事，允许浏览器处理（滚动）
                 }
             };
 
-            // 拖拽进入事件
             cell.onpointerenter = () => {
-                // 修改：只有在 paintModeEnabled 开启且正在按压时，才连续涂色
                 if (state.paintModeEnabled && state.isPainting) {
                     paintCell(i);
                 }
@@ -333,7 +323,6 @@
         if(cell) {
             const block = state.blocks[state.selectedBlock];
             if (block) {
-                // 修改：使用 backgroundColor
                 cell.style.backgroundColor = block.color;
             }
         }
@@ -350,7 +339,6 @@
 
     function clearGrid() {
         if (confirm('确定要清空整个画布吗？')) {
-            // 修改：重置为白色
             state.cells = new Array(state.gridWidth * state.gridHeight).fill(DEFAULT_BLOCK_INDEX);
             state.elements = [];
             renderGrid();
@@ -365,10 +353,9 @@
 
         if (type === 'text') {
             const content = document.getElementById('textContent').value;
-            const size = parseInt(document.getElementById('textSize').value) || 35; // 默认 35
+            const size = parseInt(document.getElementById('textSize').value) || 35;
             const color = document.getElementById('textColor').value;
             const align = document.getElementById('textAlign').value;
-            // 修改：获取粗体状态
             const isBold = document.getElementById('textBold').checked;
             const w = parseInt(document.getElementById('textW').value) || 4;
             const h = parseInt(document.getElementById('textH').value) || 1;
@@ -383,7 +370,7 @@
                     fontSize: size,
                     color,
                     textAlign: align,
-                    fontWeight: isBold ? 'bold' : 'normal' // 修改：增加粗体
+                    fontWeight: isBold ? 'bold' : 'normal'
                 }
             };
         } else if (type === 'var') {
@@ -434,7 +421,14 @@
             div.style.fontSize = `${el.style?.fontSize || 12}px`;
             div.style.color = el.style?.color || '#000';
             div.style.textAlign = el.style?.textAlign || 'center';
-            div.style.fontWeight = el.style?.fontWeight || 'normal'; // 修改：应用粗体
+            div.style.fontWeight = el.style?.fontWeight || 'normal';
+            
+            // 修复：动态设置 justifyContent 以实现对齐
+            const align = el.style?.textAlign || 'center';
+            if (align === 'left') div.style.justifyContent = 'flex-start';
+            else if (align === 'right') div.style.justifyContent = 'flex-end';
+            else div.style.justifyContent = 'center';
+
             div.innerHTML = renderElementContent(el);
 
             div.onmousedown = (e) => startDrag(e, el);
@@ -546,7 +540,6 @@
             if (el.type === 'text') {
                 propHtml += `<div class="control-group"><label>内容</label><textarea rows="3" onchange="updateElementContent(${el.id}, this.value)">${el.content}</textarea></div>`;
                 
-                // 修改：添加粗体开关
                 const isBold = el.style?.fontWeight === 'bold';
                 propHtml += `<div class="control-group" style="display:flex; align-items:center; justify-content:space-between;">
                     <label style="margin-bottom:0;">粗体</label>
@@ -650,33 +643,36 @@
     function initModeSwitch() {
         document.querySelectorAll('.mode-btn').forEach(btn => {
             btn.onclick = () => {
+                // 修复：统一的按钮点击处理逻辑
                 const mode = btn.dataset.mode;
                 
-                // 特殊处理 palette (选色) 模式
+                // 1. 重置所有按钮状态
+                document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+                // 2. 激活当前按钮
+                btn.classList.add('active');
+
+                // 3. 设置逻辑状态
                 if (mode === 'palette') {
-                    // 选色模式下，本质上也是 select 模式（可以拖动元素），但要显示调色板
+                    // 选色模式本质上也是 select（可拖动元素），但需要显示调色板
                     state.currentMode = 'select';
-                    updateModeButtons();
-                    // 强制高亮“选色”按钮，取消“选择”按钮的高亮（视觉上）
-                    document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
-                    btn.classList.add('active');
-                    
-                    // 显示面板
-                    updatePanels();
-                    // 强制显示 paint panel，因为 updatePanels 可能会根据 currentMode=select 隐藏它
-                    document.getElementById('panel-paint').style.display = 'block';
                 } else {
                     state.currentMode = mode;
-                    updateModeButtons();
-                    updatePanels();
                 }
+                
+                // 4. 更新界面
+                updatePanels();
             };
         });
     }
 
     function updateModeButtons() {
+        // 这个函数现在主要用于初始化或外部强制刷新状态
+        // 按钮状态主要由 onclick 逻辑直接控制，这里做兜底同步
         document.querySelectorAll('.mode-btn').forEach(btn => {
-            // 如果是 palette 模式按钮，其状态由点击逻辑单独处理，这里主要处理标准模式
+            // 如果是 palette，且我们在 select 模式且调色板显示，则高亮
+            // 否则如果 mode 匹配，则高亮
+            // 为了简化，这里不做复杂判断，依赖点击事件。
+            // 仅当处于非 palette 状态时，根据 currentMode 高亮
             if (btn.dataset.mode !== 'palette') {
                 btn.classList.toggle('active', btn.dataset.mode === state.currentMode);
             }
@@ -684,15 +680,12 @@
     }
 
     function updatePanels() {
-        // 标准逻辑：根据 currentMode 显示对应面板
-        // 但由于 palette 也是 select 模式的一种变体，需要特殊处理
-        
-        // 默认隐藏所有功能面板
+        // 隐藏所有特定面板
         document.getElementById('panel-paint').style.display = 'none';
         document.getElementById('panel-text').style.display = 'none';
         document.getElementById('panel-var').style.display = 'none';
         
-        // 检查是否手动触发了 palette (通过按钮 active 状态判断)
+        // 检查 palette 按钮是否激活 (通过 class 判断，因为按钮状态由 onclick 统一管理)
         const paletteBtn = document.querySelector('.mode-btn[data-mode="palette"]');
         const isPaletteActive = paletteBtn.classList.contains('active');
 
@@ -702,13 +695,18 @@
             document.getElementById('panel-text').style.display = 'block';
         } else if (state.currentMode === 'add-var') {
             document.getElementById('panel-var').style.display = 'block';
-        } else if (state.currentMode === 'select') {
-             // 纯粹的 select 模式不显示 paint panel，除非通过 palette 按钮
-             document.getElementById('panel-paint').style.display = 'none';
         }
 
-        if (state.currentMode !== 'select' && !isPaletteActive) {
+        // 如果不是编辑模式，或者没选中元素，隐藏属性面板
+        if (state.appMode !== 'edit' || !state.selectedElementId) {
             document.getElementById('panel-properties').style.display = 'none';
+        } else {
+            // 如果选中了元素，确保属性面板显示（除非在特殊放置模式下，但通常放置完会切回 select）
+            if (state.currentMode === 'select' || isPaletteActive) {
+                 document.getElementById('panel-properties').style.display = 'block';
+            } else {
+                 document.getElementById('panel-properties').style.display = 'none';
+            }
         }
     }
 
@@ -754,7 +752,11 @@
         window.pendingVarKey = key;
         state.pendingBlockType = null;
         state.currentMode = 'add-var';
-        updateModeButtons();
+        
+        // 切换按钮状态到“数据”
+        document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+        document.querySelector('.mode-btn[data-mode="add-var"]').classList.add('active');
+        
         updatePanels();
         document.querySelectorAll('.var-list button').forEach(btn => btn.classList.remove('active'));
         if(event && event.target) event.target.classList.add('active');
@@ -764,7 +766,11 @@
         state.pendingBlockType = blockType;
         window.pendingVarKey = null;
         state.currentMode = 'add-var';
-        updateModeButtons();
+
+        // 切换按钮状态到“数据”
+        document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+        document.querySelector('.mode-btn[data-mode="add-var"]').classList.add('active');
+
         updatePanels();
         document.querySelectorAll('.var-list button').forEach(btn => btn.classList.remove('active'));
         if(event && event.target) event.target.classList.add('active');
@@ -793,12 +799,10 @@
             state.isPainting = false;
         });
 
-        // 修改：监听涂色开关 (原 dragPaintSwitch)
         const paintSwitch = document.getElementById('paintModeSwitch');
         paintSwitch.addEventListener('change', function() {
             state.paintModeEnabled = this.checked;
             const canvas = document.getElementById('gridCanvas');
-            // 开启时给画布加上锁定滑动的 class
             canvas.classList.toggle('locked-swipe', state.paintModeEnabled);
         });
     }
