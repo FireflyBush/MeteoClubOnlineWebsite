@@ -29,14 +29,14 @@ body {
 /* 修改：工具栏区域居中，统一限制高度，防止遮挡工作区 */
 .builder-sidebar {
     width: 100%;
-    background: #f5f5f5;
+    background: #eef2f6;
     border-top: 1px solid rgba(0,0,0,0.05);
     padding: 15px;
     overflow-y: auto;
     flex-shrink: 0;
     max-height: 40vh;
     align-self: center;
-    max-width: 900px;
+    max-width: 1000px;
     /* Grid 布局 + Order 控制 */
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -44,7 +44,6 @@ body {
     gap: 15px;
     align-items: start;
     justify-items: center;
-    box-shadow: 0 -4px 10px rgba(0,0,0,0.05);
     z-index: 10;
 }
 
@@ -183,7 +182,7 @@ body {
     margin-top: 15px;
     padding-top: 10px;
     border-top: 1px solid rgba(0,0,0,0.05);
-    font-size: 11px;
+    font-size: 12px;
     color: #666;
     line-height: 1.5;
 }
@@ -191,12 +190,8 @@ body {
 /* 调色板通用 */
 .color-palette, .color-palette-mini {
     display: grid;
-    grid-template-columns: repeat(8, 1fr);
+    grid-template-columns: repeat(12, 1fr);
     gap: 6px;
-}
-
-.color-palette-mini {
-    gap: 4px;
 }
 
 .color-swatch {
@@ -272,7 +267,7 @@ body {
     background: rgba(255,255,255,0.5);
     border: 1px solid transparent;
     border-radius: 4px;
-    font-size: 11px;
+    font-size: 12px;
     cursor: pointer;
     color: #444;
 }
@@ -427,13 +422,13 @@ body {
     box-shadow: 0 4px 20px rgba(0,0,0,0.15);
     padding: 10px;
     z-index: 100;
-    margin-bottom: 5px;
-    max-height: 300px;
+    margin-bottom: -225px;
+    max-height: 150px;
     overflow-y: auto;
 }
 
 .var-section-title {
-    font-size: 11px;
+    font-size: 12px;
     color: #888;
     font-weight: bold;
     margin-bottom: 5px;
@@ -523,7 +518,7 @@ body {
     justify-content: center;
     align-items: center;
     text-align: center;
-    font-size: 11px;
+    font-size: 12px;
     color: #555;
 }
 
