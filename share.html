@@ -37,53 +37,114 @@
     <div class="builder-container">
         <!-- 左侧工具栏 -->
         <aside class="builder-sidebar">
-            <div class="tool-panel">
-                <h4>🛠️ 操作模式</h4>
+            
+            <!-- 合并面板：操作模式 + 分享提示 (Order 1) -->
+            <div class="tool-panel panel-general" style="order: 1;">
+                <h4>🛠️ 操作与分享</h4>
+                
+                <!-- 上部分：操作模式 -->
                 <div class="mode-switch">
-                    <button class="mode-btn active" data-mode="paint">🎨 涂色</button>
+                    <button class="mode-btn" data-mode="palette">🎨 选色</button>
                     <button class="mode-btn" data-mode="add-text">📝 文本</button>
-                    <button class="mode-btn" data-mode="add-var">📊 数据</button>
-                    <button class="mode-btn" data-mode="select">🖱️ 选择</button>
+                    <button class="mode-btn active" data-mode="select">🖱️ 选择</button>
+                </div>
+
+                <!-- 分隔线 -->
+                <div class="panel-divider"></div>
+
+                <!-- 下部分：分享与设置 -->
+                <div class="control-group">
+                    <label>网格高度 (16-64)</label>
+                    <input type="number" id="gridHeightInput" value="16" min="16" max="64">
+                </div>
+                
+                <div class="control-group" style="margin-bottom: 10px;">
+                    <label>作者署名</label>
+                    <input type="text" id="authorName" placeholder="留下你的名字">
+                </div>
+
+                <button class="action-btn primary" onclick="generateShareLink()">🔗 生成分享链接</button>
+                
+                <div class="tips-area">
+                    <strong>💡 提示：</strong><br>
+                    1. 选色模式：点击画布填色<br>
+                    2. 文本模式：输入内容，点“🧩”插入变量，放置到网格<br>
+                    3. 选择模式：拖动元素调整位置
                 </div>
             </div>
 
-            <div class="tool-panel" id="panel-paint">
-                <h4>🎨 选择方块</h4>
+            <!-- 选色面板 (Order 2) -->
+            <div class="tool-panel panel-palette" id="panel-paint" style="order: 2; display:none;">
+                <h4>🎨 选择颜色</h4>
                 <div class="color-palette" id="colorPalette"></div>
-				
-				                <!-- 新增：拖拽涂色开关 -->
+                
                 <div class="control-group drag-paint-toggle" style="margin-top:12px; display:flex; align-items:center; justify-content:space-between;">
-                    <label style="margin-bottom:0; cursor:pointer;" for="dragPaintSwitch">🖌️ 拖拽涂色</label>
+                    <label style="margin-bottom:0; cursor:pointer;" for="paintModeSwitch">🎨 涂色开关</label>
                     <label class="switch">
-                        <input type="checkbox" id="dragPaintSwitch">
+                        <input type="checkbox" id="paintModeSwitch">
                         <span class="slider"></span>
                     </label>
                 </div>
                 <p style="font-size:11px; color:#888; margin-top:4px; line-height:1.4;">
-                    开启后可长按拖动连续涂色（手机端将锁定画布滑动）；关闭后可正常滑动挪动视角。
+                    开启后可点击或拖动在网格上涂色（此时无法移动画布）；关闭后可正常拖动画布调整视野。
                 </p>
-				
-                <div class="control-group" style="margin-top:10px;">
-                    <label>网格高度 (行数 16-64)</label>
-                    <input type="number" id="gridHeightInput" value="16" min="16" max="64">
-                </div>
-                <button class="action-btn secondary" onclick="clearGrid()">🗑️ 清空画布</button>
+                
+                <button class="action-btn secondary" onclick="clearGrid()" style="margin-top:15px;">🗑️ 清空画布</button>
             </div>
 
-            <div class="tool-panel" id="panel-text" style="display:none;">
-                <h4>📝 添加文本框</h4>
-                <div class="control-group">
-                    <label>内容 (支持 {变量})</label>
-                    <textarea id="textContent" rows="3" placeholder="例如：当前温度 {realtime.temp}°C"></textarea>
-                </div>
-                <div class="control-group">
-                    <label>字号</label>
-                    <input type="number" id="textSize" value="14" min="8" max="48">
-                </div>
+            <!-- 文本面板 (Order 3) -->
+            <div class="tool-panel panel-text" id="panel-text" style="order: 3; display:none;">
+                <h4>📝 添加文本/板块</h4>
+                
                 <div class="control-group">
                     <label>文字颜色</label>
-                    <input type="color" id="textColor" value="#000000">
+                    <div class="color-palette-mini" id="textColorPalette"></div>
                 </div>
+
+                <div class="control-group" style="position: relative;">
+                    <label>内容 (支持变量)</label>
+                    <div style="position: relative;">
+                        <textarea id="textContent" rows="3" placeholder="例如：今日天气："></textarea>
+                        
+                        <!-- 变量与板块按钮组 -->
+                        <div class="input-action-btns">
+                            <button type="button" class="insert-var-btn" onclick="toggleVarMenu()" title="插入变量">🧩</button>
+                            <!-- 新增：板块按钮 -->
+                            <button type="button" class="insert-var-btn" onclick="placeSpecialBlock('warning')" title="添加预警信息">⚠️</button>
+                            <button type="button" class="insert-var-btn" onclick="placeSpecialBlock('rain')" title="添加降雨预报">🌧️</button>
+                        </div>
+                        
+                        <div id="varMenu" class="var-menu" style="display: none;">
+                            <div class="var-section-title">实况数据</div>
+                            <div class="var-list-mini" id="varMenuRealtime"></div>
+                            
+                            <div class="var-section-title" style="margin-top:10px;">
+                                预报数据 
+                                <select id="varMenuDaySelect" style="width: auto; font-size: 11px; padding: 2px; margin-left: 5px;" onchange="updateVarMenuForecast()">
+                                    <option value="0">+1天</option>
+                                    <option value="1">+2天</option>
+                                    <option value="2">+3天</option>
+                                </select>
+                            </div>
+                            <div class="var-list-mini" id="varMenuForecast"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="control-group" style="display:flex; gap:10px;">
+                    <div style="flex:1;">
+                        <label>字号</label>
+                        <input type="number" id="textSize" value="35" min="8" max="72">
+                    </div>
+                    <div style="flex:1; display:flex; flex-direction:column; justify-content:flex-end; padding-bottom:2px;">
+                        <label>粗体</label>
+                        <label class="switch">
+                            <input type="checkbox" id="textBold">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                </div>
+
                 <div class="control-group">
                     <label>对齐方式</label>
                     <select id="textAlign">
@@ -92,55 +153,24 @@
                         <option value="right">右对齐</option>
                     </select>
                 </div>
+
                 <div class="control-group">
                     <label>尺寸 (格数)</label>
                     <div style="display:flex; gap:5px;">
-                        <input type="number" id="textW" value="4" min="1" max="16" placeholder="宽">
-                        <input type="number" id="textH" value="1" min="1" max="20" placeholder="高">
+                        <input type="number" id="textW" value="6" min="1" max="16" placeholder="宽">
+                        <input type="number" id="textH" value="2" min="1" max="20" placeholder="高">
                     </div>
                 </div>
                 <button class="action-btn primary" onclick="confirmAddText()">✅ 放置文本</button>
             </div>
-
-            <div class="tool-panel" id="panel-var" style="display:none;">
-                <h4>📊 插入数据元素</h4>
-                <p style="font-size:11px; color:#666; margin-bottom:8px;">点击变量或板块将其放置在网格中</p>
-                
-                <h5 style="font-size:12px; margin:8px 0 4px 0; color:#555;">实况数据</h5>
-                <div class="var-list" id="varListRealtime"></div>
-                
-                <h5 style="font-size:12px; margin:10px 0 4px 0; color:#555;">预报数据 (相对日期)</h5>
-                <div class="control-group">
-                    <label>选择日期 (<span id="forecastDayLabel">今天</span>)</label>
-                    <input type="range" id="forecastDayRange" min="0" max="9" value="0" oninput="updateForecastVars()">
-                </div>
-                <div class="var-list" id="varListForecast"></div>
-
-                <h5 style="font-size:12px; margin:10px 0 4px 0; color:#555;">数据板块</h5>
-                <div class="var-list" id="varListBlock"></div>
-            </div>
-
-            <div class="tool-panel" id="panel-properties" style="display:none; border-left: 4px solid #007bff;">
+            
+            <!-- 属性面板 (Order 4) -->
+            <div class="tool-panel panel-properties" id="panel-properties" style="order: 4; display:none; border-left: 4px solid #007bff;">
                 <h4>⚙️ 属性编辑</h4>
                 <div id="propContent"></div>
                 <button class="action-btn danger" onclick="deleteSelected()">🗑️ 删除元素</button>
             </div>
 
-            <div style="margin-top:auto;">
-                <div class="control-group" style="margin-bottom: 10px;">
-                    <label>作者署名</label>
-                    <input type="text" id="authorName" placeholder="留下你的名字">
-                </div>
-                <button class="action-btn primary" onclick="generateShareLink()">🔗 生成分享链接</button>
-            </div>
-            
-            <div class="tool-panel" style="margin-top:10px; font-size:11px; color:#666;">
-                <strong>💡 提示：</strong><br>
-                1. 涂色模式：点击网格填色<br>
-                2. 文本/数据模式：设置后点网格放置<br>
-                3. 选择模式：拖动元素调整位置<br>
-                4. 变量格式：<code>{realtime.temp}</code>
-            </div>
         </aside>
 
         <!-- 工作区 -->

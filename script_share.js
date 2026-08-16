@@ -6,46 +6,57 @@
     const MAX_GRID_HEIGHT = 64;
     const MIN_GRID_HEIGHT = 16;
 
+    // 颜色映射表 (1-32)
+    const COLOR_MAP = [
+        '#F20C0C', '#F27F0C', '#F2F20C', '#7FF20C', 
+        '#0CF20C', '#0CF27F', '#0CF2F2', '#0C7FF2', 
+        '#0C0CF2', '#7F0CF2', '#F20CF2', '#F20C7F', 
+        '#E0592C', '#E0B32C', '#B3E02C', '#59E02C', 
+        '#2CE059', '#2CE0B3', '#2CB3E0', '#2C59E0', 
+        '#592CE0', '#B32CE0', '#E02CB3', '#E02C59', 
+        '#000000', '#242424', '#484848', '#6D6D6D', 
+        '#919191', '#B6B6B6', '#DADADA', '#FFFFFF'
+    ];
+
+    const DEFAULT_BLOCK_INDEX = 31; // 纯白
+
     const state = {
         gridWidth: 16,
         gridHeight: 16,
         cells: [],
         elements: [],
-        selectedBlock: 0,
-        currentMode: 'paint',
+        selectedBlock: DEFAULT_BLOCK_INDEX,
+        currentMode: 'select',
         selectedElementId: null,
-        pendingBlockType: null,
+        pendingBlockType: null, // 'text', 'warning', 'rain'
         appMode: 'preview',
         realData: null,
         author: '',
         isPainting: false,
-        dragPaintEnabled: false, // 新增：记录开关状态
-        blocks: Array.from({length: 32}, (_, i) => ({
-            name: `方块${i + 1}`,
-            file: `${(i + 1).toString().padStart(2, '0')}.png`
-        }))
+        paintModeEnabled: false,
+        blocks: COLOR_MAP.map((hex, i) => ({
+            id: i,
+            name: `颜色${i + 1}`,
+            color: hex,
+            file: ''
+        })),
+        // 当前选中的文本颜色（索引），默认黑色(索引24)
+        selectedTextColorIndex: 24 
     };
 
-
-
     const realtimeVars = [
-        { key: 'realtime.temp', label: '温度 (°C)' },
+        { key: 'realtime.temp', label: '温度' },
         { key: 'realtime.feelsLike', label: '体感温度' },
-        { key: 'realtime.humidity', label: '湿度 (%)' },
+        { key: 'realtime.humidity', label: '湿度' },
         { key: 'realtime.wind', label: '风速' },
         { key: 'realtime.updateTime', label: '更新时间' }
     ];
 
     const forecastVarDefs = [
         { key: 'date', label: '日期' },
-        { key: 'highTemp', label: '最高温 (°C)' },
-        { key: 'lowTemp', label: '最低温 (°C)' },
+        { key: 'highTemp', label: '最高温' },
+        { key: 'lowTemp', label: '最低温' },
         { key: 'weather', label: '天气描述' }
-    ];
-
-    const blockVars = [
-        { key: 'rainBlock', label: '🌧️ 降雨预报板块' },
-        { key: 'alertBlock', label: '⚠️ 预警信息板块' }
     ];
 
     // ==================== API 与数据处理 ====================
@@ -55,7 +66,9 @@
     const BASE_URL_ALARM = "https://weather.121.com.cn/data_cache/szWeather/alarm/szAlarm.js";
     const BASE_URL_RAIN = "https://wx.121.com.cn/Mobile/LdService/position?latitude=22.552188&longitude=114.025106&sign=1e86faea84f8574f155c9e485ed4710e";
 
-    const WARNING_LEVEL_PRIORITY = { 'hongse': 5, 'chengse': 4, 'huangse': 3, 'leidian': 3, 'ganhan': 3, 'lanse': 2, 'baisse': 1 };
+    const WARNING_LEVEL_PRIORITY = {
+        'hongse': 5, 'chengse': 4, 'huangse': 3, 'leidian': 3, 'ganhan': 3, 'lanse': 2, 'baisse': 1
+    };
 
     function extractObserveTime(dataTime) {
         if (!dataTime) return 'N/A';
@@ -86,7 +99,8 @@
         let typeBestAlarm = {};
         alarms.forEach(alarm => {
             let icon = alarm.icon || '';
-            let level = 0, alarmType = 'unknown';
+            let level = 0;
+            let alarmType = 'unknown';
             for (let key in WARNING_LEVEL_PRIORITY) {
                 if (icon.includes(key)) {
                     level = WARNING_LEVEL_PRIORITY[key];
@@ -94,7 +108,8 @@
                     break;
                 }
             }
-            alarm._level = level; alarm._type = alarmType;
+            alarm._level = level;
+            alarm._type = alarmType;
             if (!typeBestAlarm[alarmType] || level > typeBestAlarm[alarmType]._level) {
                 typeBestAlarm[alarmType] = alarm;
             }
@@ -117,7 +132,6 @@
         const URL_FORECAST = `${BASE_URL_FORECAST}?_=${ts}`;
         const URL_ALARM = `${BASE_URL_ALARM}?_=${ts}`;
         const URL_RAIN = CORS_PROXY + encodeURIComponent(BASE_URL_RAIN + "&_=" + ts);
-
         state.realData = { realtime: {}, forecast: [], alarm: null, rain: null };
 
         $.getScript(URL_FORECAST, function() {
@@ -153,7 +167,7 @@
                 wind: wind || 'N/A',
                 updateTime: extractObserveTime(rainData.dataTime)
             };
-            state.realData.rain = rainData;
+            state.realData.rain = rainData; 
             renderElements();
         }).fail(function() { console.warn("实况数据获取失败"); });
     }
@@ -161,8 +175,8 @@
     // ==================== 初始化 ====================
     function init() {
         initColorPalette();
+        initTextColorPalette();
         initModeSwitch();
-        initVarLists();
         initEventListeners();
 
         const urlParams = new URLSearchParams(window.location.search);
@@ -195,6 +209,9 @@
             editBtn.style.display = 'none';
             exitBtn.style.display = 'flex';
             document.getElementById('gridCanvas').classList.remove('view-only');
+            state.paintModeEnabled = false;
+            document.getElementById('paintModeSwitch').checked = false;
+            document.getElementById('gridCanvas').classList.remove('locked-swipe');
             renderElements();
         } else if (mode === 'view') {
             editBtn.style.display = 'none';
@@ -204,7 +221,6 @@
             renderElements();
         }
 
-        // 控制作者署名的显示
         if (mode === 'edit') {
             authorDisplay.style.display = 'none';
         } else {
@@ -218,36 +234,54 @@
         }
     }
 
-    // ==================== 方块面板 ====================
+    // ==================== 颜色面板 ====================
     function initColorPalette() {
         const palette = document.getElementById('colorPalette');
         palette.innerHTML = '';
         state.blocks.forEach((block, index) => {
             const swatch = document.createElement('div');
-            swatch.className = 'color-swatch' + (index === 0 ? ' active' : '');
-            // 这里的 block.svg 改为 block.file
-            swatch.style.backgroundImage = `url(${CDN_BASE}/data/blocks/${block.file})`;
+            swatch.className = 'color-swatch' + (index === state.selectedBlock ? ' active' : '');
+            swatch.style.backgroundColor = block.color;
             swatch.title = block.name;
             swatch.onclick = () => selectColor(index);
             palette.appendChild(swatch);
         });
     }
 
-
     function selectColor(index) {
         state.selectedBlock = index;
-        document.querySelectorAll('.color-swatch').forEach((el, i) => {
+        document.querySelectorAll('#colorPalette .color-swatch').forEach((el, i) => {
+            el.classList.toggle('active', i === index);
+        });
+    }
+
+    function initTextColorPalette() {
+        const palette = document.getElementById('textColorPalette');
+        palette.innerHTML = '';
+        state.blocks.forEach((block, index) => {
+            const swatch = document.createElement('div');
+            swatch.className = 'color-swatch' + (index === state.selectedTextColorIndex ? ' active' : '');
+            swatch.style.backgroundColor = block.color;
+            swatch.title = block.name;
+            swatch.onclick = () => selectTextColor(index);
+            palette.appendChild(swatch);
+        });
+    }
+
+    function selectTextColor(index) {
+        state.selectedTextColorIndex = index;
+        document.querySelectorAll('#textColorPalette .color-swatch').forEach((el, i) => {
             el.classList.toggle('active', i === index);
         });
     }
 
     // ==================== 网格系统 ====================
-    function initGrid() { 
-        // 初始化全为 0 号方块
+    function initGrid() {
         if (state.cells.length !== state.gridWidth * state.gridHeight) {
-            state.cells = new Array(state.gridWidth * state.gridHeight).fill(0);
+            state.cells = new Array(state.gridWidth * state.gridHeight).fill(DEFAULT_BLOCK_INDEX);
+            state.elements = [];
         }
-        renderGrid(); 
+        renderGrid();
     }
 
     function renderGrid() {
@@ -264,45 +298,36 @@
             const cell = document.createElement('div');
             cell.className = 'grid-cell';
             cell.dataset.index = i;
-            const blockIndex = state.cells[i] !== undefined ? state.cells[i] : 0;
+            const blockIndex = state.cells[i] !== undefined ? state.cells[i] : DEFAULT_BLOCK_INDEX;
             const block = state.blocks[blockIndex];
             if (block) {
-                cell.style.backgroundImage = `url(${CDN_BASE}/data/blocks/${block.file})`;
-                cell.style.backgroundSize = 'cover';
-                cell.classList.add('filled');
+                cell.style.backgroundColor = block.color;
             }
-            
-            // 按下事件
+
             cell.onpointerdown = (e) => {
                 if (state.appMode !== 'edit') return;
-                
-                if (state.currentMode === 'paint') {
-                    // 只有开启了拖拽涂色，才阻止默认行为并记录拖拽状态
-                    if (state.dragPaintEnabled) {
+                if (state.currentMode === 'add-text') {
+                    handleCellClick(i);
+                } else {
+                    if (state.paintModeEnabled) {
                         e.preventDefault();
                         state.isPainting = true;
+                        paintCell(i);
                     }
-                    paintCell(i); // 无论是否开启，单击都会涂色
-                } else {
-                    handleCellClick(i);
                 }
             };
 
-            // 拖拽进入事件
             cell.onpointerenter = () => {
-                // 只有开启了拖拽涂色且正在按压时，才连续涂色
-                if (state.dragPaintEnabled && state.isPainting && state.currentMode === 'paint') {
+                if (state.paintModeEnabled && state.isPainting) {
                     paintCell(i);
                 }
             };
 
             layerBg.appendChild(cell);
         }
-
         renderElements();
     }
 
-    // 新增：抽离的涂色执行函数
     function paintCell(index) {
         state.cells[index] = state.selectedBlock;
         const cells = document.querySelectorAll('.grid-cell');
@@ -310,45 +335,44 @@
         if(cell) {
             const block = state.blocks[state.selectedBlock];
             if (block) {
-                cell.style.backgroundImage = `url(${CDN_BASE}/data/blocks/${block.file})`;
-                cell.style.backgroundSize = 'cover';
-                cell.classList.add('filled');
+                cell.style.backgroundColor = block.color;
             }
         }
     }
 
-
     function handleCellClick(index) {
         if (state.appMode !== 'edit') return;
-        if (state.currentMode === 'paint') {
-            state.cells[index] = state.selectedBlock;
-            // 局部更新提升性能
-            const cells = document.querySelectorAll('.grid-cell');
-            const cell = cells[index];
-            if(cell) {
-                const block = state.blocks[state.selectedBlock];
-                if (block) {
-                    // 这里的 block.svg 改为 block.file
-                    cell.style.backgroundImage = `url(${CDN_BASE}/data/blocks/${block.file})`;
-                    cell.style.backgroundSize = 'cover';
-                    cell.classList.add('filled');
-                }
+        if (state.currentMode === 'add-text') {
+            if (state.pendingBlockType && state.pendingBlockType !== 'text') {
+                placeElementAtCell(index, state.pendingBlockType);
+            } else {
+                placeElementAtCell(index, 'text');
             }
-        }
- else if (state.currentMode === 'add-text') placeElementAtCell(index, 'text');
-        else if (state.currentMode === 'add-var') {
-            if (window.pendingVarKey) placeElementAtCell(index, 'var');
-            else if (state.pendingBlockType) placeElementAtCell(index, 'block');
         }
     }
 
     function clearGrid() {
         if (confirm('确定要清空整个画布吗？')) {
-            state.cells = new Array(state.gridWidth * state.gridHeight).fill(0);
+            state.cells = new Array(state.gridWidth * state.gridHeight).fill(DEFAULT_BLOCK_INDEX);
             state.elements = [];
             renderGrid();
         }
     }
+
+    // ==================== 特殊板块放置 ====================
+    window.placeSpecialBlock = function(type) {
+        document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+        document.querySelector('.mode-btn[data-mode="add-text"]').classList.add('active');
+        
+        state.currentMode = 'add-text';
+        state.pendingBlockType = type;
+        
+        const typeName = type === 'warning' ? '预警信息' : '降雨预报';
+        const sizeStr = type === 'warning' ? '建议 4x4' : '建议 8x4';
+        alert(`已选择“${typeName}”板块，请点击网格放置。\n推荐尺寸：${sizeStr}。`);
+        
+        updatePanels();
+    };
 
     // ==================== 元素系统 ====================
     function placeElementAtCell(cellIndex, type) {
@@ -356,53 +380,95 @@
         const y = Math.floor(cellIndex / state.gridWidth);
         let element;
 
+        console.log(`[DEBUG] Placing element type: ${type} at ${x},${y}`);
+
         if (type === 'text') {
             const content = document.getElementById('textContent').value;
-            const size = parseInt(document.getElementById('textSize').value) || 14;
-            const color = document.getElementById('textColor').value;
-            const textAlign = document.getElementById('textAlign').value;
-            const w = parseInt(document.getElementById('textW').value) || 4;
-            const h = parseInt(document.getElementById('textH').value) || 1;
+            const size = parseInt(document.getElementById('textSize').value) || 35;
+            const align = document.getElementById('textAlign').value;
+            const isBold = document.getElementById('textBold').checked;
+            const colorHex = state.blocks[state.selectedTextColorIndex]?.color || '#000000';
+            
+            const w = Math.max(1, parseInt(document.getElementById('textW').value) || 4);
+            const h = Math.max(1, parseInt(document.getElementById('textH').value) || 1);
+
             if (!content.trim()) { return; }
-            element = { id: Date.now(), type: 'text', x, y, w, h, content, style: { fontSize: size, color, textAlign } };
-        } else if (type === 'var') {
-            const varKey = window.pendingVarKey;
-            if (!varKey) { return; }
-            element = { id: Date.now(), type: 'var', x, y, w: 3, h: 1, content: `{${varKey}}`, style: { fontSize: 12, color: '#0d47a1', textAlign: 'center' } };
-            window.pendingVarKey = null;
-        } else if (type === 'block') {
-            const blockType = state.pendingBlockType;
-            if (!blockType) { return; }
-            element = { id: Date.now(), type: 'block', blockType, x, y, w: 8, h: 4, scale: 1.0, style: {} };
-            state.pendingBlockType = null;
+
+            element = {
+                id: Date.now(),
+                type: 'text',
+                x, y, w, h, content,
+                style: {
+                    fontSize: size,
+                    color: colorHex,
+                    textAlign: align,
+                    fontWeight: isBold ? 'bold' : 'normal'
+                }
+            };
+        } else if (type === 'warning' || type === 'rain') {
+            const inputW = document.getElementById('textW');
+            const inputH = document.getElementById('textH');
+            
+            const w = Math.max(1, parseInt(inputW?.value) || (type === 'warning' ? 4 : 8));
+            const h = Math.max(1, parseInt(inputH?.value) || (type === 'warning' ? 4 : 4));
+
+            console.log(`[DEBUG] Block size: ${w}x${h}`);
+
+            element = {
+                id: Date.now(),
+                type: 'block',
+                blockType: type,
+                x, y, w, h,
+                content: type === 'warning' ? '⚠️ 预警' : '🌧️ 降雨'
+            };
         }
 
         if (element) {
+            console.log('[DEBUG] Element object created:', element);
             state.elements.push(element);
             state.currentMode = 'select';
+            state.pendingBlockType = null;
             updateModeButtons();
             updatePanels();
-            document.querySelectorAll('.var-list button.active').forEach(btn => btn.classList.remove('active'));
             renderElements();
             selectElement(element.id);
+        } else {
+            console.warn('[DEBUG] Failed to create element.');
         }
     }
 
     function renderElements() {
         const layer = document.getElementById('layer-elements');
         layer.innerHTML = '';
+        
+        console.log(`[DEBUG] Rendering ${state.elements.length} elements.`);
+
         state.elements.forEach(el => {
             const div = document.createElement('div');
-            div.className = 'placed-element' + (el.id === state.selectedElementId && state.appMode === 'edit' ? ' selected' : '');
+            
+            div.className = 'placed-element';
+            if (el.id === state.selectedElementId && state.appMode === 'edit') {
+                div.classList.add('selected');
+            }
+
             div.style.left = `calc(${el.x} * var(--grid-cell-size))`;
             div.style.top = `calc(${el.y} * var(--grid-cell-size))`;
             div.style.width = `calc(${el.w} * var(--grid-cell-size))`;
             div.style.height = `calc(${el.h} * var(--grid-cell-size))`;
-            div.style.fontSize = `${el.style?.fontSize || 12}px`;
-            div.style.color = el.style?.color || '#000';
-            div.style.textAlign = el.style?.textAlign || 'center';
 
-            div.innerHTML = renderElementContent(el);
+            if (el.type === 'text') {
+                div.classList.add('el-text');
+                div.style.fontSize = `${el.style?.fontSize || 12}px`;
+                div.style.color = el.style?.color || '#000';
+                div.style.fontWeight = el.style?.fontWeight || 'normal';
+                
+                const align = el.style?.textAlign || 'center';
+                div.classList.add(`justify-${align}`);
+                div.innerHTML = renderElementContent(el);
+            } else if (el.type === 'block') {
+                div.classList.add('el-block', `${el.blockType}-block`);
+                div.innerHTML = renderElementContent(el);
+            }
 
             div.onmousedown = (e) => startDrag(e, el);
             div.onclick = (e) => {
@@ -410,15 +476,11 @@
                 if (state.appMode === 'edit') selectElement(el.id);
             };
             layer.appendChild(div);
-
-            if (el.type === 'block' && state.appMode !== 'edit' && state.realData) {
-                renderBlockIntoElement(div, el);
-            }
         });
     }
 
     function renderElementContent(el) {
-        if (el.type === 'text' || el.type === 'var') {
+        if (el.type === 'text') {
             let content = el.content || '';
             if (state.appMode !== 'edit') {
                 content = replaceVarsWithRealData(content);
@@ -427,13 +489,54 @@
                 return content.replace(/\{([^}]+)\}/g, '<span class="var-tag">{$1}</span>');
             }
         } else if (el.type === 'block') {
-            if (state.appMode === 'edit') {
-                const blockName = el.blockType === 'rainBlock' ? '🌧️ 降雨预报' : '⚠️ 预警信息';
-                return `<div style="font-size:11px; color:#666;">${blockName}<br><small>缩放：${el.scale}x</small></div>`;
+            if (el.blockType === 'warning') {
+                // 修复：使用 state.realData?.alarm?.subAlarm 而不是 state.realData?.alarm
+                const alarms = deduplicateAlarms(state.realData?.alarm?.subAlarm);
+                if (alarms && alarms.length > 0) {
+                    return alarms.map(a => `<img src="${a.icon || ''}" class="mini-warning-icon" alt="${a.title}">`).join('');
+                } else {
+                    return '<span style="font-size:10px; color:#999;">无预警</span>';
+                }
+            } else if (el.blockType === 'rain') {
+                const rainData = state.realData?.rain;
+                const rainList = Array.isArray(rainData?.rain) ? rainData.rain : [];
+                const data = rainList.length ? rainList : []; 
+
+                let barsHtml = '';
+                let timeLabelsHtml = '';
+                
+                const step = Math.ceil(data.length / 8) || 1;
+                const displayData = data.filter((_, i) => i % step === 0).slice(0, 8);
+
+                displayData.forEach((d, idx) => {
+                    const height = calcHeight(d.rain || 0); 
+                    const hasRain = (d.rain || 0) > 0;
+                    const hourStr = d.hour ? (d.hour < 10 ? `0${d.hour}:00` : `${d.hour}:00`) : '';
+                    
+                    barsHtml += `<div class="mini-rain-bar ${hasRain ? 'has-rain' : ''}" style="height: ${height}%;" title="${d.rain}mm"></div>`;
+                    if (idx % 2 === 0) {
+                        timeLabelsHtml += `<span>${hourStr}</span>`;
+                    } else {
+                        timeLabelsHtml += `<span></span>`;
+                    }
+                });
+
+                return `
+                    <div class="rain-chart-container">
+                        <div class="rain-bar-row">
+                            ${barsHtml}
+                        </div>
+                        <div class="rain-time-axis">
+                            ${timeLabelsHtml}
+                        </div>
+                    </div>
+                    <div class="rain-desc-container">
+                        未来降水
+                    </div>
+                `;
             }
-            return '';
         }
-        return el.content || '';
+        return '';
     }
 
     function replaceVarsWithRealData(content) {
@@ -443,50 +546,6 @@
             return d ? (d[key] || 'N/A') : 'N/A';
         });
         return content;
-    }
-
-    function renderBlockIntoElement(container, el) {
-        if (!state.realData) return;
-        container.innerHTML = '';
-        const innerDiv = document.createElement('div');
-        innerDiv.style.width = '100%';
-        innerDiv.style.height = '100%';
-        innerDiv.style.transform = `scale(${el.scale || 1})`;
-        innerDiv.style.transformOrigin = 'center center';
-        innerDiv.style.display = 'flex';
-        innerDiv.style.alignItems = 'center';
-        innerDiv.style.justifyContent = 'center';
-
-        if (el.blockType === 'alertBlock') {
-            let iconsHtml = '';
-            if (state.realData.alarm && state.realData.alarm.subAlarm && state.realData.alarm.subAlarm.length > 0) {
-                const deduped = deduplicateAlarms(state.realData.alarm.subAlarm);
-                deduped.forEach((alarm) => {
-                    iconsHtml += `<img src="${CDN_BASE}/data/warnings/${alarm.icon}.png" title="${alarm.str}" style="height:30px;margin:2px;">`;
-                });
-            }
-            innerDiv.innerHTML = iconsHtml ? `<div style="display:flex;flex-wrap:wrap;justify-content:center;">${iconsHtml}</div>` : `<div style="color:#666;font-size:12px;">暂无预警</div>`;
-        } else if (el.blockType === 'rainBlock') {
-            if (state.realData.rain && state.realData.rain.rain) {
-                const rainArr = state.realData.rain.rain.split(',').map(Number);
-                const heights = rainArr.map(calcHeight);
-                const hasRain = Math.max(...heights) > 3;
-                if (hasRain) {
-                    let barsHtml = '<div style="display:flex;align-items:flex-end;height:90%;gap:2px;width:100%;">';
-                    for (let i = 0; i < 30; i++) {
-                        const h = heights[i] / 90 * 100;
-                        barsHtml += `<div style="flex:1;background-color:var(--rain-blue);border-radius:2px 2px 0 0;height:${h}%;max-width:8px;"></div>`;
-                    }
-                    barsHtml += '</div>';
-                    innerDiv.innerHTML = barsHtml;
-                } else {
-                    innerDiv.innerHTML = `<div style="color:#666;font-size:12px;">无降雨</div>`;
-                }
-            } else {
-                innerDiv.innerHTML = `<div style="color:#666;font-size:12px;">无降雨数据</div>`;
-            }
-        }
-        container.appendChild(innerDiv);
     }
 
     function selectElement(id) {
@@ -502,50 +561,116 @@
         const content = document.getElementById('propContent');
         panel.style.display = 'block';
         
-        let propHtml = `<div class="control-group"><label>类型</label><div style="font-size:12px; padding:4px; background:#f0f0f0; border-radius:4px;">${el.type === 'text' ? '📝 文本框' : (el.type === 'var' ? '📊 数据变量' : '📦 数据板块')}</div></div>`;
-        propHtml += `<div class="control-group"><label>位置 (格)</label><div style="display:flex; gap:5px;"><input type="number" value="${el.x}" min="0" max="${state.gridWidth-1}" onchange="updateElementPos(${el.id}, 'x', this.value)"><input type="number" value="${el.y}" min="0" max="${state.gridHeight-1}" onchange="updateElementPos(${el.id}, 'y', this.value)"></div></div>`;
+        let propHtml = '';
+
+        let typeName = el.type === 'block' ? (el.blockType === 'warning' ? '⚠️ 预警板块' : '🌧️ 降雨板块') : '📝 文本框';
+        propHtml += `<div class="control-group"><label>类型</label><div style="font-size:12px; padding:4px; background:#f0f0f0; border-radius:4px;">${typeName}</div></div>`;
         
-        if (el.type === 'block') {
-            propHtml += `<div class="control-group"><label>缩放比例 (0.5x - 2x)</label><input type="range" min="0.5" max="2" step="0.1" value="${el.scale || 1}" oninput="updateBlockScale(${el.id}, this.value)"><div style="font-size:11px; color:#666; margin-top:2px;">当前：${(el.scale || 1).toFixed(1)}x</div></div>`;
-        } else {
-            propHtml += `<div class="control-group"><label>尺寸 (格)</label><div style="display:flex; gap:5px;"><input type="number" value="${el.w}" min="1" max="${state.gridWidth}" onchange="updateElementSize(${el.id}, 'w', this.value)"><input type="number" value="${el.h}" min="1" max="${state.gridHeight}" onchange="updateElementSize(${el.id}, 'h', this.value)"></div></div>`;
-            if (el.type === 'text') {
-                propHtml += `<div class="control-group"><label>内容</label><textarea rows="3" onchange="updateElementContent(${el.id}, this.value)">${el.content}</textarea></div>`;
+        propHtml += `<div class="control-group"><label>位置 (格)</label><div style="display:flex; gap:5px;"><input type="number" value="${el.x}" min="0" max="${state.gridWidth-1}" onchange="updateElementPos(${el.id}, 'x', this.value)"><input type="number" value="${el.y}" min="0" max="${state.gridHeight-1}" onchange="updateElementPos(${el.id}, 'y', this.value)"></div></div>`;
+        propHtml += `<div class="control-group"><label>尺寸 (格)</label><div style="display:flex; gap:5px;"><input type="number" value="${el.w}" min="1" max="${state.gridWidth}" onchange="updateElementSize(${el.id}, 'w', this.value)"><input type="number" value="${el.h}" min="1" max="${state.gridHeight}" onchange="updateElementSize(${el.id}, 'h', this.value)"></div></div>`;
+
+        if (el.type === 'text') {
+            const safeContent = (el.content || '').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+            
+            let selectOptionsHtml = '';
+            for(let i=0; i<10; i++) {
+                selectOptionsHtml += `<option value="${i}">+${i+1}天</option>`;
             }
+
+            propHtml += `
+                <div class="control-group" style="position: relative;">
+                    <label>内容 (支持变量)</label>
+                    <div style="position: relative;">
+                        <textarea id="prop-textarea-${el.id}" rows="3" onchange="updateElementContent(${el.id}, this.value)">${safeContent}</textarea>
+                        <div class="input-action-btns">
+                            <button type="button" class="insert-var-btn" onclick="togglePropVarMenu(${el.id})" title="插入变量">🧩</button>
+                        </div>
+                        <div id="prop-var-menu-${el.id}" class="var-menu" style="display: none;">
+                            <div class="var-section-title">实况数据</div>
+                            <div class="var-list-mini" id="prop-var-realtime-${el.id}"></div>
+                            <div class="var-section-title" style="margin-top:10px;">
+                                预报数据 
+                                <select id="prop-var-day-${el.id}" style="width: auto; font-size: 11px; padding: 2px; margin-left: 5px;" onchange="updatePropVarMenuForecast(${el.id})">
+                                    ${selectOptionsHtml}
+                                </select>
+                            </div>
+                            <div class="var-list-mini" id="prop-var-forecast-${el.id}"></div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            const isBold = el.style?.fontWeight === 'bold';
+            propHtml += `<div class="control-group" style="display:flex; align-items:center; justify-content:space-between;">
+                <label style="margin-bottom:0;">粗体</label>
+                <label class="switch">
+                    <input type="checkbox" onchange="updateElementStyle(${el.id}, 'fontWeight', this.checked ? 'bold' : 'normal')" ${isBold ? 'checked' : ''}>
+                    <span class="slider"></span>
+                </label>
+            </div>`;
+
             propHtml += `<div class="control-group"><label>字号</label><input type="number" value="${el.style?.fontSize || 12}" onchange="updateElementStyle(${el.id}, 'fontSize', this.value)"></div>`;
-            propHtml += `<div class="control-group"><label>颜色</label><input type="color" value="${el.style?.color || '#000000'}" onchange="updateElementStyle(${el.id}, 'color', this.value)"></div>`;
-            propHtml += `<div class="control-group"><label>对齐方式</label><select onchange="updateElementStyle(${el.id}, 'textAlign', this.value)">
-                <option value="left" ${el.style?.textAlign === 'left' ? 'selected' : ''}>左对齐</option>
-                <option value="center" ${(!el.style?.textAlign || el.style?.textAlign === 'center') ? 'selected' : ''}>居中</option>
-                <option value="right" ${el.style?.textAlign === 'right' ? 'selected' : ''}>右对齐</option>
-            </select></div>`;
+            
+            const currentColor = el.style?.color || '#000000';
+            let activeColorIndex = state.blocks.findIndex(b => b.color === currentColor);
+            if (activeColorIndex === -1) activeColorIndex = 24;
+
+            let colorGridHtml = '<div class="color-palette-mini" style="margin-top:4px;">';
+            state.blocks.forEach((block, index) => {
+                const isActive = index === activeColorIndex ? 'active' : '';
+                colorGridHtml += `<div class="color-swatch ${isActive}" 
+                                   style="background-color: ${block.color};" 
+                                   onclick="updateElementStyle(${el.id}, 'color', '${block.color}')"
+                                   title="${block.name}"></div>`;
+            });
+            colorGridHtml += '</div>';
+            propHtml += `<div class="control-group"><label>颜色</label>${colorGridHtml}</div>`;
+
+            propHtml += `<div class="control-group"><label>对齐方式</label><select onchange="updateElementStyle(${el.id}, 'textAlign', this.value)"> <option value="left" ${el.style?.textAlign === 'left' ? 'selected' : ''}>左对齐</option> <option value="center" ${(!el.style?.textAlign || el.style?.textAlign === 'center') ? 'selected' : ''}>居中</option> <option value="right" ${el.style?.textAlign === 'right' ? 'selected' : ''}>右对齐</option> </select></div>`;
         }
+        
         content.innerHTML = propHtml;
+        
+        if (el.type === 'text') {
+            initPropVarMenuContent(id);
+        }
     }
 
     function updateElementPos(id, axis, value) {
         const el = state.elements.find(e => e.id === id);
-        if (el) { el[axis] = Math.max(0, Math.min(axis === 'x' ? state.gridWidth - 1 : state.gridHeight - 1, parseInt(value) || 0)); renderElements(); }
+        if (el) {
+            el[axis] = Math.max(0, Math.min(axis === 'x' ? state.gridWidth - 1 : state.gridHeight - 1, parseInt(value) || 0));
+            renderElements();
+        }
     }
 
     function updateElementSize(id, dim, value) {
         const el = state.elements.find(e => e.id === id);
-        if (el && el.type !== 'block') { el[dim] = Math.max(1, Math.min(dim === 'w' ? state.gridWidth : state.gridHeight, parseInt(value) || 1)); renderElements(); }
+        if (el) {
+            el[dim] = Math.max(1, Math.min(dim === 'w' ? state.gridWidth : state.gridHeight, parseInt(value) || 1));
+            renderElements();
+        }
     }
 
     function updateElementContent(id, value) {
         const el = state.elements.find(e => e.id === id);
-        if (el) { el.content = value; renderElements(); }
+        if (el) {
+            el.content = value;
+            renderElements();
+        }
     }
 
     function updateElementStyle(id, prop, value) {
         const el = state.elements.find(e => e.id === id);
-        if (el) { if (!el.style) el.style = {}; el.style[prop] = prop === 'fontSize' ? parseInt(value) : value; renderElements(); }
-    }
-
-    function updateBlockScale(id, scaleValue) {
-        const el = state.elements.find(e => e.id === id);
-        if (el && el.type === 'block') { el.scale = parseFloat(scaleValue); renderElements(); showPropertiesPanel(id); }
+        if (el) {
+            if (!el.style) el.style = {};
+            el.style[prop] = prop === 'fontSize' ? parseInt(value) : value;
+            renderElements();
+            
+            if (state.selectedElementId === id && document.getElementById('panel-properties').style.display !== 'none') {
+                showPropertiesPanel(id);
+            }
+        }
     }
 
     function deleteSelected() {
@@ -577,91 +702,218 @@
         let newY = Math.round((e.clientY - rect.top - dragOffsetY) / cellSize);
         newX = Math.max(0, Math.min(state.gridWidth - dragEl.w, newX));
         newY = Math.max(0, Math.min(state.gridHeight - dragEl.h, newY));
-        dragEl.x = newX; dragEl.y = newY;
+        dragEl.x = newX;
+        dragEl.y = newY;
         renderElements();
     }
 
-    function endDrag() { dragEl = null; document.onmousemove = null; document.onmouseup = null; }
+    function endDrag() {
+        dragEl = null;
+        document.onmousemove = null;
+        document.onmouseup = null;
+    }
 
     // ==================== 模式切换 ====================
     function initModeSwitch() {
-        document.querySelectorAll('.mode-btn[data-mode]').forEach(btn => {
+        document.querySelectorAll('.mode-btn').forEach(btn => {
             btn.onclick = () => {
-                state.currentMode = btn.dataset.mode;
-                updateModeButtons();
+                const mode = btn.dataset.mode;
+                
+                document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+
+                if (mode === 'palette') {
+                    state.currentMode = 'select';
+                } else {
+                    state.currentMode = mode;
+                    state.pendingBlockType = null;
+                }
+                
                 updatePanels();
             };
         });
     }
 
     function updateModeButtons() {
-        document.querySelectorAll('.mode-btn[data-mode]').forEach(btn => {
-            btn.classList.toggle('active', btn.dataset.mode === state.currentMode);
+        document.querySelectorAll('.mode-btn').forEach(btn => {
+            if (btn.dataset.mode !== 'palette') {
+                btn.classList.toggle('active', btn.dataset.mode === state.currentMode);
+            }
         });
     }
 
     function updatePanels() {
-        document.getElementById('panel-paint').style.display = state.currentMode === 'paint' ? 'block' : 'none';
-        document.getElementById('panel-text').style.display = state.currentMode === 'add-text' ? 'block' : 'none';
-        document.getElementById('panel-var').style.display = state.currentMode === 'add-var' ? 'block' : 'none';
-        if (state.currentMode !== 'select') document.getElementById('panel-properties').style.display = 'none';
+        document.getElementById('panel-paint').style.display = 'none';
+        document.getElementById('panel-text').style.display = 'none';
+        
+        const paletteBtn = document.querySelector('.mode-btn[data-mode="palette"]');
+        const isPaletteActive = paletteBtn.classList.contains('active');
+
+        if (isPaletteActive) {
+            document.getElementById('panel-paint').style.display = 'block';
+        } else if (state.currentMode === 'add-text') {
+            document.getElementById('panel-text').style.display = 'block';
+        }
+
+        if (state.appMode !== 'edit' || !state.selectedElementId) {
+            document.getElementById('panel-properties').style.display = 'none';
+        } else {
+            if (state.currentMode === 'select' || isPaletteActive) {
+                 document.getElementById('panel-properties').style.display = 'block';
+            } else {
+                 document.getElementById('panel-properties').style.display = 'none';
+            }
+        }
     }
 
-    // ==================== 变量列表 ====================
-    function initVarLists() {
-        const realtimeList = document.getElementById('varListRealtime');
-        realtimeList.innerHTML = '';
-        realtimeVars.forEach(v => {
-            const btn = document.createElement('button');
-            btn.textContent = v.label;
-            btn.onclick = (e) => selectVar(v.key, e);
-            realtimeList.appendChild(btn);
-        });
-
-        const blockList = document.getElementById('varListBlock');
-        blockList.innerHTML = '';
-        blockVars.forEach(v => {
-            const btn = document.createElement('button');
-            btn.textContent = v.label;
-            btn.onclick = (e) => selectBlock(v.key, e);
-            blockList.appendChild(btn);
-        });
-        updateForecastVars();
+    // ==================== 变量菜单逻辑 (添加文本面板) ====================
+    function toggleVarMenu() {
+        const menu = document.getElementById('varMenu');
+        if (menu.style.display === 'none') {
+            menu.style.display = 'block';
+            initVarMenuContent();
+        } else {
+            menu.style.display = 'none';
+        }
     }
 
-    function updateForecastVars() {
-        const day = parseInt(document.getElementById('forecastDayRange').value);
-        const labels = ['今天', '明天', '后天', 'D+3', 'D+4', 'D+5', 'D+6', 'D+7', 'D+8', 'D+9'];
-        document.getElementById('forecastDayLabel').textContent = labels[day];
-        const forecastList = document.getElementById('varListForecast');
-        forecastList.innerHTML = '';
-        forecastVarDefs.forEach(v => {
-            const btn = document.createElement('button');
-            btn.textContent = `${v.label} (D+${day})`;
-            btn.onclick = (e) => selectVar(`forecast[${day}].${v.key}`, e);
-            forecastList.appendChild(btn);
-        });
+    function initVarMenuContent() {
+        const realtimeList = document.getElementById('varMenuRealtime');
+        if(realtimeList) {
+            realtimeList.innerHTML = '';
+            realtimeVars.forEach(v => {
+                const btn = document.createElement('button');
+                btn.textContent = v.label;
+                btn.onclick = () => insertText(`{${v.key}}`);
+                realtimeList.appendChild(btn);
+            });
+        }
+        
+        const daySelect = document.getElementById('varMenuDaySelect');
+        if(daySelect) {
+            const currentVal = daySelect.value;
+            daySelect.innerHTML = '';
+            for(let i=0; i<10; i++) {
+                const option = document.createElement('option');
+                option.value = i;
+                option.textContent = `+${i+1}天`;
+                daySelect.appendChild(option);
+            }
+            daySelect.value = currentVal || 0;
+        }
+
+        updateVarMenuForecast();
     }
 
-    function selectVar(key, event) {
-        window.pendingVarKey = key;
-        state.pendingBlockType = null;
-        state.currentMode = 'add-var';
-        updateModeButtons();
-        updatePanels();
-        document.querySelectorAll('.var-list button').forEach(btn => btn.classList.remove('active'));
-        if(event && event.target) event.target.classList.add('active');
+    function updateVarMenuForecast() {
+        const daySelect = document.getElementById('varMenuDaySelect');
+        if(!daySelect) return;
+        
+        const day = parseInt(daySelect.value);
+        const dayLabel = `+${day+1}天`;
+        
+        const forecastList = document.getElementById('varMenuForecast');
+        if(forecastList) {
+            forecastList.innerHTML = '';
+            forecastVarDefs.forEach(v => {
+                const btn = document.createElement('button');
+                btn.textContent = `${dayLabel} ${v.label}`;
+                btn.onclick = () => insertText(`{forecast[${day}].${v.key}}`);
+                forecastList.appendChild(btn);
+            });
+        }
     }
 
-    function selectBlock(blockType, event) {
-        state.pendingBlockType = blockType;
-        window.pendingVarKey = null;
-        state.currentMode = 'add-var';
-        updateModeButtons();
-        updatePanels();
-        document.querySelectorAll('.var-list button').forEach(btn => btn.classList.remove('active'));
-        if(event && event.target) event.target.classList.add('active');
+    window.insertText = function(text) {
+        const textarea = document.getElementById('textContent');
+        if (!textarea) return;
+        const start = textarea.selectionStart;
+        const end = textarea.selectionEnd;
+        const val = textarea.value;
+        
+        textarea.value = val.substring(0, start) + text + val.substring(end);
+        
+        textarea.selectionStart = textarea.selectionEnd = start + text.length;
+        textarea.focus();
+        
+        document.getElementById('varMenu').style.display = 'none';
+    };
+
+    // ==================== 属性面板专用变量菜单逻辑 ====================
+    window.togglePropVarMenu = function(id) {
+        const menu = document.getElementById(`prop-var-menu-${id}`);
+        if (menu.style.display === 'none') {
+            menu.style.display = 'block';
+            initPropVarMenuContent(id);
+        } else {
+            menu.style.display = 'none';
+        }
+    };
+
+    function initPropVarMenuContent(id) {
+        const realtimeList = document.getElementById(`prop-var-realtime-${id}`);
+        if(realtimeList) {
+            realtimeList.innerHTML = '';
+            realtimeVars.forEach(v => {
+                const btn = document.createElement('button');
+                btn.textContent = v.label;
+                btn.onclick = () => insertPropText(id, `{${v.key}}`);
+                realtimeList.appendChild(btn);
+            });
+        }
+
+        const daySelect = document.getElementById(`prop-var-day-${id}`);
+        if(daySelect) {
+            const currentVal = daySelect.value;
+            daySelect.innerHTML = '';
+            for(let i=0; i<10; i++) {
+                const option = document.createElement('option');
+                option.value = i;
+                option.textContent = `+${i+1}天`;
+                daySelect.appendChild(option);
+            }
+            daySelect.value = currentVal || 0;
+        }
+        
+        updatePropVarMenuForecast(id);
     }
+
+    window.updatePropVarMenuForecast = function(id) {
+        const daySelect = document.getElementById(`prop-var-day-${id}`);
+        if(!daySelect) return;
+        
+        const day = parseInt(daySelect.value);
+        const dayLabel = `+${day+1}天`;
+        
+        const forecastList = document.getElementById(`prop-var-forecast-${id}`);
+        
+        if(forecastList) {
+            forecastList.innerHTML = '';
+            forecastVarDefs.forEach(v => {
+                const btn = document.createElement('button');
+                btn.textContent = `${dayLabel} ${v.label}`;
+                btn.onclick = () => insertPropText(id, `{forecast[${day}].${v.key}}`);
+                forecastList.appendChild(btn);
+            });
+        }
+    };
+
+    window.insertPropText = function(id, text) {
+        const textarea = document.getElementById(`prop-textarea-${id}`);
+        if (!textarea) return;
+        
+        const start = textarea.selectionStart;
+        const end = textarea.selectionEnd;
+        const val = textarea.value;
+        
+        textarea.value = val.substring(0, start) + text + val.substring(end);
+        
+        textarea.selectionStart = textarea.selectionEnd = start + text.length;
+        textarea.focus();
+        
+        updateElementContent(id, textarea.value);
+        document.getElementById(`prop-var-menu-${id}`).style.display = 'none';
+    };
 
     // ==================== 事件监听 ====================
     function initEventListeners() {
@@ -670,7 +922,7 @@
             val = Math.max(MIN_GRID_HEIGHT, Math.min(MAX_GRID_HEIGHT, val));
             this.value = val;
             state.gridHeight = val;
-            state.cells = new Array(state.gridWidth * state.gridHeight).fill(0);
+            state.cells = new Array(state.gridWidth * state.gridHeight).fill(DEFAULT_BLOCK_INDEX);
             state.elements = [];
             renderGrid();
         };
@@ -679,29 +931,29 @@
             state.author = this.value;
         });
 
-        window.addEventListener('pointerup', () => { state.isPainting = false; });
-        window.addEventListener('pointercancel', () => { state.isPainting = false; });
+        window.addEventListener('pointerup', () => {
+            state.isPainting = false;
+        });
+        window.addEventListener('pointercancel', () => {
+            state.isPainting = false;
+        });
 
-        // 新增：监听拖拽涂色开关
-        const dragSwitch = document.getElementById('dragPaintSwitch');
-        dragSwitch.addEventListener('change', function() {
-            state.dragPaintEnabled = this.checked;
+        const paintSwitch = document.getElementById('paintModeSwitch');
+        paintSwitch.addEventListener('change', function() {
+            state.paintModeEnabled = this.checked;
             const canvas = document.getElementById('gridCanvas');
-            // 开启时给画布加上锁定滑动的 class
-            canvas.classList.toggle('locked-swipe', state.dragPaintEnabled);
+            canvas.classList.toggle('locked-swipe', state.paintModeEnabled);
         });
     }
 
-
-
     // ==================== 分享链接生成 ====================
     function generateShareLink() {
-        const config = { 
-            w: state.gridWidth, 
-            h: state.gridHeight, 
-            c: state.cells, 
-            e: state.elements, 
-            a: state.author || '' 
+        const config = {
+            w: state.gridWidth,
+            h: state.gridHeight,
+            c: state.cells,
+            e: state.elements,
+            a: state.author || ''
         };
         const jsonStr = JSON.stringify(config);
         const compressed = pako.gzip(jsonStr);
@@ -709,7 +961,6 @@
         for (let i = 0; i < compressed.length; i++) binary += String.fromCharCode(compressed[i]);
         const base64 = btoa(binary);
         const urlSafeBase64 = base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
-        
         const shareUrl = `${location.origin}${location.pathname}?share=${urlSafeBase64}`;
         
         navigator.clipboard.writeText(shareUrl).then(() => {
@@ -728,16 +979,12 @@
             for (let i = 0; i < binary.length; i++) compressed[i] = binary.charCodeAt(i);
             const jsonStr = pako.inflate(compressed, { to: 'string' });
             const config = JSON.parse(jsonStr);
-            
             state.gridWidth = config.w || 16;
             state.gridHeight = config.h || 16;
             state.cells = config.c || [];
             state.elements = config.e || [];
             state.author = config.a || '';
-            
-            // 回填到输入框（虽然查看模式看不到，但逻辑保持一致）
             document.getElementById('authorName').value = state.author;
-            
             initGrid();
         } catch (e) {
             console.error('加载分享配置失败:', e);
@@ -749,22 +996,22 @@
     window.setAppMode = setAppMode;
     window.clearGrid = clearGrid;
     window.generateShareLink = generateShareLink;
-    window.updateBlockScale = updateBlockScale;
     window.deleteSelected = deleteSelected;
     window.updateElementPos = updateElementPos;
     window.updateElementSize = updateElementSize;
     window.updateElementContent = updateElementContent;
     window.updateElementStyle = updateElementStyle;
-    window.updateForecastVars = updateForecastVars;
-    window.loadRealData = loadRealData;
-    
     window.confirmAddText = function() {
         const centerX = Math.floor(state.gridWidth / 2);
         const centerY = Math.floor(state.gridHeight / 2);
         const centerIndex = centerY * state.gridWidth + centerX;
         placeElementAtCell(centerIndex, 'text');
     };
+    
+    window.toggleVarMenu = toggleVarMenu;
+    window.updateVarMenuForecast = updateVarMenuForecast;
 
     // 启动
     init();
+
 })();
