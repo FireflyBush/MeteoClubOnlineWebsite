@@ -2,79 +2,159 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>气象像素涂色板</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>气象深高 - 定制分享</title>
+    <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="style_share.css">
-    <!-- 兼容配置：如果以后要切回图片模式可以在这里配 CDN_BASE -->
-    <script>window.CDN_BASE = 'https://cdn.jsdelivr.net/gh/FireflyBush/MeteoClubOnlineWebsite@2026.0816';</script>
+    <link rel="icon" href="/favicon.ico" type="image/x-icon">
+    <meta name="description" content="像《我的世界》一样搭建专属天气卡片，自由涂色、放置元素、插入数据变量。">
+    <script>
+      window.CDN_BASE = "https://cdn.jsdelivr.net/gh/FireflyBush/MeteoClubOnlineWebsite@2026.0816";
+    </script>
 </head>
-<body>
+<body class="app-mode-preview">
+
+    <!-- 顶部导航条 -->
     <nav class="top-nav">
-        <div class="nav-title">气象像素涂色板</div>
-        <div class="nav-actions">
-            <button id="modeToggleBtn" onclick="toggleEditMode()">👁️ 预览模式</button>
-            <button class="primary" onclick="generateShareLink()">🔗 生成分享链接</button>
+        <div class="nav-left">
+            <img src="https://cdn.jsdelivr.net/gh/FireflyBush/MeteoClubOnlineWebsite@2026.0816/data/icons/logo.png" alt="Logo" class="nav-logo">
+            <span class="nav-title">气象深高</span>
+        </div>
+        <div class="nav-right">
+            <a href="/index.html" class="nav-link" title="返回主页">
+                <img src="https://cdn.jsdelivr.net/gh/FireflyBush/MeteoClubOnlineWebsite@2026.0816/data/icons/home.svg" alt="主页" class="nav-icon">
+            </a>
         </div>
     </nav>
 
+    <!-- 悬浮模式切换按钮 -->
+    <button id="btn-enter-edit" class="float-btn" onclick="setAppMode('edit')">🛠️ 进入编辑模式</button>
+    <button id="btn-exit-edit" class="float-btn" onclick="setAppMode('preview')" style="display:none;">👁️ 退出编辑预览</button>
+
+    <!-- 作者署名显示 -->
+    <div id="authorDisplay" class="author-display"></div>
+
     <div class="builder-container">
-        <aside class="toolbar">
-            <div class="tool-tabs">
-                <button class="tab-btn active" data-tab="paint" onclick="switchTab('paint')">🎨 涂色</button>
-                <button class="tab-btn" data-tab="data" onclick="switchTab('data')">📊 数据</button>
-            </div>
-
-            <div class="tool-content">
-                <!-- 涂色面板 -->
-                <div class="tool-panel active" id="panel-paint">
-                    <h4>🎨 选择颜色</h4>
-                    <div class="color-palette" id="colorPalette"></div>
-                    
-                    <div class="control-group drag-paint-toggle" style="margin-top:12px; display:flex; align-items:center; justify-content:space-between;">
-                        <label style="margin-bottom:0; cursor:pointer;" for="dragPaintSwitch">🖌️ 拖拽涂色</label>
-                        <label class="switch">
-                            <input type="checkbox" id="dragPaintSwitch">
-                            <span class="slider"></span>
-                        </label>
-                    </div>
-                    <p style="font-size:11px; color:#888; margin-top:4px; line-height:1.4;">
-                        开启后可长按拖动连续涂色（手机端将锁定画布滑动）；关闭后可正常滑动挪动视角。
-                    </p>
-
-                    <div class="control-group" style="margin-top:10px;">
-                        <label>网格高度 (行数 16-64)</label>
-                        <input type="number" id="gridHeightInput" value="16" min="16" max="64">
-                    </div>
-                    <button class="action-btn secondary" onclick="clearGrid()">🗑️ 清空画布</button>
-                </div>
-
-                <!-- 数据面板 -->
-                <div class="tool-panel" id="panel-data">
-                    <h4>📊 放置数据</h4>
-                    <div class="data-tools">
-                        <button class="data-btn" onclick="setPendingBlock('rain')">🌧️ 降雨量</button>
-                        <button class="data-btn" onclick="setPendingBlock('warning')">⚠️ 预警信号</button>
-                        <button class="data-btn" onclick="setPendingBlock('text')">📝 文本</button>
-                    </div>
-                    <p style="font-size:11px; color:#888; margin-top:10px;">选择类型后，点击画布空白处放置。点击已放置的元素可编辑或删除。</p>
+        <!-- 左侧工具栏 -->
+        <aside class="builder-sidebar">
+            <div class="tool-panel">
+                <h4>🛠️ 操作模式</h4>
+                <div class="mode-switch">
+                    <button class="mode-btn active" data-mode="paint">🎨 涂色</button>
+                    <button class="mode-btn" data-mode="add-text">📝 文本</button>
+                    <button class="mode-btn" data-mode="add-var">📊 数据</button>
+                    <button class="mode-btn" data-mode="select">🖱️ 选择</button>
                 </div>
             </div>
 
-            <div class="author-input">
-                <label>作者署名</label>
-                <input type="text" id="authorName" placeholder="输入你的名字">
+            <div class="tool-panel" id="panel-paint">
+                <h4>🎨 选择方块</h4>
+                <div class="color-palette" id="colorPalette"></div>
+				
+				                <!-- 新增：拖拽涂色开关 -->
+                <div class="control-group drag-paint-toggle" style="margin-top:12px; display:flex; align-items:center; justify-content:space-between;">
+                    <label style="margin-bottom:0; cursor:pointer;" for="dragPaintSwitch">🖌️ 拖拽涂色</label>
+                    <label class="switch">
+                        <input type="checkbox" id="dragPaintSwitch">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                <p style="font-size:11px; color:#888; margin-top:4px; line-height:1.4;">
+                    开启后可长按拖动连续涂色（手机端将锁定画布滑动）；关闭后可正常滑动挪动视角。
+                </p>
+				
+                <div class="control-group" style="margin-top:10px;">
+                    <label>网格高度 (行数 16-64)</label>
+                    <input type="number" id="gridHeightInput" value="16" min="16" max="64">
+                </div>
+                <button class="action-btn secondary" onclick="clearGrid()">🗑️ 清空画布</button>
+            </div>
+
+            <div class="tool-panel" id="panel-text" style="display:none;">
+                <h4>📝 添加文本框</h4>
+                <div class="control-group">
+                    <label>内容 (支持 {变量})</label>
+                    <textarea id="textContent" rows="3" placeholder="例如：当前温度 {realtime.temp}°C"></textarea>
+                </div>
+                <div class="control-group">
+                    <label>字号</label>
+                    <input type="number" id="textSize" value="14" min="8" max="48">
+                </div>
+                <div class="control-group">
+                    <label>文字颜色</label>
+                    <input type="color" id="textColor" value="#000000">
+                </div>
+                <div class="control-group">
+                    <label>对齐方式</label>
+                    <select id="textAlign">
+                        <option value="left">左对齐</option>
+                        <option value="center" selected>居中</option>
+                        <option value="right">右对齐</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <label>尺寸 (格数)</label>
+                    <div style="display:flex; gap:5px;">
+                        <input type="number" id="textW" value="4" min="1" max="16" placeholder="宽">
+                        <input type="number" id="textH" value="1" min="1" max="20" placeholder="高">
+                    </div>
+                </div>
+                <button class="action-btn primary" onclick="confirmAddText()">✅ 放置文本</button>
+            </div>
+
+            <div class="tool-panel" id="panel-var" style="display:none;">
+                <h4>📊 插入数据元素</h4>
+                <p style="font-size:11px; color:#666; margin-bottom:8px;">点击变量或板块将其放置在网格中</p>
+                
+                <h5 style="font-size:12px; margin:8px 0 4px 0; color:#555;">实况数据</h5>
+                <div class="var-list" id="varListRealtime"></div>
+                
+                <h5 style="font-size:12px; margin:10px 0 4px 0; color:#555;">预报数据 (相对日期)</h5>
+                <div class="control-group">
+                    <label>选择日期 (<span id="forecastDayLabel">今天</span>)</label>
+                    <input type="range" id="forecastDayRange" min="0" max="9" value="0" oninput="updateForecastVars()">
+                </div>
+                <div class="var-list" id="varListForecast"></div>
+
+                <h5 style="font-size:12px; margin:10px 0 4px 0; color:#555;">数据板块</h5>
+                <div class="var-list" id="varListBlock"></div>
+            </div>
+
+            <div class="tool-panel" id="panel-properties" style="display:none; border-left: 4px solid #007bff;">
+                <h4>⚙️ 属性编辑</h4>
+                <div id="propContent"></div>
+                <button class="action-btn danger" onclick="deleteSelected()">🗑️ 删除元素</button>
+            </div>
+
+            <div style="margin-top:auto;">
+                <div class="control-group" style="margin-bottom: 10px;">
+                    <label>作者署名</label>
+                    <input type="text" id="authorName" placeholder="留下你的名字">
+                </div>
+                <button class="action-btn primary" onclick="generateShareLink()">🔗 生成分享链接</button>
+            </div>
+            
+            <div class="tool-panel" style="margin-top:10px; font-size:11px; color:#666;">
+                <strong>💡 提示：</strong><br>
+                1. 涂色模式：点击网格填色<br>
+                2. 文本/数据模式：设置后点网格放置<br>
+                3. 选择模式：拖动元素调整位置<br>
+                4. 变量格式：<code>{realtime.temp}</code>
             </div>
         </aside>
 
-        <main class="canvas-area">
-            <div class="grid-canvas" id="gridCanvas">
-                <div class="layer-bg" id="layer-bg"></div>
-                <div class="layer-overlay" id="layer-overlay"></div>
+        <!-- 工作区 -->
+        <main class="builder-workspace">
+            <div id="gridCanvas" class="grid-canvas view-only">
+                <div id="layer-bg" class="grid-bg-layer"></div>
+                <div id="layer-elements" class="elements-layer"></div>
             </div>
         </main>
     </div>
 
-    <script src="test_share.js"></script>
+    <!-- 引入依赖 -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/pako@2.1.0/dist/pako.min.js"></script>
     <script src="script_share.js"></script>
 </body>
 </html>

@@ -239,9 +239,7 @@ body {
 .grid-canvas.view-only .grid-cell { outline: none !important; }
 .grid-canvas.view-only .placed-element { border: none !important; background: transparent !important; cursor: default; }
 
-/* === 追加修复样式 === */
-
-/* 1. 拖拽涂色开关样式 */
+/* 在文件末尾追加开关样式 */
 .switch {
     position: relative;
     display: inline-block;
@@ -276,23 +274,10 @@ input:checked + .slider:before {
     transform: translateX(18px);
 }
 
-/* 2. 动态控制手机端滑动锁定 */
+/* 动态控制滑动锁定的 class */
 .grid-canvas.locked-swipe {
     touch-action: none;
 }
-
-/* 3. 修复文本元素的对齐 */
-.placed-element {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-}
-.placed-element .element-text-content {
-    width: 100%;
-    word-break: break-all;
-    display: block;
-}
-
 
 /* 响应式适配：上编辑区，下工具栏 */
 @media (max-width: 900px) {
