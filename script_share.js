@@ -405,11 +405,9 @@
                 }
             };
         } else if (type === 'warning' || type === 'rain') {
-            // 读取输入框值，如果输入框被清空或无效，则使用默认值
             const inputW = document.getElementById('textW');
             const inputH = document.getElementById('textH');
             
-            // 即使输入框隐藏，只要DOM存在就能读取
             const w = Math.max(1, parseInt(inputW?.value) || (type === 'warning' ? 4 : 8));
             const h = Math.max(1, parseInt(inputH?.value) || (type === 'warning' ? 4 : 4));
 
@@ -499,7 +497,9 @@
                 }
             } else if (el.blockType === 'rain') {
                 const rainData = state.realData?.rain;
-                const rainList = rainData && rainData.rain ? rainData.rain : [];
+                // 降雨数据通常包含 list: [ {hour: 10, rain: 0.5}, ... ] 或类似
+                // 确保rainData.rain是数组，如果不是，使用空数组
+                const rainList = Array.isArray(rainData?.rain) ? rainData.rain : [];
                 const data = rainList.length ? rainList : []; 
 
                 let barsHtml = '';
