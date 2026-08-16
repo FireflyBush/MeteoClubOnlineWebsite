@@ -23,36 +23,41 @@ body {
     -webkit-user-select: none;
 }
 
-/* 修改：工具栏区域居中，使用 Grid 实现响应式多列 */
+/* 修改：工具栏区域居中，统一限制高度，防止遮挡工作区 */
 .builder-sidebar {
     width: 100%;
     background: #f5f5f5;
-    border-top: 1px solid #ddd; /* 修改：顶部边框 */
+    border-top: 1px solid #ddd;
     padding: 15px;
-    overflow-y: auto;
+    overflow-y: auto; /* 内部允许滚动 */
     flex-shrink: 0;
+    /* 核心修复：最大高度限制为 40vh，确保工作区至少占 60vh */
+    max-height: 40vh; 
     /* 居中显示 */
     align-self: center;
     max-width: 900px;
-    /* Grid 布局：最小宽度280px，自动填充，居中对齐 */
+    /* Grid 布局 */
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
     grid-auto-rows: min-content;
     gap: 15px;
     align-items: start;
     justify-items: center;
+    /* 阴影区分层级 */
+    box-shadow: 0 -4px 10px rgba(0,0,0,0.05);
+    z-index: 10;
 }
 
 .builder-workspace {
     flex: 1;
     background: #e0e5ec;
     position: relative;
-    overflow: auto;
+    overflow: auto; /* 工作区内部滚动 */
     display: flex;
-    justify-content: center; /* 修改：画布在顶部居中 */
+    justify-content: center;
     align-items: flex-start;
     padding: 30px;
-    min-height: 300px; /* 确保工作区有最小高度 */
+    min-height: 0; /* 修复 flex 子元素溢出问题 */
 }
 
 .grid-canvas {
@@ -105,13 +110,13 @@ body {
     overflow: hidden;
     display: flex;
     align-items: center;
-    /* 修改：移除固定的 justify-content: center，由 JS 动态控制 */
+    /* JS 动态控制 */
     pointer-events: auto;
     z-index: 10;
     white-space: pre-wrap;
     word-break: break-word;
     line-height: 1.3;
-    width: 100%; /* 允许 flex 布局撑开 */
+    width: 100%;
     height: 100%;
 }
 
@@ -137,9 +142,11 @@ body {
     border: 1px solid #ddd;
     border-radius: 6px;
     padding: 10px;
-    width: 100%; /* 填满 Grid 单元格 */
+    width: 100%;
     box-sizing: border-box;
-    max-width: 320px; /* 限制最大宽度，避免在大屏上太宽 */
+    max-width: 320px;
+    /* 防止面板内容撑破 Grid */
+    overflow: hidden; 
 }
 
 .tool-panel h4 {
@@ -413,26 +420,15 @@ input:checked + .slider:before {
     touch-action: none;
 }
 
-/* 响应式微调：在小屏幕上限制侧边栏高度，避免占满屏幕 */
+/* 响应式微调 */
 @media (max-width: 900px) {
-    .builder-container {
-        /* flex-direction: column; 已经统一，无需覆盖 */
-        height: calc(100vh - var(--nav-height));
-    }
-
-    .builder-workspace {
-        /* order: 1; 已经在上面 */
-        flex: 1;
-        min-height: 200px;
-        padding: 15px;
-    }
-
     .builder-sidebar {
-        /* order: 2; 已经在上面 */
-        max-height: 40vh; /* 限制高度 */
+        /* 手机端保持高度限制，但稍微放宽 padding */
+        max-height: 40vh; 
         padding: 10px;
         gap: 10px;
-        grid-template-columns: 1fr; /* 强制单列 */
+        /* 手机端强制单列 */
+        grid-template-columns: 1fr; 
         max-width: 100%; /* 撑满宽度 */
     }
     
