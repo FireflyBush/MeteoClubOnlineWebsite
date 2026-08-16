@@ -6,27 +6,42 @@
     const MAX_GRID_HEIGHT = 64;
     const MIN_GRID_HEIGHT = 16;
 
+    // 颜色映射表 (1-32)
+    const COLOR_MAP = [
+        '#F20C0C', '#F27F0C', '#F2F20C', '#7FF20C', 
+        '#0CF20C', '#0CF27F', '#0CF2F2', '#0C7FF2', 
+        '#0C0CF2', '#7F0CF2', '#F20CF2', '#F20C7F', 
+        '#E0592C', '#E0B32C', '#B3E02C', '#59E02C', 
+        '#2CE059', '#2CE0B3', '#2CB3E0', '#2C59E0', 
+        '#592CE0', '#B32CE0', '#E02CB3', '#E02C59', 
+        '#000000', '#242424', '#484848', '#6D6D6D', 
+        '#919191', '#B6B6B6', '#DADADA', '#FFFFFF'
+    ];
+
+    // 默认颜色索引：32号 (纯白) -> 索引 31
+    const DEFAULT_BLOCK_INDEX = 31;
+
     const state = {
         gridWidth: 16,
         gridHeight: 16,
         cells: [],
         elements: [],
-        selectedBlock: 0,
-        currentMode: 'paint',
+        selectedBlock: DEFAULT_BLOCK_INDEX,
+        currentMode: 'select', // 默认为选择模式
         selectedElementId: null,
         pendingBlockType: null,
         appMode: 'preview',
         realData: null,
         author: '',
         isPainting: false,
-        dragPaintEnabled: false, // 新增：记录开关状态
-        blocks: Array.from({length: 32}, (_, i) => ({
-            name: `方块${i + 1}`,
-            file: `${(i + 1).toString().padStart(2, '0')}.png`
+        paintModeEnabled: false, // 修改：原 dragPaintEnabled 改为 paintModeEnabled
+        blocks: COLOR_MAP.map((hex, i) => ({
+            id: i,
+            name: `颜色${i + 1}`, // 序号 1-32
+            color: hex,
+            file: '' // 移除文件映射
         }))
     };
-
-
 
     const realtimeVars = [
         { key: 'realtime.temp', label: '温度 (°C)' },
@@ -55,7 +70,9 @@
     const BASE_URL_ALARM = "https://weather.121.com.cn/data_cache/szWeather/alarm/szAlarm.js";
     const BASE_URL_RAIN = "https://wx.121.com.cn/Mobile/LdService/position?latitude=22.552188&longitude=114.025106&sign=1e86faea84f8574f155c9e485ed4710e";
 
-    const WARNING_LEVEL_PRIORITY = { 'hongse': 5, 'chengse': 4, 'huangse': 3, 'leidian': 3, 'ganhan': 3, 'lanse': 2, 'baisse': 1 };
+    const WARNING_LEVEL_PRIORITY = {
+        'hongse': 5, 'chengse': 4, 'huangse': 3, 'leidian': 3, 'ganhan': 3, 'lanse': 2, 'baisse': 1
+    };
 
     function extractObserveTime(dataTime) {
         if (!dataTime) return 'N/A';
@@ -94,7 +111,8 @@
                     break;
                 }
             }
-            alarm._level = level; alarm._type = alarmType;
+            alarm._level = level;
+            alarm._type = alarmType;
             if (!typeBestAlarm[alarmType] || level > typeBestAlarm[alarmType]._level) {
                 typeBestAlarm[alarmType] = alarm;
             }
@@ -117,7 +135,6 @@
         const URL_FORECAST = `${BASE_URL_FORECAST}?_=${ts}`;
         const URL_ALARM = `${BASE_URL_ALARM}?_=${ts}`;
         const URL_RAIN = CORS_PROXY + encodeURIComponent(BASE_URL_RAIN + "&_=" + ts);
-
         state.realData = { realtime: {}, forecast: [], alarm: null, rain: null };
 
         $.getScript(URL_FORECAST, function() {
@@ -195,6 +212,10 @@
             editBtn.style.display = 'none';
             exitBtn.style.display = 'flex';
             document.getElementById('gridCanvas').classList.remove('view-only');
+            // 进入编辑模式时，默认关闭涂色开关，恢复滚动
+            state.paintModeEnabled = false;
+            document.getElementById('paintModeSwitch').checked = false;
+            document.getElementById('gridCanvas').classList.remove('locked-swipe');
             renderElements();
         } else if (mode === 'view') {
             editBtn.style.display = 'none';
@@ -204,7 +225,6 @@
             renderElements();
         }
 
-        // 控制作者署名的显示
         if (mode === 'edit') {
             authorDisplay.style.display = 'none';
         } else {
@@ -224,15 +244,14 @@
         palette.innerHTML = '';
         state.blocks.forEach((block, index) => {
             const swatch = document.createElement('div');
-            swatch.className = 'color-swatch' + (index === 0 ? ' active' : '');
-            // 这里的 block.svg 改为 block.file
-            swatch.style.backgroundImage = `url(${CDN_BASE}/data/blocks/${block.file})`;
+            swatch.className = 'color-swatch' + (index === state.selectedBlock ? ' active' : '');
+            // 修改：使用 backgroundColor 替代 backgroundImage
+            swatch.style.backgroundColor = block.color;
             swatch.title = block.name;
             swatch.onclick = () => selectColor(index);
             palette.appendChild(swatch);
         });
     }
-
 
     function selectColor(index) {
         state.selectedBlock = index;
@@ -242,12 +261,12 @@
     }
 
     // ==================== 网格系统 ====================
-    function initGrid() { 
-        // 初始化全为 0 号方块
+    function initGrid() {
+        // 修改：初始化为默认白色 (索引 31)
         if (state.cells.length !== state.gridWidth * state.gridHeight) {
-            state.cells = new Array(state.gridWidth * state.gridHeight).fill(0);
+            state.cells = new Array(state.gridWidth * state.gridHeight).fill(DEFAULT_BLOCK_INDEX);
         }
-        renderGrid(); 
+        renderGrid();
     }
 
     function renderGrid() {
@@ -264,45 +283,49 @@
             const cell = document.createElement('div');
             cell.className = 'grid-cell';
             cell.dataset.index = i;
-            const blockIndex = state.cells[i] !== undefined ? state.cells[i] : 0;
+            const blockIndex = state.cells[i] !== undefined ? state.cells[i] : DEFAULT_BLOCK_INDEX;
             const block = state.blocks[blockIndex];
             if (block) {
-                cell.style.backgroundImage = `url(${CDN_BASE}/data/blocks/${block.file})`;
-                cell.style.backgroundSize = 'cover';
-                cell.classList.add('filled');
+                // 修改：使用 backgroundColor
+                cell.style.backgroundColor = block.color;
             }
-            
+
             // 按下事件
             cell.onpointerdown = (e) => {
                 if (state.appMode !== 'edit') return;
-                
-                if (state.currentMode === 'paint') {
-                    // 只有开启了拖拽涂色，才阻止默认行为并记录拖拽状态
-                    if (state.dragPaintEnabled) {
-                        e.preventDefault();
-                        state.isPainting = true;
-                    }
-                    paintCell(i); // 无论是否开启，单击都会涂色
-                } else {
+
+                // 如果是添加文本或变量的模式
+                if (state.currentMode === 'add-text') {
                     handleCellClick(i);
+                } else if (state.currentMode === 'add-var') {
+                    if (window.pendingVarKey || state.pendingBlockType) {
+                        handleCellClick(i);
+                    }
+                } else {
+                    // Select 模式 或 Palette 模式（本质也是 Select）
+                    // 修改：只有在 paintModeEnabled 开启时才响应涂色
+                    if (state.paintModeEnabled) {
+                        e.preventDefault(); // 阻止默认滚动行为
+                        state.isPainting = true;
+                        paintCell(i);
+                    }
+                    // 如果关闭涂色开关，这里不做任何事，允许浏览器处理（滚动）
                 }
             };
 
             // 拖拽进入事件
             cell.onpointerenter = () => {
-                // 只有开启了拖拽涂色且正在按压时，才连续涂色
-                if (state.dragPaintEnabled && state.isPainting && state.currentMode === 'paint') {
+                // 修改：只有在 paintModeEnabled 开启且正在按压时，才连续涂色
+                if (state.paintModeEnabled && state.isPainting) {
                     paintCell(i);
                 }
             };
 
             layerBg.appendChild(cell);
         }
-
         renderElements();
     }
 
-    // 新增：抽离的涂色执行函数
     function paintCell(index) {
         state.cells[index] = state.selectedBlock;
         const cells = document.querySelectorAll('.grid-cell');
@@ -310,32 +333,15 @@
         if(cell) {
             const block = state.blocks[state.selectedBlock];
             if (block) {
-                cell.style.backgroundImage = `url(${CDN_BASE}/data/blocks/${block.file})`;
-                cell.style.backgroundSize = 'cover';
-                cell.classList.add('filled');
+                // 修改：使用 backgroundColor
+                cell.style.backgroundColor = block.color;
             }
         }
     }
 
-
     function handleCellClick(index) {
         if (state.appMode !== 'edit') return;
-        if (state.currentMode === 'paint') {
-            state.cells[index] = state.selectedBlock;
-            // 局部更新提升性能
-            const cells = document.querySelectorAll('.grid-cell');
-            const cell = cells[index];
-            if(cell) {
-                const block = state.blocks[state.selectedBlock];
-                if (block) {
-                    // 这里的 block.svg 改为 block.file
-                    cell.style.backgroundImage = `url(${CDN_BASE}/data/blocks/${block.file})`;
-                    cell.style.backgroundSize = 'cover';
-                    cell.classList.add('filled');
-                }
-            }
-        }
- else if (state.currentMode === 'add-text') placeElementAtCell(index, 'text');
+        if (state.currentMode === 'add-text') placeElementAtCell(index, 'text');
         else if (state.currentMode === 'add-var') {
             if (window.pendingVarKey) placeElementAtCell(index, 'var');
             else if (state.pendingBlockType) placeElementAtCell(index, 'block');
@@ -344,7 +350,8 @@
 
     function clearGrid() {
         if (confirm('确定要清空整个画布吗？')) {
-            state.cells = new Array(state.gridWidth * state.gridHeight).fill(0);
+            // 修改：重置为白色
+            state.cells = new Array(state.gridWidth * state.gridHeight).fill(DEFAULT_BLOCK_INDEX);
             state.elements = [];
             renderGrid();
         }
@@ -358,22 +365,48 @@
 
         if (type === 'text') {
             const content = document.getElementById('textContent').value;
-            const size = parseInt(document.getElementById('textSize').value) || 14;
+            const size = parseInt(document.getElementById('textSize').value) || 35; // 默认 35
             const color = document.getElementById('textColor').value;
-            const textAlign = document.getElementById('textAlign').value;
+            const align = document.getElementById('textAlign').value;
+            // 修改：获取粗体状态
+            const isBold = document.getElementById('textBold').checked;
             const w = parseInt(document.getElementById('textW').value) || 4;
             const h = parseInt(document.getElementById('textH').value) || 1;
+
             if (!content.trim()) { return; }
-            element = { id: Date.now(), type: 'text', x, y, w, h, content, style: { fontSize: size, color, textAlign } };
+
+            element = {
+                id: Date.now(),
+                type: 'text',
+                x, y, w, h, content,
+                style: {
+                    fontSize: size,
+                    color,
+                    textAlign: align,
+                    fontWeight: isBold ? 'bold' : 'normal' // 修改：增加粗体
+                }
+            };
         } else if (type === 'var') {
             const varKey = window.pendingVarKey;
             if (!varKey) { return; }
-            element = { id: Date.now(), type: 'var', x, y, w: 3, h: 1, content: `{${varKey}}`, style: { fontSize: 12, color: '#0d47a1', textAlign: 'center' } };
+            element = {
+                id: Date.now(),
+                type: 'var',
+                x, y, w: 3, h: 1,
+                content: `{${varKey}}`,
+                style: { fontSize: 12, color: '#0d47a1', textAlign: 'center', fontWeight: 'normal' }
+            };
             window.pendingVarKey = null;
         } else if (type === 'block') {
             const blockType = state.pendingBlockType;
             if (!blockType) { return; }
-            element = { id: Date.now(), type: 'block', blockType, x, y, w: 8, h: 4, scale: 1.0, style: {} };
+            element = {
+                id: Date.now(),
+                type: 'block',
+                blockType,
+                x, y, w: 8, h: 4, scale: 1.0,
+                style: {}
+            };
             state.pendingBlockType = null;
         }
 
@@ -401,7 +434,7 @@
             div.style.fontSize = `${el.style?.fontSize || 12}px`;
             div.style.color = el.style?.color || '#000';
             div.style.textAlign = el.style?.textAlign || 'center';
-
+            div.style.fontWeight = el.style?.fontWeight || 'normal'; // 修改：应用粗体
             div.innerHTML = renderElementContent(el);
 
             div.onmousedown = (e) => startDrag(e, el);
@@ -504,48 +537,73 @@
         
         let propHtml = `<div class="control-group"><label>类型</label><div style="font-size:12px; padding:4px; background:#f0f0f0; border-radius:4px;">${el.type === 'text' ? '📝 文本框' : (el.type === 'var' ? '📊 数据变量' : '📦 数据板块')}</div></div>`;
         propHtml += `<div class="control-group"><label>位置 (格)</label><div style="display:flex; gap:5px;"><input type="number" value="${el.x}" min="0" max="${state.gridWidth-1}" onchange="updateElementPos(${el.id}, 'x', this.value)"><input type="number" value="${el.y}" min="0" max="${state.gridHeight-1}" onchange="updateElementPos(${el.id}, 'y', this.value)"></div></div>`;
-        
+
         if (el.type === 'block') {
             propHtml += `<div class="control-group"><label>缩放比例 (0.5x - 2x)</label><input type="range" min="0.5" max="2" step="0.1" value="${el.scale || 1}" oninput="updateBlockScale(${el.id}, this.value)"><div style="font-size:11px; color:#666; margin-top:2px;">当前：${(el.scale || 1).toFixed(1)}x</div></div>`;
         } else {
             propHtml += `<div class="control-group"><label>尺寸 (格)</label><div style="display:flex; gap:5px;"><input type="number" value="${el.w}" min="1" max="${state.gridWidth}" onchange="updateElementSize(${el.id}, 'w', this.value)"><input type="number" value="${el.h}" min="1" max="${state.gridHeight}" onchange="updateElementSize(${el.id}, 'h', this.value)"></div></div>`;
+            
             if (el.type === 'text') {
                 propHtml += `<div class="control-group"><label>内容</label><textarea rows="3" onchange="updateElementContent(${el.id}, this.value)">${el.content}</textarea></div>`;
+                
+                // 修改：添加粗体开关
+                const isBold = el.style?.fontWeight === 'bold';
+                propHtml += `<div class="control-group" style="display:flex; align-items:center; justify-content:space-between;">
+                    <label style="margin-bottom:0;">粗体</label>
+                    <label class="switch">
+                        <input type="checkbox" onchange="updateElementStyle(${el.id}, 'fontWeight', this.checked ? 'bold' : 'normal')" ${isBold ? 'checked' : ''}>
+                        <span class="slider"></span>
+                    </label>
+                </div>`;
             }
+
             propHtml += `<div class="control-group"><label>字号</label><input type="number" value="${el.style?.fontSize || 12}" onchange="updateElementStyle(${el.id}, 'fontSize', this.value)"></div>`;
             propHtml += `<div class="control-group"><label>颜色</label><input type="color" value="${el.style?.color || '#000000'}" onchange="updateElementStyle(${el.id}, 'color', this.value)"></div>`;
-            propHtml += `<div class="control-group"><label>对齐方式</label><select onchange="updateElementStyle(${el.id}, 'textAlign', this.value)">
-                <option value="left" ${el.style?.textAlign === 'left' ? 'selected' : ''}>左对齐</option>
-                <option value="center" ${(!el.style?.textAlign || el.style?.textAlign === 'center') ? 'selected' : ''}>居中</option>
-                <option value="right" ${el.style?.textAlign === 'right' ? 'selected' : ''}>右对齐</option>
-            </select></div>`;
+            propHtml += `<div class="control-group"><label>对齐方式</label><select onchange="updateElementStyle(${el.id}, 'textAlign', this.value)"> <option value="left" ${el.style?.textAlign === 'left' ? 'selected' : ''}>左对齐</option> <option value="center" ${(!el.style?.textAlign || el.style?.textAlign === 'center') ? 'selected' : ''}>居中</option> <option value="right" ${el.style?.textAlign === 'right' ? 'selected' : ''}>右对齐</option> </select></div>`;
         }
         content.innerHTML = propHtml;
     }
 
     function updateElementPos(id, axis, value) {
         const el = state.elements.find(e => e.id === id);
-        if (el) { el[axis] = Math.max(0, Math.min(axis === 'x' ? state.gridWidth - 1 : state.gridHeight - 1, parseInt(value) || 0)); renderElements(); }
+        if (el) {
+            el[axis] = Math.max(0, Math.min(axis === 'x' ? state.gridWidth - 1 : state.gridHeight - 1, parseInt(value) || 0));
+            renderElements();
+        }
     }
 
     function updateElementSize(id, dim, value) {
         const el = state.elements.find(e => e.id === id);
-        if (el && el.type !== 'block') { el[dim] = Math.max(1, Math.min(dim === 'w' ? state.gridWidth : state.gridHeight, parseInt(value) || 1)); renderElements(); }
+        if (el && el.type !== 'block') {
+            el[dim] = Math.max(1, Math.min(dim === 'w' ? state.gridWidth : state.gridHeight, parseInt(value) || 1));
+            renderElements();
+        }
     }
 
     function updateElementContent(id, value) {
         const el = state.elements.find(e => e.id === id);
-        if (el) { el.content = value; renderElements(); }
+        if (el) {
+            el.content = value;
+            renderElements();
+        }
     }
 
     function updateElementStyle(id, prop, value) {
         const el = state.elements.find(e => e.id === id);
-        if (el) { if (!el.style) el.style = {}; el.style[prop] = prop === 'fontSize' ? parseInt(value) : value; renderElements(); }
+        if (el) {
+            if (!el.style) el.style = {};
+            el.style[prop] = prop === 'fontSize' ? parseInt(value) : value;
+            renderElements();
+        }
     }
 
     function updateBlockScale(id, scaleValue) {
         const el = state.elements.find(e => e.id === id);
-        if (el && el.type === 'block') { el.scale = parseFloat(scaleValue); renderElements(); showPropertiesPanel(id); }
+        if (el && el.type === 'block') {
+            el.scale = parseFloat(scaleValue);
+            renderElements();
+            showPropertiesPanel(id);
+        }
     }
 
     function deleteSelected() {
@@ -577,34 +635,81 @@
         let newY = Math.round((e.clientY - rect.top - dragOffsetY) / cellSize);
         newX = Math.max(0, Math.min(state.gridWidth - dragEl.w, newX));
         newY = Math.max(0, Math.min(state.gridHeight - dragEl.h, newY));
-        dragEl.x = newX; dragEl.y = newY;
+        dragEl.x = newX;
+        dragEl.y = newY;
         renderElements();
     }
 
-    function endDrag() { dragEl = null; document.onmousemove = null; document.onmouseup = null; }
+    function endDrag() {
+        dragEl = null;
+        document.onmousemove = null;
+        document.onmouseup = null;
+    }
 
     // ==================== 模式切换 ====================
     function initModeSwitch() {
-        document.querySelectorAll('.mode-btn[data-mode]').forEach(btn => {
+        document.querySelectorAll('.mode-btn').forEach(btn => {
             btn.onclick = () => {
-                state.currentMode = btn.dataset.mode;
-                updateModeButtons();
-                updatePanels();
+                const mode = btn.dataset.mode;
+                
+                // 特殊处理 palette (选色) 模式
+                if (mode === 'palette') {
+                    // 选色模式下，本质上也是 select 模式（可以拖动元素），但要显示调色板
+                    state.currentMode = 'select';
+                    updateModeButtons();
+                    // 强制高亮“选色”按钮，取消“选择”按钮的高亮（视觉上）
+                    document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    
+                    // 显示面板
+                    updatePanels();
+                    // 强制显示 paint panel，因为 updatePanels 可能会根据 currentMode=select 隐藏它
+                    document.getElementById('panel-paint').style.display = 'block';
+                } else {
+                    state.currentMode = mode;
+                    updateModeButtons();
+                    updatePanels();
+                }
             };
         });
     }
 
     function updateModeButtons() {
-        document.querySelectorAll('.mode-btn[data-mode]').forEach(btn => {
-            btn.classList.toggle('active', btn.dataset.mode === state.currentMode);
+        document.querySelectorAll('.mode-btn').forEach(btn => {
+            // 如果是 palette 模式按钮，其状态由点击逻辑单独处理，这里主要处理标准模式
+            if (btn.dataset.mode !== 'palette') {
+                btn.classList.toggle('active', btn.dataset.mode === state.currentMode);
+            }
         });
     }
 
     function updatePanels() {
-        document.getElementById('panel-paint').style.display = state.currentMode === 'paint' ? 'block' : 'none';
-        document.getElementById('panel-text').style.display = state.currentMode === 'add-text' ? 'block' : 'none';
-        document.getElementById('panel-var').style.display = state.currentMode === 'add-var' ? 'block' : 'none';
-        if (state.currentMode !== 'select') document.getElementById('panel-properties').style.display = 'none';
+        // 标准逻辑：根据 currentMode 显示对应面板
+        // 但由于 palette 也是 select 模式的一种变体，需要特殊处理
+        
+        // 默认隐藏所有功能面板
+        document.getElementById('panel-paint').style.display = 'none';
+        document.getElementById('panel-text').style.display = 'none';
+        document.getElementById('panel-var').style.display = 'none';
+        
+        // 检查是否手动触发了 palette (通过按钮 active 状态判断)
+        const paletteBtn = document.querySelector('.mode-btn[data-mode="palette"]');
+        const isPaletteActive = paletteBtn.classList.contains('active');
+
+        if (isPaletteActive) {
+            document.getElementById('panel-paint').style.display = 'block';
+        } else if (state.currentMode === 'add-text') {
+            document.getElementById('panel-text').style.display = 'block';
+        } else if (state.currentMode === 'add-var') {
+            document.getElementById('panel-var').style.display = 'block';
+        } else if (state.currentMode === 'select') {
+             // 纯粹的 select 模式不显示 paint panel，除非通过 palette 按钮
+             document.getElementById('panel-paint').style.display = 'none';
+        }
+
+        if (state.currentMode !== 'select' && !isPaletteActive) {
+            document.getElementById('panel-properties').style.display = 'none';
+        }
     }
 
     // ==================== 变量列表 ====================
@@ -616,7 +721,7 @@
             btn.textContent = v.label;
             btn.onclick = (e) => selectVar(v.key, e);
             realtimeList.appendChild(btn);
-        });
+ });
 
         const blockList = document.getElementById('varListBlock');
         blockList.innerHTML = '';
@@ -626,6 +731,7 @@
             btn.onclick = (e) => selectBlock(v.key, e);
             blockList.appendChild(btn);
         });
+
         updateForecastVars();
     }
 
@@ -633,6 +739,7 @@
         const day = parseInt(document.getElementById('forecastDayRange').value);
         const labels = ['今天', '明天', '后天', 'D+3', 'D+4', 'D+5', 'D+6', 'D+7', 'D+8', 'D+9'];
         document.getElementById('forecastDayLabel').textContent = labels[day];
+
         const forecastList = document.getElementById('varListForecast');
         forecastList.innerHTML = '';
         forecastVarDefs.forEach(v => {
@@ -670,7 +777,7 @@
             val = Math.max(MIN_GRID_HEIGHT, Math.min(MAX_GRID_HEIGHT, val));
             this.value = val;
             state.gridHeight = val;
-            state.cells = new Array(state.gridWidth * state.gridHeight).fill(0);
+            state.cells = new Array(state.gridWidth * state.gridHeight).fill(DEFAULT_BLOCK_INDEX);
             state.elements = [];
             renderGrid();
         };
@@ -679,29 +786,31 @@
             state.author = this.value;
         });
 
-        window.addEventListener('pointerup', () => { state.isPainting = false; });
-        window.addEventListener('pointercancel', () => { state.isPainting = false; });
+        window.addEventListener('pointerup', () => {
+            state.isPainting = false;
+        });
+        window.addEventListener('pointercancel', () => {
+            state.isPainting = false;
+        });
 
-        // 新增：监听拖拽涂色开关
-        const dragSwitch = document.getElementById('dragPaintSwitch');
-        dragSwitch.addEventListener('change', function() {
-            state.dragPaintEnabled = this.checked;
+        // 修改：监听涂色开关 (原 dragPaintSwitch)
+        const paintSwitch = document.getElementById('paintModeSwitch');
+        paintSwitch.addEventListener('change', function() {
+            state.paintModeEnabled = this.checked;
             const canvas = document.getElementById('gridCanvas');
             // 开启时给画布加上锁定滑动的 class
-            canvas.classList.toggle('locked-swipe', state.dragPaintEnabled);
+            canvas.classList.toggle('locked-swipe', state.paintModeEnabled);
         });
     }
 
-
-
     // ==================== 分享链接生成 ====================
     function generateShareLink() {
-        const config = { 
-            w: state.gridWidth, 
-            h: state.gridHeight, 
-            c: state.cells, 
-            e: state.elements, 
-            a: state.author || '' 
+        const config = {
+            w: state.gridWidth,
+            h: state.gridHeight,
+            c: state.cells,
+            e: state.elements,
+            a: state.author || ''
         };
         const jsonStr = JSON.stringify(config);
         const compressed = pako.gzip(jsonStr);
@@ -709,7 +818,6 @@
         for (let i = 0; i < compressed.length; i++) binary += String.fromCharCode(compressed[i]);
         const base64 = btoa(binary);
         const urlSafeBase64 = base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
-        
         const shareUrl = `${location.origin}${location.pathname}?share=${urlSafeBase64}`;
         
         navigator.clipboard.writeText(shareUrl).then(() => {
@@ -728,16 +836,12 @@
             for (let i = 0; i < binary.length; i++) compressed[i] = binary.charCodeAt(i);
             const jsonStr = pako.inflate(compressed, { to: 'string' });
             const config = JSON.parse(jsonStr);
-            
             state.gridWidth = config.w || 16;
             state.gridHeight = config.h || 16;
             state.cells = config.c || [];
             state.elements = config.e || [];
             state.author = config.a || '';
-            
-            // 回填到输入框（虽然查看模式看不到，但逻辑保持一致）
             document.getElementById('authorName').value = state.author;
-            
             initGrid();
         } catch (e) {
             console.error('加载分享配置失败:', e);
@@ -757,7 +861,6 @@
     window.updateElementStyle = updateElementStyle;
     window.updateForecastVars = updateForecastVars;
     window.loadRealData = loadRealData;
-    
     window.confirmAddText = function() {
         const centerX = Math.floor(state.gridWidth / 2);
         const centerY = Math.floor(state.gridHeight / 2);
@@ -767,4 +870,5 @@
 
     // 启动
     init();
+
 })();

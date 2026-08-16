@@ -40,29 +40,30 @@
             <div class="tool-panel">
                 <h4>🛠️ 操作模式</h4>
                 <div class="mode-switch">
-                    <button class="mode-btn active" data-mode="paint">🎨 涂色</button>
+                    <!-- 修改：涂色变为选色 -->
+                    <button class="mode-btn" data-mode="palette">🎨 选色</button>
                     <button class="mode-btn" data-mode="add-text">📝 文本</button>
                     <button class="mode-btn" data-mode="add-var">📊 数据</button>
-                    <button class="mode-btn" data-mode="select">🖱️ 选择</button>
+                    <button class="mode-btn active" data-mode="select">🖱️ 选择</button>
                 </div>
             </div>
 
-            <div class="tool-panel" id="panel-paint">
-                <h4>🎨 选择方块</h4>
+            <div class="tool-panel" id="panel-paint" style="display:none;">
+                <h4>🎨 选择颜色</h4>
                 <div class="color-palette" id="colorPalette"></div>
-				
-				                <!-- 新增：拖拽涂色开关 -->
+                
+                <!-- 修改：拖拽涂色开关变为涂色开关，优化文案 -->
                 <div class="control-group drag-paint-toggle" style="margin-top:12px; display:flex; align-items:center; justify-content:space-between;">
-                    <label style="margin-bottom:0; cursor:pointer;" for="dragPaintSwitch">🖌️ 拖拽涂色</label>
+                    <label style="margin-bottom:0; cursor:pointer;" for="paintModeSwitch">🎨 涂色开关</label>
                     <label class="switch">
-                        <input type="checkbox" id="dragPaintSwitch">
+                        <input type="checkbox" id="paintModeSwitch">
                         <span class="slider"></span>
                     </label>
                 </div>
                 <p style="font-size:11px; color:#888; margin-top:4px; line-height:1.4;">
-                    开启后可长按拖动连续涂色（手机端将锁定画布滑动）；关闭后可正常滑动挪动视角。
+                    开启后可点击或拖动在网格上涂色（此时无法移动画布）；关闭后可正常拖动画布调整视野。
                 </p>
-				
+                
                 <div class="control-group" style="margin-top:10px;">
                     <label>网格高度 (行数 16-64)</label>
                     <input type="number" id="gridHeightInput" value="16" min="16" max="64">
@@ -78,7 +79,16 @@
                 </div>
                 <div class="control-group">
                     <label>字号</label>
-                    <input type="number" id="textSize" value="14" min="8" max="48">
+                    <!-- 修改：默认字号改为35 -->
+                    <input type="number" id="textSize" value="35" min="8" max="48">
+                </div>
+                <div class="control-group">
+                    <label>粗体</label>
+                    <!-- 新增：粗体开关 -->
+                    <label class="switch">
+                        <input type="checkbox" id="textBold">
+                        <span class="slider"></span>
+                    </label>
                 </div>
                 <div class="control-group">
                     <label>文字颜色</label>
@@ -136,7 +146,7 @@
             
             <div class="tool-panel" style="margin-top:10px; font-size:11px; color:#666;">
                 <strong>💡 提示：</strong><br>
-                1. 涂色模式：点击网格填色<br>
+                1. 选色模式：点击画布填色<br>
                 2. 文本/数据模式：设置后点网格放置<br>
                 3. 选择模式：拖动元素调整位置<br>
                 4. 变量格式：<code>{realtime.temp}</code>
