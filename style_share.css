@@ -50,7 +50,6 @@ body {
 
 .builder-workspace {
     flex: 1;
-    background: #e0e5ec;
     position: relative;
     overflow: auto; /* 工作区内部滚动 */
     display: flex;
@@ -134,7 +133,7 @@ body {
     border-radius: 4px;
     font-weight: bold;
     font-family: monospace;
-    font-size: 11px;
+    font-size: 12px;
 }
 
 .tool-panel {
@@ -144,8 +143,6 @@ body {
     padding: 10px;
     width: 100%;
     box-sizing: border-box;
-    max-width: 320px;
-    /* 防止面板内容撑破 Grid */
     overflow: hidden; 
 }
 
@@ -158,12 +155,12 @@ body {
 
 .color-palette {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(8, 1fr);
     gap: 8px;
 }
 
 .color-swatch {
-    width: 100%;
+    width: 80%;
     aspect-ratio: 1;
     border-radius: 4px;
     cursor: pointer;
@@ -190,7 +187,7 @@ body {
     background: #f8f9fa;
     border: 1px solid #dee2e6;
     border-radius: 4px;
-    font-size: 11px;
+    font-size: 12px;
     cursor: pointer;
     transition: background 0.15s;
 }
@@ -211,7 +208,7 @@ body {
 
 .control-group label {
     display: block;
-    font-size: 11px;
+    font-size: 12px;
     margin-bottom: 3px;
     color: #666;
     font-weight: 500;
@@ -257,7 +254,7 @@ body {
     border: 1px solid #ddd;
     background: #fff;
     cursor: pointer;
-    font-size: 11px;
+    font-size: 12px;
     border-radius: 4px;
     transition: all 0.15s;
 }
