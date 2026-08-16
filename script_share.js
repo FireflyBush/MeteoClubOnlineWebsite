@@ -99,7 +99,8 @@
         let typeBestAlarm = {};
         alarms.forEach(alarm => {
             let icon = alarm.icon || '';
-            let level = 0, alarmType = 'unknown';
+            let level = 0;
+            let alarmType = 'unknown';
             for (let key in WARNING_LEVEL_PRIORITY) {
                 if (icon.includes(key)) {
                     level = WARNING_LEVEL_PRIORITY[key];
@@ -489,7 +490,8 @@
             }
         } else if (el.type === 'block') {
             if (el.blockType === 'warning') {
-                const alarms = deduplicateAlarms(state.realData?.alarm);
+                // 修复：使用 state.realData?.alarm?.subAlarm 而不是 state.realData?.alarm
+                const alarms = deduplicateAlarms(state.realData?.alarm?.subAlarm);
                 if (alarms && alarms.length > 0) {
                     return alarms.map(a => `<img src="${a.icon || ''}" class="mini-warning-icon" alt="${a.title}">`).join('');
                 } else {
@@ -497,8 +499,6 @@
                 }
             } else if (el.blockType === 'rain') {
                 const rainData = state.realData?.rain;
-                // 降雨数据通常包含 list: [ {hour: 10, rain: 0.5}, ... ] 或类似
-                // 确保rainData.rain是数组，如果不是，使用空数组
                 const rainList = Array.isArray(rainData?.rain) ? rainData.rain : [];
                 const data = rainList.length ? rainList : []; 
 
