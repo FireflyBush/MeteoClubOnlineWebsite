@@ -511,7 +511,7 @@
                     </div>
                     <div class="var-menu-section">
                         <div class="var-menu-title">预报数据</div>
-                        <select id="propVarMenuDaySelect" onchange="updatePropVarMenuForecast()" style="width:100%; margin-bottom:5px; font-size:11px;">
+                        <select id="propVarMenuDaySelect" onchange="updatePropVarMenuForecast()" style="width:100%; margin-bottom:5px; font-size:12px;">
                             <option value="0">+1天</option><option value="1">+2天</option><option value="2">+3天</option>
                             <option value="3">+4天</option><option value="4">+5天</option><option value="5">+6天</option>
                             <option value="6">+7天</option><option value="7">+8天</option><option value="8">+9天</option><option value="9">+10天</option>
