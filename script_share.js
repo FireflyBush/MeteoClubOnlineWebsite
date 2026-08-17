@@ -1,22 +1,19 @@
-// 气象深高 - 定制分享构建器脚本 (修复版)
+// 气象深高 - 定制分享构建器脚本 (完整修复版)
 (function() {
     'use strict';
     // ==================== 全局状态 ====================
     const MAX_GRID_HEIGHT = 64;
     const MIN_GRID_HEIGHT = 16;
-    // 颜色映射表 (1-32)
     const COLOR_MAP = [
         '#F20C0C', '#F27F0C', '#F2F20C', '#7FF20C', '#0CF20C', '#0CF27F', '#0CF2F2', '#0C7FF2', '#0C0CF2', '#7F0CF2', '#F20CF2', '#F20C7F',
         '#E0592C', '#E0B32C', '#B3E02C', '#59E02C', '#2CE059', '#2CE0B3', '#2CB3E0', '#2C59E0', '#592CE0', '#B32CE0', '#E02CB3', '#E02C59',
         '#000000', '#242424', '#484848', '#6D6D6D', '#919191', '#B6B6B6', '#DADADA', '#FFFFFF'
     ];
-    const DEFAULT_BLOCK_INDEX = 31; // 纯白
+    const DEFAULT_BLOCK_INDEX = 31;
 
     const state = {
-        gridWidth: 16,
-        gridHeight: 16,
-        cells: [],
-        elements: [],
+        gridWidth: 16, gridHeight: 16,
+        cells: [], elements: [],
         selectedBlock: DEFAULT_BLOCK_INDEX,
         currentMode: 'select',
         selectedElementId: null,
@@ -38,10 +35,8 @@
         { key: 'realtime.updateTime', label: '更新时间' }
     ];
     const forecastVarDefs = [
-        { key: 'date', label: '日期' },
-        { key: 'highTemp', label: '最高温' },
-        { key: 'lowTemp', label: '最低温' },
-        { key: 'weather', label: '天气描述' }
+        { key: 'date', label: '日期' }, { key: 'highTemp', label: '最高温' },
+        { key: 'lowTemp', label: '最低温' }, { key: 'weather', label: '天气描述' }
     ];
 
     // ==================== API 与数据处理 ====================
@@ -52,6 +47,14 @@
     const BASE_URL_RAIN = "https://wx.121.com.cn/Mobile/LdService/position?latitude=22.552188&longitude=114.025106&sign=1e86faea84f8574f155c9e485ed4710e";
 
     const WARNING_LEVEL_PRIORITY = { 'hongse': 5, 'chengse': 4, 'huangse': 3, 'leidian': 3, 'ganhan': 3, 'lanse': 2, 'baisse': 1 };
+
+    // === 辅助函数：格式化时间 HH:mm ===
+    function formatTime(date) {
+        if (!date) return '';
+        let h = date.getHours().toString().padStart(2, '0');
+        let m = date.getMinutes().toString().padStart(2, '0');
+        return `${h}:${m}`;
+    }
 
     function extractObserveTime(dataTime) {
         if (!dataTime) return 'N/A';
@@ -98,19 +101,21 @@
         result.forEach(a => { delete a._level; delete a._type; });
         return result.slice(0, 6);
     }
+    
+    // 降雨高度计算函数
     function calcHeight(rain_mm) {
-        const MAX_BAR_HEIGHT = 90;
+        const MAX_BAR_HEIGHT = 90; // 对应 CSS 百分比最大值
         const MAX_RAIN_VALUE = 40;
         if (rain_mm <= 0) return 0;
         if (rain_mm >= MAX_RAIN_VALUE) return MAX_BAR_HEIGHT;
         return Math.round((rain_mm / MAX_RAIN_VALUE) * MAX_BAR_HEIGHT);
     }
+
     function loadRealData() {
         const ts = new Date().getTime();
         const URL_FORECAST = `${BASE_URL_FORECAST}?_=${ts}`;
         const URL_ALARM = `${BASE_URL_ALARM}?_=${ts}`;
         const URL_RAIN = CORS_PROXY + encodeURIComponent(BASE_URL_RAIN + "&_=" + ts);
-
         state.realData = { realtime: {}, forecast: [], alarm: null, rain: null };
 
         $.getScript(URL_FORECAST, function() {
@@ -120,10 +125,8 @@
                 if (day10[i]) {
                     let d = day10[i];
                     state.realData.forecast.push({
-                        date: convertWeekday(d[0]),
-                        highTemp: parseInt(d[2]) || 'N/A',
-                        lowTemp: parseInt(d[3]) || 'N/A',
-                        weather: d[1] || 'N/A'
+                        date: convertWeekday(d[0]), highTemp: parseInt(d[2]) || 'N/A',
+                        lowTemp: parseInt(d[3]) || 'N/A', weather: d[1] || 'N/A'
                     });
                 }
             }
@@ -136,22 +139,17 @@
         }).fail(function() { console.warn("预警数据获取失败"); });
 
         $.getJSON(URL_RAIN, function(rainData) {
-            let temp = rainData.temp;
-            let hum = rainData.humidity;
-            let wind = rainData.wind;
+            let temp = rainData.temp; let hum = rainData.humidity; let wind = rainData.wind;
             state.realData.realtime = {
-                temp: temp || 'N/A',
-                feelsLike: apparentTemperature(temp, hum, wind),
-                humidity: hum || 'N/A',
-                wind: wind || 'N/A',
-                updateTime: extractObserveTime(rainData.dataTime)
+                temp: temp || 'N/A', feelsLike: apparentTemperature(temp, hum, wind),
+                humidity: hum || 'N/A', wind: wind || 'N/A', updateTime: extractObserveTime(rainData.dataTime)
             };
             state.realData.rain = rainData;
             renderElements();
         }).fail(function() { console.warn("实况数据获取失败"); });
     }
 
-    // ==================== 初始化 ====================
+    // ==================== 初始化与网格系统 ====================
     function init() {
         initColorPalette();
         initTextColorPalette();
@@ -167,7 +165,6 @@
         }
     }
 
-    // ==================== 模式控制 ====================
     function setAppMode(mode) {
         state.appMode = mode;
         document.body.classList.remove('app-mode-preview', 'app-mode-edit', 'app-mode-view');
@@ -194,7 +191,6 @@
             if (!state.realData) loadRealData();
             renderElements();
         }
-
         if (mode === 'edit') { authorDisplay.style.display = 'none'; }
         else {
             const author = state.author || document.getElementById('authorName').value || '';
@@ -203,7 +199,6 @@
         }
     }
 
-    // ==================== 颜色面板 ====================
     function initColorPalette() {
         const palette = document.getElementById('colorPalette');
         palette.innerHTML = '';
@@ -236,8 +231,6 @@
         state.selectedTextColorIndex = index;
         document.querySelectorAll('#textColorPalette .color-swatch').forEach((el, i) => { el.classList.toggle('active', i === index); });
     }
-
-    // ==================== 网格系统 ====================
     function initGrid() {
         if (state.cells.length !== state.gridWidth * state.gridHeight) {
             state.cells = new Array(state.gridWidth * state.gridHeight).fill(DEFAULT_BLOCK_INDEX);
@@ -264,9 +257,7 @@
             cell.onpointerdown = (e) => {
                 if (state.appMode !== 'edit') return;
                 if (state.currentMode === 'add-text') { handleCellClick(i); }
-                else {
-                    if (state.paintModeEnabled) { e.preventDefault(); state.isPainting = true; paintCell(i); }
-                }
+                else { if (state.paintModeEnabled) { e.preventDefault(); state.isPainting = true; paintCell(i); } }
             };
             cell.onpointerenter = () => { if (state.paintModeEnabled && state.isPainting) { paintCell(i); } };
             layerBg.appendChild(cell);
@@ -277,7 +268,7 @@
         state.cells[index] = state.selectedBlock;
         const cells = document.querySelectorAll('.grid-cell');
         const cell = cells[index];
-        if(cell) {
+        if (cell) {
             const block = state.blocks[state.selectedBlock];
             if (block) { cell.style.backgroundColor = block.color; }
         }
@@ -296,15 +287,13 @@
             renderGrid();
         }
     }
-
-    // ==================== 特殊板块放置 ====================
     window.placeSpecialBlock = function(type) {
         document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
         document.querySelector('.mode-btn[data-mode="add-text"]').classList.add('active');
         state.currentMode = 'add-text';
         state.pendingBlockType = type;
         const typeName = type === 'warning' ? '预警信息' : '降雨预报';
-        alert(`已选择“${typeName}”板块，请点击网格放置。\n提示：放置后可在属性中调整缩放比例。`);
+        alert(`已选择“${typeName}”板块，请点击网格放置。`);
         updatePanels();
     };
 
@@ -349,13 +338,11 @@
             div.className = 'placed-element';
             if (el.id === state.selectedElementId && state.appMode === 'edit') { div.classList.add('selected'); }
             
-            // 位置与尺寸
             div.style.left = `calc(${el.x} * var(--grid-cell-size))`;
             div.style.top = `calc(${el.y} * var(--grid-cell-size))`;
             div.style.width = `calc(${el.w} * var(--grid-cell-size))`;
             div.style.height = `calc(${el.h} * var(--grid-cell-size))`;
 
-            // 内容渲染
             if (el.type === 'text') {
                 div.classList.add('el-text');
                 div.style.fontSize = `${el.style?.fontSize || 12}px`;
@@ -366,7 +353,6 @@
                 div.innerHTML = renderElementContent(el);
             } else if (el.type === 'block') {
                 div.classList.add('el-block', `${el.blockType}-block`);
-                // 应用缩放：使用 transform-origin: center center
                 div.style.transform = `scale(${el.scale || 1})`;
                 div.innerHTML = renderElementContent(el);
             }
@@ -388,20 +374,19 @@
             }
         } else if (el.type === 'block') {
             if (el.blockType === 'warning') {
-                // === 修复：获取预警数据并去重 ===
                 const alarms = deduplicateAlarms(state.realData?.alarm?.subAlarm);
                 if (alarms && alarms.length > 0) {
-                    // === 修复：拼接完整 CDN 路径 ===
                     const iconsHtml = alarms.map(a => {
                         const iconUrl = `${CDN_BASE}/data/warnings/${a.icon || ''}.png`;
-                        return `<img src="${iconUrl}" class="mini-warning-icon" alt="${a.title}" title="${a.title}">`;
+                        // === 修复：添加 title 悬停提示，内容为 a.str ===
+                        return `<img src="${iconUrl}" class="mini-warning-icon" alt="${a.title}" title="${a.str || a.title}">`;
                     }).join('');
                     return `<div class="warning-inner-box">${iconsHtml}</div>`;
                 } else {
                     return '<div class="warning-inner-box"><span style="font-size:12px; color:#999; display:flex; align-items:center; justify-content:center; height:100%;">当前无预警</span></div>';
                 }
             } else if (el.blockType === 'rain') {
-                // === 修复：正确解析降雨字符串数据 ===
+                // === 修复：完整解析 30 条数据 ===
                 const rainStr = state.realData?.rain?.rain;
                 let rainArr = [];
                 if (typeof rainStr === 'string') {
@@ -410,26 +395,57 @@
                     rainArr = rainStr;
                 }
 
-                // 固定宽度内部盒子样式
                 let barsHtml = '';
                 let timeLabelsHtml = '';
-                // 取后 10 个点用于显示
-                const displayData = rainArr.slice(-10);
-                
-                displayData.forEach((val, idx) => {
-                    const heightPct = calcHeight(val); // 复用 calcHeight 逻辑
+
+                // 渲染完整 30 个柱形
+                for (let i = 0; i < 30; i++) {
+                    const val = rainArr[i] || 0;
+                    const heightPct = calcHeight(val);
                     const hasRain = val > 0;
                     barsHtml += `<div class="mini-rain-bar ${hasRain ? 'has-rain' : ''}" style="height: ${heightPct}%;" title="${val}mm"></div>`;
-                    // 仅显示部分时间轴（简单处理）
-                    if (idx % 3 === 0) timeLabelsHtml += `<span></span>`; 
-                });
+                }
+
+                // === 新增：计算并渲染时间轴 ===
+                // 尝试获取数据发布时间 (格式如 "2024/08/16 10:00")
+                const dtStr = state.realData?.rain?.dataTimeFormat;
+                if (dtStr) {
+                    try {
+                        let dt = new Date(dtStr.replace(/\//g, '-'));
+                        // 生成 5 个关键时间点：开始、+30分、+60分、+90分、+120分
+                        const keyTimes = [
+                            formatTime(dt),
+                            formatTime(new Date(dt.getTime() + 30 * 60000)),
+                            formatTime(new Date(dt.getTime() + 60 * 60000)),
+                            formatTime(new Date(dt.getTime() + 90 * 60000)),
+                            formatTime(new Date(dt.getTime() + 120 * 60000))
+                        ];
+                        // 生成时间轴 HTML (5个点分布)
+                        timeLabelsHtml = `
+                            <div>${keyTimes[0]}</div>
+                            <div>${keyTimes[1]}</div>
+                            <div>${keyTimes[2]}</div>
+                            <div>${keyTimes[3]}</div>
+                            <div>${keyTimes[4]}</div>
+                        `;
+                    } catch (e) {
+                        timeLabelsHtml = '<div>时间解析错误</div>';
+                    }
+                } else {
+                    // 如果没有时间数据，显示占位
+                    timeLabelsHtml = `<div>--:--</div><div>30</div><div>60</div><div>90</div><div>120</div>`;
+                }
 
                 return `
                     <div class="rain-inner-box">
                         <div class="rain-chart-area">
                             <div class="rain-bar-row">${barsHtml}</div>
+                            <div class="rain-time-axis">${timeLabelsHtml}</div>
                         </div>
-                        <div class="rain-desc-area">降雨预报</div>
+                        <div class="rain-desc-area">
+                            <span style="font-size:14px; font-weight:bold;">降雨预报</span>
+                            <span style="font-size:10px; opacity:0.8;">未来2小时</span>
+                        </div>
                     </div>
                 `;
             }
@@ -446,12 +462,7 @@
         return content;
     }
 
-    function selectElement(id) {
-        state.selectedElementId = id;
-        renderElements();
-        showPropertiesPanel(id);
-    }
-
+    function selectElement(id) { state.selectedElementId = id; renderElements(); showPropertiesPanel(id); }
     function showPropertiesPanel(id) {
         const el = state.elements.find(e => e.id === id);
         if (!el) return;
@@ -459,13 +470,11 @@
         const content = document.getElementById('propContent');
         panel.style.display = 'block';
         let propHtml = '';
-
         let typeName = el.type === 'block' ? (el.blockType === 'warning' ? '⚠️ 预警板块' : '🌧️ 降雨板块') : '📝 文本框';
         propHtml += `<div class="control-group"><label>类型</label><div style="font-size:12px; padding:4px; background:#f0f0f0; border-radius:4px;">${typeName}</div></div>`;
         propHtml += `<div class="control-group"><label>位置 (格)</label><div style="display:flex; gap:5px;"><input type="number" value="${el.x}" min="0" max="${state.gridWidth-1}" onchange="updateElementPos(${el.id}, 'x', this.value)"><input type="number" value="${el.y}" min="0" max="${state.gridHeight-1}" onchange="updateElementPos(${el.id}, 'y', this.value)"></div></div>`;
         propHtml += `<div class="control-group"><label>尺寸 (格)</label><div style="display:flex; gap:5px;"><input type="number" value="${el.w}" min="1" max="${state.gridWidth}" onchange="updateElementSize(${el.id}, 'w', this.value)"><input type="number" value="${el.h}" min="1" max="${state.gridHeight}" onchange="updateElementSize(${el.id}, 'h', this.value)"></div></div>`;
 
-        // === 新增：缩放控制，仅针对 block 类型 ===
         if (el.type === 'block') {
             const currentScale = el.scale || 1;
             propHtml += `
@@ -475,17 +484,14 @@
                         <input type="range" min="0.5" max="2" step="0.1" value="${currentScale}" onchange="updateElementScale(${el.id}, this.value)" style="flex:1;">
                         <span style="font-size:12px; width:40px; text-align:right;">${Math.round(currentScale * 100)}%</span>
                     </div>
-                    <div style="font-size:11px; color:#888; margin-top:4px;">提示：调整此比例可放大或缩小内容，不影响网格占位。</div>
                 </div>
             `;
         }
 
         if (el.type === 'text') {
             const safeContent = (el.content || '').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-            // 简化版文本属性，保留核心功能
             propHtml += `<div class="control-group"><label>内容</label><textarea id="prop-textarea-${el.id}" rows="2" onchange="updateElementContent(${el.id}, this.value)">${safeContent}</textarea></div>`;
             propHtml += `<div class="control-group"><label>字号</label><input type="number" value="${el.style?.fontSize || 12}" onchange="updateElementStyle(${el.id}, 'fontSize', this.value)"></div>`;
-            
             const currentColor = el.style?.color || '#000000';
             let activeColorIndex = state.blocks.findIndex(b => b.color === currentColor);
             if (activeColorIndex === -1) activeColorIndex = 24;
@@ -500,22 +506,14 @@
         content.innerHTML = propHtml;
     }
 
-    // === 新增：缩放更新函数 ===
     window.updateElementScale = function(id, value) {
         const el = state.elements.find(e => e.id === id);
-        if (el) {
-            el.scale = parseFloat(value);
-            renderElements();
-            // 更新显示的百分比文字（需要重新生成面板或通过DOM直接修改，这里简单处理重新渲染）
-            showPropertiesPanel(id); 
-        }
+        if (el) { el.scale = parseFloat(value); renderElements(); showPropertiesPanel(id); }
     };
-
     function updateElementPos(id, axis, value) { const el = state.elements.find(e => e.id === id); if (el) { el[axis] = Math.max(0, Math.min(axis === 'x' ? state.gridWidth - 1 : state.gridHeight - 1, parseInt(value) || 0)); renderElements(); } }
     function updateElementSize(id, dim, value) { const el = state.elements.find(e => e.id === id); if (el) { el[dim] = Math.max(1, Math.min(dim === 'w' ? state.gridWidth : state.gridHeight, parseInt(value) || 1)); renderElements(); } }
     function updateElementContent(id, value) { const el = state.elements.find(e => e.id === id); if (el) { el.content = value; renderElements(); } }
     function updateElementStyle(id, prop, value) { const el = state.elements.find(e => e.id === id); if (el) { if (!el.style) el.style = {}; el.style[prop] = prop === 'fontSize' ? parseInt(value) : value; renderElements(); if (state.selectedElementId === id && document.getElementById('panel-properties').style.display !== 'none') showPropertiesPanel(id); } }
-
     function deleteSelected() { if (state.selectedElementId) { state.elements = state.elements.filter(e => e.id !== state.selectedElementId); state.selectedElementId = null; document.getElementById('panel-properties').style.display = 'none'; renderElements(); } }
 
     let dragEl = null, dragOffsetX = 0, dragOffsetY = 0;
@@ -568,7 +566,7 @@
             state.gridWidth = config.w || 16;
             state.gridHeight = config.h || 16;
             state.cells = config.c || [];
-            state.elements = (config.e || []).map(el => ({...el, scale: el.scale || 1})); // 兼容旧数据，默认缩放1
+            state.elements = (config.e || []).map(el => ({...el, scale: el.scale || 1}));
             state.author = config.a || '';
             document.getElementById('authorName').value = state.author;
             initGrid();
@@ -588,6 +586,5 @@
     window.toggleVarMenu = toggleVarMenu;
     window.updateVarMenuForecast = updateVarMenuForecast;
 
-    // 启动
     init();
 })();
