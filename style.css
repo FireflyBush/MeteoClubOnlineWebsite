@@ -1,5 +1,31 @@
 /* style.css —— 晴雨表浅色磨砂主题样式 (优化整理版) */
 
+/* 1. 引入思源黑体 (Google Fonts API 会自动处理中文分片加载) */
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;700&display=swap');
+
+/* 2. 定义自定义西文字体 */
+@font-face {
+    font-family: 'GWM Sans UI'; /* 自定义一个名字 */
+    src: url('/data/GWM.woff2') format('woff2');
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap; /* 字体加载时先显示后备字体，避免白屏 */
+}
+
+/* 3. 覆盖全局字体设置 */
+/* 注意：将自定义西文字体放在最前，思源黑体放在第二位 */
+/* 这样西文/数字会用 myfont.woff2，中文会回退到思源黑体 */
+body {
+    font-family: 'GWM Sans UI', 'Noto Sans SC', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", sans-serif;
+}
+
+/* 针对可能需要加粗的标题元素 */
+h1, h2, h3, h4, h5, h6, .nav-title, .section-title, .card-title {
+    font-family: 'GWM Sans UI', 'Noto Sans SC', sans-serif;
+    font-weight: 700; /* 使用思源黑体的粗体 */
+}
+
+
 /* =========================================
    1. 全局变量与重置
    ========================================= */
@@ -25,15 +51,6 @@
 
 body {
     background-color: #eef2f6;
-    font-family: 
-        -apple-system,          /* iOS / macOS 优先使用苹方 (PingFang) */
-        BlinkMacSystemFont,     /* macOS Chrome */
-        "Segoe UI",             /* Windows 优先使用 Segoe UI */
-        Roboto,                 /* Android 优先使用 Roboto */
-        "Helvetica Neue",       /* 经典备用 */
-        "PingFang SC",          /* 明确指定苹果中文 */
-        "Microsoft YaHei",      /* 明确指定微软雅黑 */
-        sans-serif;             /* 最终兜底 */
     color: var(--text-color);
     min-height: 100vh;
     padding-top: calc(var(--nav-height) + 20px);
@@ -137,6 +154,8 @@ body {
     color: var(--dim-color);
     margin-top: 2px;
 }
+
+
 
 /* =========================================
    4. 天气应用组件
@@ -309,7 +328,6 @@ body {
     align-items: center;
     gap: 6px;
     transition: all 0.2s;
-    font-family: inherit;
 	font-weight: bold;
 }
 

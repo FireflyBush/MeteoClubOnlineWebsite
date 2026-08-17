@@ -314,12 +314,14 @@
             if (!content.trim()) return;
             element = { id: Date.now(), type: 'text', x, y, w, h, content, style: { fontSize: size, color: colorHex, textAlign: align, fontWeight: isBold ? 'bold' : 'normal' } };
         } else if (type === 'warning' || type === 'rain') {
-            const inputW = document.getElementById('textW');
-            const inputH = document.getElementById('textH');
-            const w = Math.max(1, parseInt(inputW?.value) || (type === 'warning' ? 4 : 6));
-            const h = Math.max(1, parseInt(inputH?.value) || (type === 'warning' ? 2 : 3));
-            element = { id: Date.now(), type: 'block', blockType: type, x, y, w, h, scale: 1 };
-        }
+    // === 修改：强制使用指定的默认尺寸 ===
+    // 预警板块: 9宽 x 2高
+    // 降雨板块: 9宽 x 4高
+    const w = 9; 
+    const h = type === 'warning' ? 2 : 4;
+    
+    element = { id: Date.now(), type: 'block', blockType: type, x, y, w, h, scale: 1 };
+}
 
         if (element) {
             state.elements.push(element);
@@ -470,6 +472,7 @@
         const content = document.getElementById('propContent');
         panel.style.display = 'block';
         let propHtml = '';
+
         let typeName = el.type === 'block' ? (el.blockType === 'warning' ? '⚠️ 预警板块' : '🌧️ 降雨板块') : '📝 文本框';
         propHtml += `<div class="control-group"><label>类型</label><div style="font-size:12px; padding:4px; background:#f0f0f0; border-radius:4px;">${typeName}</div></div>`;
         propHtml += `<div class="control-group"><label>位置 (格)</label><div style="display:flex; gap:5px;"><input type="number" value="${el.x}" min="0" max="${state.gridWidth-1}" onchange="updateElementPos(${el.id}, 'x', this.value)"><input type="number" value="${el.y}" min="0" max="${state.gridHeight-1}" onchange="updateElementPos(${el.id}, 'y', this.value)"></div></div>`;
@@ -490,8 +493,57 @@
 
         if (el.type === 'text') {
             const safeContent = (el.content || '').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+            
+            // --- 文本内容 ---
             propHtml += `<div class="control-group"><label>内容</label><textarea id="prop-textarea-${el.id}" rows="2" onchange="updateElementContent(${el.id}, this.value)">${safeContent}</textarea></div>`;
+            
+            // === 新增：插入变量功能 ===
+            propHtml += `
+            <div class="control-group">
+                <div style="display:flex; gap:5px; flex-wrap:wrap;">
+                    <button class="insert-var-btn" onclick="togglePropVarMenu()">🔍 插入变量</button>
+                </div>
+                <!-- 嵌入变量菜单，默认隐藏 -->
+                <div id="propVarMenu" class="var-menu-popup" style="display:none; position:relative; margin-top:5px;">
+                    <div class="var-menu-section">
+                        <div class="var-menu-title">实况数据</div>
+                        <div id="propVarMenuRealtime" class="var-menu-grid"></div>
+                    </div>
+                    <div class="var-menu-section">
+                        <div class="var-menu-title">预报数据</div>
+                        <select id="propVarMenuDaySelect" onchange="updatePropVarMenuForecast()" style="width:100%; margin-bottom:5px; font-size:11px;">
+                            <option value="0">+1天</option><option value="1">+2天</option><option value="2">+3天</option>
+                            <option value="3">+4天</option><option value="4">+5天</option><option value="5">+6天</option>
+                            <option value="6">+7天</option><option value="7">+8天</option><option value="8">+9天</option><option value="9">+10天</option>
+                        </select>
+                        <div id="propVarMenuForecast" class="var-menu-grid"></div>
+                    </div>
+                </div>
+            </div>
+            `;
+
             propHtml += `<div class="control-group"><label>字号</label><input type="number" value="${el.style?.fontSize || 12}" onchange="updateElementStyle(${el.id}, 'fontSize', this.value)"></div>`;
+            
+            // --- 样式设置（粗体 + 对齐） ---
+            const isBold = el.style?.fontWeight === 'bold';
+            const currentAlign = el.style?.textAlign || 'center';
+            
+            propHtml += `<div class="control-group">
+                <label>样式</label>
+                <div style="display:flex; gap:10px; align-items:center;">
+                    <label style="cursor:pointer; display:flex; align-items:center; gap:4px; width:50%;">
+                        <input type="checkbox" ${isBold ? 'checked' : ''} onchange="updateElementStyle(${el.id}, 'fontWeight', this.checked ? 'bold' : 'normal')"> 
+                        <span style="font-size:12px;">粗体</span>
+                    </label>
+                    <select style="padding:2px; font-size:12px; border:1px solid #ccc; border-radius:3px;" onchange="updateElementStyle(${el.id}, 'textAlign', this.value)">
+                        <option value="left" ${currentAlign === 'left' ? 'selected' : ''}>左对齐</option>
+                        <option value="center" ${currentAlign === 'center' ? 'selected' : ''}>居中</option>
+                        <option value="right" ${currentAlign === 'right' ? 'selected' : ''}>右对齐</option>
+                    </select>
+                </div>
+            </div>`;
+
+            // --- 颜色选择 ---
             const currentColor = el.style?.color || '#000000';
             let activeColorIndex = state.blocks.findIndex(b => b.color === currentColor);
             if (activeColorIndex === -1) activeColorIndex = 24;
@@ -504,7 +556,14 @@
             propHtml += `<div class="control-group"><label>颜色</label>${colorGridHtml}</div>`;
         }
         content.innerHTML = propHtml;
+
+        // 如果是文本元素，初始化一下变量菜单内容（数据填充）
+        if (el.type === 'text') {
+            initPropVarMenuContent();
+        }
     }
+
+
 
     window.updateElementScale = function(id, value) {
         const el = state.elements.find(e => e.id === id);
@@ -531,6 +590,69 @@
     function initVarMenuContent() { const realtimeList = document.getElementById('varMenuRealtime'); if(realtimeList) { realtimeList.innerHTML = ''; realtimeVars.forEach(v => { const btn = document.createElement('button'); btn.textContent = v.label; btn.onclick = () => insertText(`{${v.key}}`); realtimeList.appendChild(btn); }); } updateVarMenuForecast(); }
     function updateVarMenuForecast() { const daySelect = document.getElementById('varMenuDaySelect'); if(!daySelect) return; const day = parseInt(daySelect.value); const dayLabel = `+${day+1}天`; const forecastList = document.getElementById('varMenuForecast'); if(forecastList) { forecastList.innerHTML = ''; forecastVarDefs.forEach(v => { const btn = document.createElement('button'); btn.textContent = `${dayLabel} ${v.label}`; btn.onclick = () => insertText(`{forecast[${day}].${v.key}}`); forecastList.appendChild(btn); }); } }
     window.insertText = function(text) { const textarea = document.getElementById('textContent'); if (!textarea) return; const start = textarea.selectionStart; const end = textarea.selectionEnd; const val = textarea.value; textarea.value = val.substring(0, start) + text + val.substring(end); textarea.selectionStart = textarea.selectionEnd = start + text.length; textarea.focus(); document.getElementById('varMenu').style.display = 'none'; };
+	    // === 属性面板专用的变量菜单逻辑 ===
+    window.togglePropVarMenu = function() {
+        const menu = document.getElementById('propVarMenu');
+        if (menu) {
+            const isHidden = menu.style.display === 'none';
+            menu.style.display = isHidden ? 'block' : 'none';
+            if (isHidden) initPropVarMenuContent(); // 每次打开时刷新
+        }
+    };
+
+    function initPropVarMenuContent() {
+        const realtimeList = document.getElementById('propVarMenuRealtime');
+        if (realtimeList) {
+            realtimeList.innerHTML = '';
+            realtimeVars.forEach(v => {
+                const btn = document.createElement('button');
+                btn.textContent = v.label;
+                btn.onclick = () => insertPropText(`{${v.key}}`);
+                realtimeList.appendChild(btn);
+            });
+        }
+        updatePropVarMenuForecast();
+    }
+
+    window.updatePropVarMenuForecast = function() {
+        const daySelect = document.getElementById('propVarMenuDaySelect');
+        if(!daySelect) return;
+        const day = parseInt(daySelect.value);
+        const dayLabel = `+${day+1}天`;
+        const forecastList = document.getElementById('propVarMenuForecast');
+        if(forecastList) {
+            forecastList.innerHTML = '';
+            forecastVarDefs.forEach(v => {
+                const btn = document.createElement('button');
+                btn.textContent = `${dayLabel} ${v.label}`;
+                btn.onclick = () => insertPropText(`{forecast[${day}].${v.key}}`);
+                forecastList.appendChild(btn);
+            });
+        }
+    };
+
+    // 将文本插入到属性面板的 textarea 中
+    function insertPropText(text) {
+        // 获取当前选中文本框的 ID
+        if (!state.selectedElementId) return;
+        const textareaId = `prop-textarea-${state.selectedElementId}`;
+        const textarea = document.getElementById(textareaId);
+        if (!textarea) return;
+
+        const start = textarea.selectionStart;
+        const end = textarea.selectionEnd;
+        const val = textarea.value;
+        textarea.value = val.substring(0, start) + text + val.substring(end);
+        textarea.selectionStart = textarea.selectionEnd = start + text.length;
+        textarea.focus();
+
+        // 触发更新
+        updateElementContent(state.selectedElementId, textarea.value);
+        
+        // 关闭菜单
+        const menu = document.getElementById('propVarMenu');
+        if (menu) menu.style.display = 'none';
+    }
 
     // ==================== 事件监听 ====================
     function initEventListeners() {
@@ -572,6 +694,7 @@
             initGrid();
         } catch (e) { console.error('加载分享配置失败:', e); alert('无效的分享链接'); }
     }
+
 
     // ==================== 暴露接口 ====================
     window.setAppMode = setAppMode;
