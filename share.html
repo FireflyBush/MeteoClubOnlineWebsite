@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>气象深高 - 定制分享</title>
+    <title>气象深高 - 我的天气栈</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="style_share.css">
     <link rel="icon" href="/favicon.ico" type="image/x-icon">
-    <meta name="description" content="像《我的世界》一样搭建专属天气卡片，自由涂色、放置元素、插入数据变量。">
+    <meta name="description" content="“我的天气栈”是“气象深高”网站的一个创意功能，网站用户可以进入并制作自己的天气实况和预报分享卡片。">
     <script>
       window.CDN_BASE = "https://cdn.jsdelivr.net/gh/FireflyBush/MeteoClubOnlineWebsite@2026.0816";
     </script>
@@ -28,8 +28,8 @@
     </nav>
 
     <!-- 悬浮模式切换按钮 -->
-    <button id="btn-enter-edit" class="float-btn" onclick="setAppMode('edit')">🛠️ 进入编辑模式</button>
-    <button id="btn-exit-edit" class="float-btn" onclick="setAppMode('preview')" style="display:none;">👁️ 退出编辑预览</button>
+    <button id="btn-enter-edit" class="float-btn" onclick="setAppMode('edit')">🛠️ 点我开始编辑</button>
+    <button id="btn-exit-edit" class="float-btn" onclick="setAppMode('preview')" style="display:none;">📱️ 点我进入预览</button>
 
     <!-- 作者署名显示 -->
     <div id="authorDisplay" class="author-display"></div>
@@ -66,10 +66,10 @@
                 <button class="action-btn primary" onclick="generateShareLink()">🔗 生成分享链接</button>
                 
                 <div class="tips-area">
-                    <strong>💡 提示：</strong><br>
-                    1. 选色模式：点击画布填色<br>
-                    2. 文本模式：输入内容，点“🧩”插入变量，放置到网格<br>
-                    3. 选择模式：拖动元素调整位置
+                    <strong>💡 创作提示：</strong><br>
+                    1. 选色模式：用于绘制背景图样，选择一个颜色并打开涂色开关，点击画布即可填色。<br>
+                    2. 文本模式：输入内容，或者点“🧩”插入变量添加可实时更新的气象数据，放置到网格中。<br>
+                    3. 选择模式：拖动元素调整位置，并通过属性面板调节其内容和外观。
                 </div>
             </div>
 

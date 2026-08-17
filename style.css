@@ -246,7 +246,7 @@ body {
 .day-date { font-size: 16px; color: var(--dim-color); font-weight: bold; }
 .day-info { display: flex; flex-direction: row; justify-content: center; align-items: center; }
 .day-icon { width: 65px; height: 65px; cursor: pointer; }
-.day-temps { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.day-temps { display: flex; flex-direction: column; align-items: center; gap: 2px; margin-top: 8px; }
 .day-max, .day-min { font-size: 20px; font-weight: bold; }
 .day-max .unit, .day-min .unit { font-size: 16px; color: var(--dim-color); }
 
