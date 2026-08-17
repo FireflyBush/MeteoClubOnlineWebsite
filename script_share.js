@@ -104,7 +104,7 @@
     
     // 降雨高度计算函数
     function calcHeight(rain_mm) {
-        const MAX_BAR_HEIGHT = 90; // 对应 CSS 百分比最大值
+        const MAX_BAR_HEIGHT = 100; // 对应 CSS 百分比最大值
         const MAX_RAIN_VALUE = 40;
         if (rain_mm <= 0) return 0;
         if (rain_mm >= MAX_RAIN_VALUE) return MAX_BAR_HEIGHT;
