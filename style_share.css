@@ -435,91 +435,93 @@ body {
     text-transform: uppercase;
 }
 
-/* ================= 特殊板块内部样式 ================= */
-/* 预警板块 */
-.el-block.warning-block {
+/* === 修正板块布局与缩放 === */
+
+/* 板块容器：居中显示，隐藏溢出 */
+.el-block {
     display: flex;
-    flex-direction: row;
-    flex-wrap: wrap;
-    gap: 4px;
+    justify-content: center;
     align-items: center;
-    justify-content: flex-start;
+    overflow: hidden; /* 关键：隐藏缩放溢出的部分 */
+    background-color: rgba(255, 255, 255, 0.9);
+    border-radius: 4px;
+    /* 继承 placed-element 的基础样式 */
+}
+
+/* === 预警板块内部盒子 (固定尺寸) === */
+.warning-inner-box {
+    width: 120px;
+    height: 48px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 4px;
     padding: 4px;
+    background: #fff;
+    border-radius: 4px;
+    box-sizing: border-box;
+    /* 内部盒子不缩放，跟随父级 transform 变换 */
 }
 
 .mini-warning-icon {
-    height: 100%;
-    max-width: 100%;
+    height: 36px; /* 固定高度 */
+    width: auto;
     object-fit: contain;
+    filter: drop-shadow(0 2px 2px rgba(0,0,0,0.1));
 }
 
-/* 降雨板块 */
-.el-block.rain-block {
+/* === 降雨板块内部盒子 (固定尺寸) === */
+.rain-inner-box {
+    width: 160px;
+    height: 80px;
     display: flex;
-    flex-direction: row; /* 左图右字 */
-    padding: 4px;
-    gap: 8px;
+    align-items: stretch;
+    background: #fff;
+    border-radius: 6px;
     overflow: hidden;
-    font-size: 10px;
-    color: #666;
-    background: rgba(255,255,255,0.8);
-    border-radius: 4px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    box-sizing: border-box;
 }
 
-.rain-chart-container {
-    flex: 2; /* 占更多宽度 */
+.rain-chart-area {
+    flex: 2;
     display: flex;
     flex-direction: column;
     justify-content: flex-end;
-    gap: 2px;
-    height: 100%;
-    padding-bottom: 10px; /* 留出时间轴空间 */
-    position: relative;
-}
-
-.rain-time-axis {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    height: 12px;
-    display: flex;
-    justify-content: space-between;
-    border-top: 1px solid #eee;
-    font-size: 9px;
-    color: #999;
-    padding-top: 2px;
+    padding: 8px 4px;
+    background: #f8f9fa;
+    border-right: 1px solid #eee;
 }
 
 .rain-bar-row {
-    flex: 1;
     display: flex;
     align-items: flex-end;
     gap: 2px;
+    width: 100%;
     height: 100%;
 }
 
 .mini-rain-bar {
-    width: 100%;
+    flex: 1;
     background-color: #eef2f6;
-    border-radius: 2px;
-    position: relative;
+    border-radius: 2px 2px 0 0;
     transition: height 0.3s;
 }
 
 .mini-rain-bar.has-rain {
-    background-color: var(--rain-blue, #007AFF);
+    background-color: var(--rain-blue, #007AFF); /* 使用主站配色 */
 }
 
-.rain-desc-container {
+.rain-desc-area {
     flex: 1;
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
+    font-size: 14px;
+    color: var(--dim-color, #666);
     text-align: center;
-    font-size: 12px;
-    color: #555;
+    font-weight: 500;
 }
 
 /* ================= 模式控制 ================= */
