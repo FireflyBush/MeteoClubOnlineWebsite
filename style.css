@@ -6,7 +6,7 @@
 /* 2. 定义自定义西文字体 */
 @font-face {
     font-family: 'GWM Sans UI'; /* 自定义一个名字 */
-    src: url('/data/GWM.woff2') format('woff2');
+    src: url('https://cdn.jsdelivr.net/gh/FireflyBush/MeteoClubOnlineWebsite@2026.0817/GWM.woff2') format('woff2');
     font-weight: normal;
     font-style: normal;
     font-display: swap; /* 字体加载时先显示后备字体，避免白屏 */
