@@ -156,7 +156,6 @@ $(document).ready(function() {
     }
 
     function renderRain(rainData) {
-        $('#rainCard').show();
         $('#rainDesc').hide();
         $('#rainBars').empty();
         $('#rainTimeLabels').empty();
