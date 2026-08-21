@@ -74,7 +74,7 @@ $(document).ready(function() {
                         '<div class="date">' + dateInfo.date + '</div>' +
                         '<div class="weekday">' + dateInfo.week + '</div>' +
                     '</div>' +
-                    '<img class="day-icon-10d" src="' + CDN_BASE + '/data/icons/' + icon + '.png" title="' + weather + '" loading="lazy">' +
+                    '<img class="day-icon-10d" src="' + CDN_BASE + '/data/icons/' + icon + '.png" alt="' + weather + '" title="' + weather + '" loading="lazy">' +
                     '<div class="day-weather-text">' + weather + '</div>' +
                     '<div class="day-temp-range">' +
                         '<div class="temp-min">' + minStr + '°</div>' +
