@@ -93,14 +93,12 @@
     <div id="statusBanner" class="status-banner" hidden></div>
 
     <section class="card chart-card">
-      <!-- 滚动容器：移动端时 chart-inner 固定最小宽度，横向滚动 -->
-      <div class="chart-scroll" id="chartScroll">
-        <div class="chart-inner" id="chartInner">
-          <div id="mainChart" class="main-chart"></div>
-          <div class="sub-strip" id="stripCloud">
-            <span class="strip-label">☁ 云量</span>
-            <div class="strip-cells" id="cloudCells"></div>
-          </div>
+      <!-- 滚动容器：桌面端无效果，移动端（≤1000px）固定宽 + 横向滚动 -->
+      <div class="chart-scroll">
+        <div id="mainChart" class="main-chart"></div>
+        <div class="sub-strip" id="stripCloud">
+          <span class="strip-label">☁ 云量</span>
+          <div class="strip-cells" id="cloudCells"></div>
         </div>
       </div>
 
