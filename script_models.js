@@ -5,20 +5,15 @@
  * 页面逻辑：三选一展示单个模式；切换模式/要素纯前端重绘，不重新请求
  * 缓存：服务端 Function 10 分钟边缘缓存（functions/api/models-proxy.js）
  * 时间：API 返回 UTC，前端统一转为北京时间（UTC+8）显示
- * 移动端：≤1000px 隐藏纵轴、图表固定 1000px 宽内部横向滚动
+ * 注意：折线序列不使用数据点 label（Canvas 标签过多会拖慢鼠标悬停响应）
  * ===================================================================== */
 $(function () {
   'use strict';
 
-  // ==================== 可调参数区 ====================
-  // 线条样式改 UNIFIED_DEFS；纵轴值域改 axisRange 计算块与下列常量
+  // ---------- 配置 ----------
   const PROXY = '/api/models-proxy?url=';
   const PROXY_TTL_MS = 10 * 60 * 1000;
-  const LAT = 22.552188, LON = 114.025106;
-  const RAIN_CAP = 50;            // 降水柱满格值 (mm)
-  const WIND_DEFAULT_MAX = 75;    // 风速轴默认上限 (km/h)
-  const MOBILE_BP = 1000;         // 移动端断点 (px)
-  const MOBILE_CHART_W = 1000;    // 移动端图表固定宽度 (px)
+  const LAT = 22.552188, LON = 114.025106;   // 中心校区坐标，按实际改
 
   const HOURLY_VARS = [
     'temperature_2m', 'relative_humidity_2m', 'dew_point_2m',
@@ -47,7 +42,7 @@ $(function () {
     95: ['雷阵雨', '⛈️'], 96: ['雷阵雨伴冰雹', '⛈️'], 99: ['雷阵雨伴冰雹', '⛈️'],
   };
 
-  // 要素注册表（改线条颜色/虚实在这里）
+  // 要素注册表：axisKey = 同单位共轴分组
   const UNIFIED_DEFS = {
     temperature:   { label: '气温', axisKey: 'temp', type: 'line', color: '#e74c3c' },
     dew_point:     { label: '露点', axisKey: 'temp', type: 'line', color: '#f39c12' },
@@ -65,6 +60,8 @@ $(function () {
     rain: { name: '降水 (mm)',   side: 'right', offset: 30 },
     wind: { name: '风速 (km/h)', side: 'right', offset: 60 },
   };
+  const RAIN_CAP = 50;        // 降水柱 50mm 满格
+  const WIND_DEFAULT_MAX = 75;
 
   // ---------- 状态 ----------
   const state = {
@@ -80,28 +77,19 @@ $(function () {
     initTimeBJT: '—',
     fetchedAt: 0,
   };
-  let precipActual = [];
-  let lastGrid = { left: 56, right: 20 };   // 最近一次渲染的绘图区边界（云量条裁剪用）
-  let lastMobile = null;                    // 跨断点检测
+  let precipActual = [];      // 各 3h 时次的实际降水量（未封顶，tooltip 用）
 
   const chart = echarts.init(document.getElementById('mainChart'));
-  $(window).on('resize', () => {
-    chart.resize();
-    const mobile = isMobile();
-    if (mobile !== lastMobile) { renderAll(); return; }   // 跨断点需整体重渲染
-    layoutBars();
-    renderSubStrips();
-  });
+  $(window).on('resize', () => { chart.resize(); layoutBars(); renderSubStrips(); });
   chart.on('dataZoom', () => { layoutBars(); renderSubStrips(); });
 
-  function isMobile() { return window.innerWidth <= MOBILE_BP; }
   function setStatus(msg, isError) {
     const $b = $('#statusBanner');
     if (!msg) { $b.hide(); return; }
     $b.text(msg).toggleClass('error', !!isError).show();
   }
 
-  // ---------- 时间工具：UTC → 北京时间 ----------
+  // ---------- 时间工具：UTC → 北京时间（与浏览器时区无关） ----------
   function toBJT(iso) {
     const ms = Date.parse(iso + (iso.length === 16 ? ':00' : '') + 'Z');
     const b = new Date(ms + 8 * 3600 * 1000);
@@ -112,13 +100,13 @@ $(function () {
     };
   }
 
-  // ---------- Steadman 体感温度 ----------
-  function apparentTemperature(T, RH, v) {
+  // ---------- Steadman 体感温度（与首页公式一致） ----------
+  function apparentTemperature(T, RH, v) {  // °C, %, m/s
     if (v > 4.8) return 13.12 + 0.6215 * T - 11.37 * Math.sqrt(v) + 0.3965 * T * Math.sqrt(v);
     return T + 0.33 * RH / 100 * 6.105 * Math.exp(17.27 * T / (237.7 + T)) - 4;
   }
 
-  // ---------- 字段访问 ----------
+  // ---------- 字段访问（按当前模式后缀 + 全 null 兜底） ----------
   function field(base) {
     const h = state.data?.hourly;
     if (!h) return null;
@@ -127,7 +115,7 @@ $(function () {
     return arr;
   }
 
-  // ---------- 数据获取（单请求三模式全要素） ----------
+  // ---------- 数据获取（单请求三模式全要素，切换不重取） ----------
   async function fetchData() {
     setStatus('⏳ 正在获取模式数据…');
     const params = new URLSearchParams({
@@ -186,6 +174,7 @@ $(function () {
     return field(base);
   }
 
+  // 降水 3 小时聚合：每 3h 一柱（求和），其余类目为 null
   function aggregate3h(arr) {
     const out = new Array(arr.length).fill(null);
     for (let i = 0; i < arr.length; i += 3) {
@@ -194,6 +183,7 @@ $(function () {
     }
     return out;
   }
+  // 某时次起未来 3h 降水合计（tooltip 用）
   function precip3hAt(i) {
     const rain = field('rain'), snow = field('snowfall');
     if (!rain && !snow) return null;
@@ -203,18 +193,8 @@ $(function () {
     }
     return +sum.toFixed(1);
   }
-  // 局部极值：仅比相邻两点大/小的点
-  function localExtrema(arr, mode) {
-    const out = new Array(arr.length).fill(null);
-    for (let i = 1; i < arr.length - 1; i++) {
-      if (arr[i] == null || arr[i-1] == null || arr[i+1] == null) continue;
-      if (mode === 'max' && arr[i] > arr[i-1] && arr[i] >= arr[i+1]) out[i] = arr[i];
-      if (mode === 'min' && arr[i] < arr[i-1] && arr[i] <= arr[i+1]) out[i] = arr[i];
-    }
-    return out;
-  }
 
-  // ---------- 格式化 ----------
+  // ---------- 数值格式化 ----------
   function defFormat(v, axisKey) {
     if (v == null || isNaN(v)) return '';
     if (axisKey === 'temp' || axisKey === 'rain' || axisKey === 'wind') return (+v).toFixed(1);
@@ -225,6 +205,7 @@ $(function () {
     if (state.windUnit === 'kn') return (kmh / 1.852).toFixed(1) + ' kn';
     return kmh.toFixed(1) + ' km/h';
   }
+  // 云量颜色：0% 天蓝 → 50% 白 → 100% 灰黑
   function cloudColor(pct) {
     pct = Math.max(0, Math.min(100, pct ?? 0));
     const lerp = (a, b, t) => Math.round(a + (b - a) * t);
@@ -242,18 +223,16 @@ $(function () {
     $('#unitGroup').toggle(hasWindVar);
     $('#beaufortRef').toggle(hasWindVar);
     $('#stripCloud').toggle(state.activeStrips.has('cloud') && !!state.data);
-    lastMobile = isMobile();
     renderUnifiedChart();
     renderSubStrips();
   }
 
-  // ---------- 统合图表 ----------
+  // ---------- 统合图表（单模式 × 多要素多轴） ----------
   function renderUnifiedChart() {
     if (!state.data) return;
-    const mobile = isMobile();
     const keyLabel = MODELS[state.activeModel].label;
 
-    // 1. 提取激活要素数据
+    // 1. 提取所有激活要素的数据
     const dataByVar = {};
     for (const v of state.activeVars) {
       const vals = getSeries(v);
@@ -261,17 +240,20 @@ $(function () {
     }
     if (!Object.keys(dataByVar).length) { chart.clear(); return; }
 
-    // 2. 降水 3h 聚合 + 封顶
+    // 2. 降水 3h 聚合 + 50mm 封顶
     precipActual = [];
+    let rain3hCapped = null, snow3h = null;
     if (dataByVar.precipitation) {
       const rawRain = aggregate3h(dataByVar.precipitation.rain);
-      const snow3h  = aggregate3h(dataByVar.precipitation.snow);
+      snow3h = aggregate3h(dataByVar.precipitation.snow);
       precipActual = rawRain.map((v, i) => +(((v || 0) + (snow3h[i] || 0)).toFixed(1)));
-      dataByVar._rain3h = rawRain.map(v => v == null ? null : Math.min(v, RAIN_CAP));
-      dataByVar._snow3h = snow3h.map(v => v == null ? null : Math.min(v, RAIN_CAP));
+      rain3hCapped = rawRain.map(v => v == null ? null : Math.min(v, RAIN_CAP));
+      const snowCapped = snow3h.map(v => v == null ? null : Math.min(v, RAIN_CAP));
+      dataByVar._rain3h = rain3hCapped;
+      dataByVar._snow3h = snowCapped;
     }
 
-    // 3. 各轴值域（★ 调整值域规则改这里 ★）
+    // 3. 各轴值域计算
     const statsOf = arrays => {
       const all = arrays.filter(Boolean).flatMap(a => a.filter(Number.isFinite));
       return all.length ? { min: Math.min(...all), max: Math.max(...all) } : null;
@@ -279,9 +261,6 @@ $(function () {
     const tempStats = statsOf(['temperature', 'dew_point', 'apparent'].map(v => dataByVar[v]));
     const windStats = statsOf(['wind_speed', 'wind_gusts'].map(v => dataByVar[v]));
     const presStats = statsOf([dataByVar.pressure]);
-    const rainStats = dataByVar._rain3h
-      ? statsOf([dataByVar._rain3h.map((v, i) => v == null ? null : v + (dataByVar._snow3h[i] || 0))])
-      : null;
 
     const axisRange = {
       temp: tempStats ? { min: Math.floor(tempStats.min - 5), max: Math.ceil(tempStats.max + 5) } : undefined,
@@ -295,7 +274,7 @@ $(function () {
       rain: { min: 0, max: RAIN_CAP },
     };
 
-    // 4. 动态 Y 轴（移动端整体隐藏）
+    // 4. 动态 Y 轴
     const axesNeeded = [];
     for (const v of state.activeVars) {
       const k = UNIFIED_DEFS[v].axisKey;
@@ -308,23 +287,15 @@ $(function () {
       return {
         type: 'value', name: m.name, position: m.side,
         offset: m.offset || 0, ...axisRange[k],
-        show: !mobile,                          // ★ 移动端隐藏全部纵轴
-        axisLine: { show: true }, splitLine: { show: i === 0 && !mobile },
+        axisLine: { show: true }, splitLine: { show: i === 0 },
         nameTextStyle: { align: m.side === 'left' ? 'right' : 'left' },
       };
     });
-    let gridLeft, gridRight;
-    if (mobile) {
-      gridLeft = 16; gridRight = 16;
-    } else {
-      gridRight = 20 + axesNeeded.filter(k => AXIS_META[k].side === 'right').length * 44;
-      gridLeft  = 56 + Math.max(0, axesNeeded.filter(k => AXIS_META[k].side === 'left').length - 1) * 44;
-    }
-    lastGrid = { left: gridLeft, right: gridRight };
+    const gridRight = 20 + axesNeeded.filter(k => AXIS_META[k].side === 'right').length * 44;
+    const gridLeft  = 56 + Math.max(0, axesNeeded.filter(k => AXIS_META[k].side === 'left').length - 1) * 44;
 
-    // 5. series
+    // 5. series（折线不带数据点 label，避免 Canvas 标签拖慢悬停）
     const series = [];
-    const mainNames = [];          // 图例只显示主序列
     const seriesAxis = {};
     for (const v of state.activeVars) {
       const def = UNIFIED_DEFS[v];
@@ -335,11 +306,12 @@ $(function () {
           id: 'rainbar', name: def.label, type: 'bar', stack: 'rain',
           yAxisIndex: axisIndex.rain, barWidth: 20,
           data: dataByVar._rain3h, itemStyle: { color: def.color },
+          // 柱顶雨雪总量标注（如需回退，删除此 label 块即可）
           label: {
             show: true, fontSize: 10, position: 'top',
             formatter: p => {
-              const a = precipActual[p.dataIndex];
-              return (a != null && a > 0) ? a.toFixed(1) : '';
+              const i = p.dataIndex;
+              return (precipActual[i] != null && precipActual[i] > 0) ? precipActual[i].toFixed(1) : '';
             },
           },
         });
@@ -348,7 +320,6 @@ $(function () {
           yAxisIndex: axisIndex.rain, barWidth: 20,
           data: dataByVar._snow3h, itemStyle: { color: '#aed6f1' },
         });
-        mainNames.push(def.label);
       } else {
         const vals = dataByVar[v];
         if (!vals) continue;
@@ -357,45 +328,10 @@ $(function () {
           smooth: true, symbol: 'none',
           lineStyle: def.dashed ? { type: 'dashed' } : undefined,
           data: vals, itemStyle: { color: def.color },
-          label: {
-            show: true, fontSize: 10, position: 'top',
-            formatter: p => p.dataIndex % 3 === 0 ? defFormat(p.value, def.axisKey) : '',
-          },
+          // 不设 label：数值详情统一走悬停 tooltip
         });
-        mainNames.push(def.label);
-
-        // 气温专属：每 3h 圆点 + 极大/极小值数字标注
-        if (v === 'temperature') {
-          series.push({
-            name: '气温·点', type: 'line', yAxisIndex: axisIndex.temp,
-            data: vals.map((x, i) => i % 3 === 0 ? x : null),
-            symbol: 'circle', symbolSize: 6, showSymbol: true,
-            lineStyle: { opacity: 0 }, itemStyle: { color: def.color },
-            silent: true, z: 5,
-          });
-          series.push({
-            name: '气温·极大', type: 'line', yAxisIndex: axisIndex.temp,
-            data: localExtrema(vals, 'max'),
-            symbol: 'circle', symbolSize: 0.1,
-            lineStyle: { opacity: 0 }, itemStyle: { color: def.color },
-            label: { show: true, fontSize: 10, fontWeight: 'bold', position: 'top',
-                     color: def.color, formatter: p => p.value != null ? p.value.toFixed(1) : '' },
-            silent: true, z: 6,
-          });
-          series.push({
-            name: '气温·极小', type: 'line', yAxisIndex: axisIndex.temp,
-            data: localExtrema(vals, 'min'),
-            symbol: 'circle', symbolSize: 0.1,
-            lineStyle: { opacity: 0 }, itemStyle: { color: def.color },
-            label: { show: true, fontSize: 10, position: 'bottom',
-                     color: '#888', formatter: p => p.value != null ? p.value.toFixed(1) : '' },
-            silent: true, z: 6,
-          });
-        }
       }
     }
-
-    if (!series.length) { chart.clear(); return; }
 
     // 6. 风速色带
     if ((state.activeVars.has('wind_speed') || state.activeVars.has('wind_gusts')) && state.showBands) {
@@ -414,13 +350,18 @@ $(function () {
 
     chart.setOption({
       animation: false,
-      title: { text: `${keyLabel} 模式预报`, left: 'center', top: 2,
-               textStyle: { fontSize: 14, fontWeight: 500 } },
-      legend: {
-        top: 24, data: mainNames,
-        selectedMode: false,                  // ★ 取消图例点击切换
-        left: 'center', padding: [4, 10],
+      title: { text: `${keyLabel} 模式预报`, left: 'center', top: 2, textStyle: { fontSize: 14, fontWeight: 500 } },
+      tooltip: {
+        trigger: 'axis',
+        confine: true,                       // 悬浮层限制在图表内，防止被裁剪
+        enterable: false,
+        formatter: p => {
+          try { return multiTooltip(p, seriesAxis); }
+          catch (e) { return p[0]?.axisValueLabel || ''; }   // 容错：任何异常都退回基础提示
+        },
+        axisPointer: { type: 'cross' },
       },
+      legend: { top: 24 },
       grid: { left: gridLeft, right: gridRight, top: 56, bottom: 60 },
       xAxis: { type: 'category', data: state.timeAxis, axisLabel: { hideOverlap: true } },
       yAxis,
@@ -431,10 +372,11 @@ $(function () {
     layoutBars();
   }
 
-  // 降水柱宽：充满 3 个类目宽（随缩放动态调整）
+  // 降水柱宽：3 个类目宽（随缩放动态调整）
   function layoutBars() {
     if (!state.data || !state.activeVars.has('precipitation')) return;
-    if (state.timeAxis.length < 4) return;
+    const N = state.timeAxis.length;
+    if (N < 4) return;
     let xa, xb;
     try {
       xa = chart.convertToPixel({ xAxisIndex: 0 }, 0);
@@ -444,11 +386,14 @@ $(function () {
     const w = Math.abs(xb - xa);
     if (w < 2 || w > 200) return;
     chart.setOption({
-      series: [{ id: 'rainbar', barWidth: w }, { id: 'snowbar', barWidth: w }],
+      series: [
+        { id: 'rainbar', barWidth: w },
+        { id: 'snowbar', barWidth: w },
+      ],
     });
   }
 
-  // 多要素 tooltip（含该时次天气情况；过滤辅助序列）
+  // 多要素 tooltip（含该时次天气情况）
   function multiTooltip(params, seriesAxis) {
     const i = params[0].dataIndex;
     const code = field('weather_code')?.[i];
@@ -457,8 +402,7 @@ $(function () {
     if (w) html += `<br/>${w[1]} ${w[0]}`;
     html += '<br/>';
     params.forEach(p => {
-      if (p.value == null) return;
-      if (p.seriesName === '降雪' || p.seriesName.startsWith('气温·')) return;
+      if (p.value == null || p.seriesName === '降雪') return;
       const axis = seriesAxis[p.seriesName];
       let extra = '';
       if (axis === 'wind') {
@@ -477,7 +421,7 @@ $(function () {
     return html;
   }
 
-  // ---------- 云量条：逐小时方形色块，仅渲染缩放窗口内的格子 ----------
+  // ---------- 云量条：方形色块，逐小时，与主图 X 轴像素对齐 ----------
   function renderSubStrips() {
     const $cells = $('#cloudCells').empty();
     if (!state.activeStrips.has('cloud') || !state.data) return;
@@ -491,21 +435,17 @@ $(function () {
     if (!Number.isFinite(x0) || !Number.isFinite(x1)) return;
     const step = x1 - x0;
     if (!(step > 0)) return;
-    // 绘图区左右边界（缩放窗口外不渲染）
-    const plotL = lastGrid.left;
-    const plotR = chart.getWidth() - lastGrid.right;
     const cc = field('cloud_cover');
     const w = Math.max(2, step - 1);
     for (let i = 0; i < N; i++) {
-      const left = x0 + i * step - w / 2;
-      if (left + w < plotL || left > plotR) continue;   // ★ 窗口外裁剪
       const pct = cc?.[i] ?? 0;
+      const left = x0 + i * step - w / 2;
       $cells.append(`<div class="cloud-block" style="left:${left}px;width:${w}px;
         background:${cloudColor(pct)}" title="${state.fullTime[i]} 云量 ${Math.round(pct)}%"></div>`);
     }
   }
 
-  // ---------- 蒲福参考表 ----------
+  // ---------- 蒲福参考表（一次生成） ----------
   (function buildBeaufortRef() {
     BEAUFORT_SCALE.forEach(b => {
       $('#beaufortGrid').append(`
@@ -537,22 +477,39 @@ $(function () {
     state.activeModel = $(this).data('model');
     renderAll();
   });
+
   $('#varToggles input').on('change', function () {
     const v = $(this).data('var');
     $(this).is(':checked') ? state.activeVars.add(v) : state.activeVars.delete(v);
     if (!state.activeVars.size) { $(this).prop('checked', true); state.activeVars.add(v); return; }
     renderAll();
   });
+
   $('#stripToggles input').on('change', function () {
     const s = $(this).data('strip');
     $(this).is(':checked') ? state.activeStrips.add(s) : state.activeStrips.delete(s);
     renderAll();
   });
-  $('#daysSel').on('change', function () { state.days = +$(this).val(); fetchData(); });
-  $('#unitSel').on('change', function () { state.windUnit = $(this).val(); renderAll(); });
-  $('#chkBands').on('change', function () { state.showBands = $(this).is(':checked'); renderAll(); });
+
+  $('#daysSel').on('change', function () {
+    state.days = +$(this).val();
+    fetchData();
+  });
+
+  $('#unitSel').on('change', function () {
+    state.windUnit = $(this).val();
+    renderAll();
+  });
+
+  $('#chkBands').on('change', function () {
+    state.showBands = $(this).is(':checked');
+    renderAll();
+  });
+
   $('#refreshBtn').on('click', () => fetchData());
 
   fetchData();
+
+  // 控制台调试入口
   window.__models = { state, renderAll };
-})();
+});
