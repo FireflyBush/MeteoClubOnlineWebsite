@@ -74,9 +74,10 @@
             <label><input type="checkbox" data-var="humidity" checked>💧 湿度</label>
             <label><input type="checkbox" data-var="precipitation" checked>🌧 降水</label>
             <label><input type="checkbox" data-var="wind_speed">🍃 风速</label>
+            <label><input type="checkbox" data-var="wind_gusts">💨 阵风</label>
             <label><input type="checkbox" data-var="pressure">📊 气压</label>
-            <label><input type="checkbox" data-var="dew_point">🌡 露点</label>
-            <label><input type="checkbox" data-var="apparent">🥵 体感</label>
+            <label><input type="checkbox" data-var="dew_point">🌡 <span class="has-tip" data-tip="露点温度：空气中水汽冷却达到饱和、开始凝结出露水时的温度。露点越高说明空气越潮湿、越闷热；常用于判断闷热程度（露点≥24°C 感觉闷热）以及雾和露的形成条件。">露点</span></label>
+            <label><input type="checkbox" data-var="apparent">🥵 <span class="has-tip" data-tip="体感温度：综合考虑气温、湿度、风速后，人体实际感受到的温度。夏季高湿高体感提示中暑风险，冬季大风低体感提示失温风险。">体感</span></label>
           </div>
         </div>
         <div class="ctrl-group">
@@ -86,14 +87,13 @@
           </div>
         </div>
       </div>
-      <div class="cache-note">⏱ 数据缓存 10 分钟 · 下次可刷新：<span id="cacheCountdown">--</span> · 点击图表任意时刻可查看天气详情</div>
+      <div class="cache-note">⏱ 数据缓存 10 分钟 · 下次可刷新：<span id="cacheCountdown">--</span> · 悬停图表可查看该时次天气详情</div>
     </section>
 
     <div id="statusBanner" class="status-banner" hidden></div>
 
     <section class="card chart-card">
       <div id="mainChart" class="main-chart"></div>
-      <!-- 云量条：像素级对齐主图 X 轴 -->
       <div class="sub-strip" id="stripCloud">
         <span class="strip-label">☁ 云量</span>
         <div class="strip-cells" id="cloudCells"></div>
@@ -115,7 +115,7 @@
           <tr><td>ECMWF IFS</td><td>~25 km</td><td id="initIfs">—</td><td>15 天</td></tr>
           <tr><td>ECMWF AIFS</td><td>~25 km</td><td id="initAifs">—</td><td>15 天</td></tr>
         </table>
-        <p class="init-note">* 起报时间按当前 UTC 时间向下取整至最近的 6 小时推算（三模式均为 00/06/12/18Z 起报）。</p>
+        <p class="init-note">* 起报时间取自数据时间轴起点（北京时间）。</p>
       </div>
       <div class="card disclaimer-card">
         <h3>免责声明</h3>
@@ -123,12 +123,5 @@
       </div>
     </section>
   </main>
-
-  <div id="myModal" class="modal">
-    <div class="modal-content">
-      <span class="modal-close">&times;</span>
-      <div id="modalText"></div>
-    </div>
-  </div>
 </body>
 </html>

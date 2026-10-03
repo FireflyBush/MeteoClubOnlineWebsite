@@ -11,7 +11,6 @@
 .ctrl-group { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .ctrl-label { font-size: 13px; color: var(--dim-color, #667); }
 
-/* 模式三选一按钮组 */
 .mode-select { display: inline-flex; border: 1px solid var(--border-color, #dde); border-radius: 18px; overflow: hidden; }
 .mode-btn {
   border: none; background: var(--card-bg, #fff); color: var(--text-color, #223);
@@ -26,6 +25,28 @@
   font-size: 13.5px; cursor: pointer; white-space: nowrap;
 }
 .var-toggles input, .strip-toggles input { accent-color: var(--accent, #3b82f6); }
+
+/* 要素通俗说明：悬停显示 */
+.has-tip {
+  position: relative;
+  border-bottom: 1px dotted currentColor;
+  cursor: help;
+}
+.has-tip::after {
+  content: attr(data-tip);
+  position: absolute; left: 50%; bottom: calc(100% + 8px);
+  transform: translateX(-50%);
+  width: max-content; max-width: 260px;
+  background: #333; color: #fff; font-size: 12.5px; line-height: 1.6;
+  padding: 8px 10px; border-radius: 8px;
+  opacity: 0; pointer-events: none;
+  transition: opacity .15s; z-index: 30;
+  box-shadow: 0 2px 10px rgba(0,0,0,.25);
+  text-align: left; font-weight: normal; white-space: normal;
+}
+.has-tip:hover::after { opacity: 1; }
+/* 屏幕边缘防溢出：最后一个元素 tooltip 左对齐 */
+.var-toggles label:last-child .has-tip::after { left: auto; right: 0; transform: none; }
 
 .model-switch { display: inline-flex; align-items: center; gap: 5px; font-size: 13.5px; cursor: pointer; }
 .model-switch input { accent-color: var(--accent, #3b82f6); }
@@ -53,20 +74,18 @@
 .main-chart { width: 100%; height: 480px; }
 @media (max-width: 640px) { .main-chart { height: 380px; } }
 
-/* ---------- 云量条（绝对定位与主图 X 轴像素对齐） ---------- */
-.sub-strip { position: relative; height: 28px; margin-top: 4px; }
+/* ---------- 云量条（方形色块，与主图逐小时对齐） ---------- */
+.sub-strip { position: relative; height: 26px; margin-top: 4px; }
 .strip-label {
   position: absolute; left: 8px; top: 50%; transform: translateY(-50%); z-index: 2;
   font-size: 11px; color: var(--dim-color, #667);
   background: var(--card-bg, #fff); padding: 0 6px; opacity: .92; border-radius: 4px;
 }
 .strip-cells { position: relative; width: 100%; height: 100%; }
-.cloud-cell {
-  position: absolute; top: 50%; transform: translate(-50%, -50%);
-  width: 16px; height: 16px; border-radius: 50%;
-  border: 1px solid var(--border-color, #ccd);
+.cloud-block {
+  position: absolute; top: 50%; transform: translateY(-50%);
+  height: 18px; border-radius: 2px;
 }
-body.dark-mode .cloud-cell { border-color: #556; }
 
 /* ---------- 蒲福风级参考 ---------- */
 .beaufort-ref { margin-top: 10px; border-top: 1px dashed var(--border-color, #dde); padding-top: 8px; }
@@ -78,16 +97,6 @@ body.dark-mode .cloud-cell { border-color: #556; }
 }
 .beaufort-item small { color: var(--dim-color, #889); }
 .beaufort-note { font-size: 12px; color: var(--dim-color, #889); margin-top: 8px; }
-
-/* ---------- 天气详情卡片（modal 内） ---------- */
-.wx-card { text-align: left; }
-.wx-head { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
-.wx-icon { font-size: 40px; line-height: 1; }
-.wx-time { font-weight: bold; font-size: 15px; }
-.wx-desc { color: var(--dim-color, #667); font-size: 13.5px; margin-top: 2px; }
-.wx-table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
-.wx-table td { padding: 6px 4px; border-bottom: 1px solid var(--border-color, #eef); }
-.wx-table td:first-child { color: var(--dim-color, #667); width: 40%; }
 
 /* ---------- 模式信息 + 免责声明 ---------- */
 .info-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px; }
