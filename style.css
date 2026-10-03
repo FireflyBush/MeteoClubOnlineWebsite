@@ -212,7 +212,7 @@ body {
 }
 
 .observe-time { font-size: 16px; color: var(--dim-color); margin-right: 10px; }
-.refresh-btn { width: 24px; height: 24px; cursor: pointer; opacity: 0.6; transition: transform 0.5s; filter: brightness(0); }
+.refresh-btn { width: 24px; height: 24px; cursor: pointer; opacity: 0.6; transition: transform 0.5s; }
 .refresh-btn:hover { opacity: 1; transform: rotate(180deg); }
 
 .realtime-section {

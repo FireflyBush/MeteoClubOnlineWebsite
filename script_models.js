@@ -45,23 +45,23 @@ $(function () {
 
   // 要素注册表：axisKey = 同单位共轴分组
   const UNIFIED_DEFS = {
-    temperature:   { label: '气温', axisKey: 'temp', type: 'line', color: '#e74c3c' },
-    dew_point:     { label: '露点', axisKey: 'temp', type: 'line', color: '#f39c12' },
-    apparent:      { label: '体感', axisKey: 'temp', type: 'line', color: '#c05070', computed: true },
-    humidity:      { label: '湿度', axisKey: 'pct',  type: 'line', color: '#16a085' },
-    wind_speed:    { label: '风速', axisKey: 'wind', type: 'line', color: '#8e44ad', beaufort: true },
-    wind_gusts:    { label: '阵风', axisKey: 'wind', type: 'line', color: '#5b2c6f', beaufort: true, dashed: true },
-    pressure:      { label: '气压', axisKey: 'pres', type: 'line', color: '#b070c0' },
-    precipitation: { label: '降水', axisKey: 'rain', type: 'bar',  color: '#2ecc71' },
+    temperature:   { label: '气温', axisKey: 'temp', type: 'line', color: '#D35618' },
+    dew_point:     { label: '露点', axisKey: 'temp', type: 'line', color: '#F3C75D' },
+    apparent:      { label: '体感', axisKey: 'temp', type: 'line', color: '#FF9929', computed: true },
+    humidity:      { label: '湿度', axisKey: 'pct',  type: 'line', color: '#4874CB' },
+    wind_speed:    { label: '风速', axisKey: 'wind', type: 'line', color: '#5BC0C8', beaufort: true },
+    wind_gusts:    { label: '阵风', axisKey: 'wind', type: 'line', color: '#FF86A9', beaufort: true },
+    pressure:      { label: '气压', axisKey: 'pres', type: 'line', color: '#83A5FD' },
+    precipitation: { label: '降水', axisKey: 'rain', type: 'bar',  color: '#00B248' },
   };
   const AXIS_META = {
-    temp: { name: '温度 (°C)',   side: 'left' },
-    pres: { name: '气压 (hPa)',  side: 'left',  offset: 44 },
-    pct:  { name: '湿度 (%)',    side: 'right' },
-    rain: { name: '降水 (mm)',   side: 'right', offset: 30 },
-    wind: { name: '风速 (km/h)', side: 'right', offset: 60 },
+    temp: { name: '°C',   side: 'left' },
+    pres: { name: 'hPa',  side: 'left',  offset: 44 },
+    pct:  { name: '%',    side: 'right' },
+    rain: { name: 'mm',   side: 'right', offset: 30 },
+    wind: { name: 'km/h', side: 'right', offset: 60 },
   };
-  const RAIN_CAP = 50;
+  const RAIN_CAP = 40;
   const WIND_DEFAULT_MAX = 75;
 
   // ---------- 状态 ----------
@@ -378,7 +378,7 @@ $(function () {
         series.push({
           name: def.label, type: def.type, yAxisIndex: axisIndex[def.axisKey],
           smooth: true, symbol: 'none',
-          lineStyle: def.dashed ? { type: 'dashed' } : undefined,
+          lineStyle: { width: 2, ...(def.dashed ? { type: 'dashed' } : {}) },
           data: vals, itemStyle: { color: def.color },
         });
       }
