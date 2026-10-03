@@ -89,7 +89,7 @@
 .status-banner.error { background: #fee2e2; color: #991b1b; border-color: #fca5a5; }
 
 /* ---------- 主图表 ---------- */
-.chart-card { padding: 12px; }
+.chart-card { padding: 12px; margin-top:10px; }
 .chart-scroll { width: 100%; }
 .main-chart { width: 100%; height: 480px; }
 
