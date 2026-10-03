@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>模式预报查询 · 气象深高</title>
+  <meta name="description" content="查看 GFS、ECMWF IFS、AIFS 三大模式的各要素预报结果">
+
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style_10d.css">
+  <link rel="stylesheet" href="models.css">
+
+  <script defer src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+  <script defer src="beaufort.js"></script>
+  <script defer src="script_models.js"></script>
+</head>
+<body>
+  <nav class="top-nav">
+    <div class="nav-left">
+      <img src="https://cdn.jsdelivr.net/gh/FireflyBush/MeteoClubOnlineWebsite@2026.1004/data/icons/logo.png" alt="Logo" class="nav-logo">
+      <span class="nav-title">气象深高</span>
+    </div>
+    <div class="nav-right">
+      <a href="/index.html" class="nav-link" title="返回主页">
+        <img src="https://cdn.jsdelivr.net/gh/FireflyBush/MeteoClubOnlineWebsite@2026.1004/data/icons/home.svg" alt="主页" class="nav-icon">
+      </a>
+    </div>
+  </nav>
+
+  <main class="models-container">
+    <section class="page-header">
+      <h2>模式预报查询</h2>
+      <p class="sub">GFS Global（NOAA ~13km）· ECMWF IFS 0.25° · ECMWF AIFS 0.25°（AI 模式）</p>
+    </section>
+
+    <section class="card control-card">
+      <div class="control-row">
+        <div class="ctrl-group">
+          <span class="ctrl-label">预报模式</span>
+          <div class="mode-select" id="modeSelect">
+            <button class="mode-btn" data-model="gfs">GFS</button>
+            <button class="mode-btn" data-model="ifs">IFS</button>
+            <button class="mode-btn active" data-model="aifs">AIFS</button>
+          </div>
+        </div>
+        <div class="ctrl-group">
+          <span class="ctrl-label">时效</span>
+          <select id="daysSel">
+            <option value="3">3 天</option>
+            <option value="7">7 天</option>
+            <option value="10" selected>10 天</option>
+            <option value="14">14 天</option>
+          </select>
+        </div>
+        <div class="ctrl-group" id="unitGroup" hidden>
+          <span class="ctrl-label">风速单位</span>
+          <select id="unitSel">
+            <option value="kmh" selected>km/h</option>
+            <option value="ms">m/s</option>
+            <option value="kn">kn</option>
+          </select>
+        </div>
+        <div class="ctrl-group" id="beaufortGroup" hidden>
+          <label class="model-switch"><input type="checkbox" id="chkBands"><span>风级色带</span></label>
+        </div>
+        <button id="refreshBtn" class="refresh-btn" title="手动刷新">🔄</button>
+      </div>
+      <div class="control-row">
+        <div class="ctrl-group">
+          <span class="ctrl-label">图表要素</span>
+          <div class="var-toggles" id="varToggles">
+            <label><input type="checkbox" data-var="temperature" checked>🌡 气温</label>
+            <label><input type="checkbox" data-var="humidity" checked>💧 湿度</label>
+            <label><input type="checkbox" data-var="precipitation" checked>🌧 降水</label>
+            <label><input type="checkbox" data-var="wind_speed">🍃 风速</label>
+            <label><input type="checkbox" data-var="wind_gusts">💨 阵风</label>
+            <label><input type="checkbox" data-var="pressure">📊 气压</label>
+            <label><input type="checkbox" data-var="dew_point">🌡 <span class="has-tip" data-tip="露点温度：空气中水汽冷却达到饱和、开始凝结出露水时的温度。露点越高说明空气越潮湿、越闷热；常用于判断闷热程度（露点≥24°C 感觉闷热）以及雾和露的形成条件。">露点</span></label>
+            <label><input type="checkbox" data-var="apparent">🥵 <span class="has-tip" data-tip="体感温度：综合考虑气温、湿度、风速后，人体实际感受到的温度。夏季高湿高体感提示中暑风险，冬季大风低体感提示失温风险。">体感</span></label>
+          </div>
+        </div>
+        <div class="ctrl-group">
+          <span class="ctrl-label">附属条</span>
+          <div class="strip-toggles" id="stripToggles">
+            <label><input type="checkbox" data-strip="cloud" checked>☁ 云量</label>
+          </div>
+        </div>
+      </div>
+      <div class="cache-note">鼠标悬停/触屏点击图表特定时次，可查看该时次天气详情</div>
+    </section>
+
+    <div id="statusBanner" class="status-banner" hidden></div>
+
+    <section class="card chart-card">
+      <!-- 滚动容器：桌面端无效果，移动端（≤1000px）固定宽 + 横向滚动 -->
+      <div class="chart-scroll">
+        <div id="mainChart" class="main-chart"></div>
+        <div class="sub-strip" id="stripCloud">
+          <span class="strip-label">☁ 云量</span>
+          <div class="strip-cells" id="cloudCells"></div>
+        </div>
+      </div>
+
+      <details class="beaufort-ref" id="beaufortRef" hidden>
+        <summary>🍃 蒲福风级对照表（GB/T 28591-2012，0–17级）</summary>
+        <div class="beaufort-grid" id="beaufortGrid"></div>
+        <p class="beaufort-note">注：12 级以上为台风延伸等级；风速指平地上离地 10 米处数值。</p>
+      </details>
+    </section>
+
+    <section class="info-row">
+      <div class="card info-card">
+        <h3>模式信息</h3>
+        <table class="model-info-table">
+          <tr><th>模式</th><th>分辨率</th><th>起报时间</th><th>最长时效</th></tr>
+          <tr><td>🇺🇸GFS Global</td><td>~13 km</td><td id="initGfs">—</td><td>16 天</td></tr>
+          <tr><td>🇪🇺ECMWF IFS</td><td>~25 km</td><td id="initIfs">—</td><td>15 天</td></tr>
+          <tr><td>🤖ECMWF AIFS</td><td>~25 km</td><td id="initAifs">—</td><td>15 天</td></tr>
+        </table>
+        <p class="init-note">* 起报时间已转换为北京时间。</p>
+      </div>
+      <div class="card disclaimer-card">
+        <h3>使用说明</h3>
+        <p>我国《气象法》第二十二条规定，公众气象预报和灾害性天气警报实行统一发布制度。数值模式数据来自 <a href="https://open-meteo.com" target="_blank" rel="noopener">Open-Meteo</a>（基于 ECMWF / NOAA 公开数据），仅代表模式模拟结果，<strong>不代表官方预报</strong>。灾害性天气请以气象部门发布为准。</p>
+      </div>
+    </section>
+  </main>
+</body>
+</html>
