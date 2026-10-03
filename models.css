@@ -147,3 +147,7 @@
   .info-row { grid-template-columns: 1fr; }
   .page-header h2 { font-size: 20px; }
 }
+
+/* 模式不提供的要素：开关置灰 */
+.var-disabled { opacity: 0.38; cursor: not-allowed; }
+.var-disabled input { cursor: not-allowed; }
