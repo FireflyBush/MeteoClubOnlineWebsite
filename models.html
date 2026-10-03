@@ -93,10 +93,15 @@
     <div id="statusBanner" class="status-banner" hidden></div>
 
     <section class="card chart-card">
-      <div id="mainChart" class="main-chart"></div>
-      <div class="sub-strip" id="stripCloud">
-        <span class="strip-label">☁ 云量</span>
-        <div class="strip-cells" id="cloudCells"></div>
+      <!-- 滚动容器：移动端时 chart-inner 固定最小宽度，横向滚动 -->
+      <div class="chart-scroll" id="chartScroll">
+        <div class="chart-inner" id="chartInner">
+          <div id="mainChart" class="main-chart"></div>
+          <div class="sub-strip" id="stripCloud">
+            <span class="strip-label">☁ 云量</span>
+            <div class="strip-cells" id="cloudCells"></div>
+          </div>
+        </div>
       </div>
 
       <details class="beaufort-ref" id="beaufortRef" hidden>
