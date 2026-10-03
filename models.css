@@ -1,6 +1,5 @@
-/* ===== models.css —— 模式对比页专属样式 ===== */
+/* ===== models.css —— 模式预报查询页专属样式 ===== */
 
-/* ---------- 布局 ---------- */
 .models-container { max-width: 1100px; margin: 0 auto; padding: 0 12px 40px; }
 .page-header { text-align: center; margin: 18px 0 20px; }
 .page-header .sub { color: var(--dim-color, #667); font-size: 14px; margin-top: 4px; }
@@ -11,6 +10,15 @@
 .control-row:last-of-type { margin-bottom: 0; }
 .ctrl-group { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .ctrl-label { font-size: 13px; color: var(--dim-color, #667); }
+
+/* 模式三选一按钮组 */
+.mode-select { display: inline-flex; border: 1px solid var(--border-color, #dde); border-radius: 18px; overflow: hidden; }
+.mode-btn {
+  border: none; background: var(--card-bg, #fff); color: var(--text-color, #223);
+  padding: 6px 16px; font-size: 13.5px; cursor: pointer; transition: all .15s;
+}
+.mode-btn + .mode-btn { border-left: 1px solid var(--border-color, #dde); }
+.mode-btn.active { background: var(--accent, #3b82f6); color: #fff; }
 
 .var-toggles, .strip-toggles { display: flex; flex-wrap: wrap; gap: 6px 14px; }
 .var-toggles label, .strip-toggles label {
@@ -45,19 +53,20 @@
 .main-chart { width: 100%; height: 480px; }
 @media (max-width: 640px) { .main-chart { height: 380px; } }
 
-/* ---------- 附属条（与主图 grid.left = 56px 对齐） ---------- */
-.sub-strip { display: flex; align-items: center; gap: 8px; padding: 4px 8px 4px 56px; margin-top: 2px; }
-.strip-label { font-size: 11px; color: var(--dim-color, #667); width: 40px; flex-shrink: 0; }
-.strip-cells { flex: 1; display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; align-items: center; gap: 1px; min-height: 24px; }
-
+/* ---------- 云量条（绝对定位与主图 X 轴像素对齐） ---------- */
+.sub-strip { position: relative; height: 28px; margin-top: 4px; }
+.strip-label {
+  position: absolute; left: 8px; top: 50%; transform: translateY(-50%); z-index: 2;
+  font-size: 11px; color: var(--dim-color, #667);
+  background: var(--card-bg, #fff); padding: 0 6px; opacity: .92; border-radius: 4px;
+}
+.strip-cells { position: relative; width: 100%; height: 100%; }
 .cloud-cell {
-  width: 16px; height: 16px; border-radius: 50%; margin: 0 auto;
+  position: absolute; top: 50%; transform: translate(-50%, -50%);
+  width: 16px; height: 16px; border-radius: 50%;
   border: 1px solid var(--border-color, #ccd);
 }
-.weather-cell { text-align: center; font-size: 15px; cursor: default; line-height: 24px; }
-.weather-cell img { width: 18px; height: 18px; vertical-align: middle; }
-.sun-cell { display: flex; align-items: flex-end; justify-content: center; height: 24px; }
-.sun-cell > div { width: 60%; background: #f1c40f; border-radius: 2px 2px 0 0; }
+body.dark-mode .cloud-cell { border-color: #556; }
 
 /* ---------- 蒲福风级参考 ---------- */
 .beaufort-ref { margin-top: 10px; border-top: 1px dashed var(--border-color, #dde); padding-top: 8px; }
@@ -70,6 +79,16 @@
 .beaufort-item small { color: var(--dim-color, #889); }
 .beaufort-note { font-size: 12px; color: var(--dim-color, #889); margin-top: 8px; }
 
+/* ---------- 天气详情卡片（modal 内） ---------- */
+.wx-card { text-align: left; }
+.wx-head { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+.wx-icon { font-size: 40px; line-height: 1; }
+.wx-time { font-weight: bold; font-size: 15px; }
+.wx-desc { color: var(--dim-color, #667); font-size: 13.5px; margin-top: 2px; }
+.wx-table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+.wx-table td { padding: 6px 4px; border-bottom: 1px solid var(--border-color, #eef); }
+.wx-table td:first-child { color: var(--dim-color, #667); width: 40%; }
+
 /* ---------- 模式信息 + 免责声明 ---------- */
 .info-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px; }
 @media (max-width: 720px) { .info-row { grid-template-columns: 1fr; } }
@@ -77,9 +96,9 @@
 .model-info-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
 .model-info-table th, .model-info-table td { padding: 5px 6px; border-bottom: 1px solid var(--border-color, #eef); text-align: left; }
 .model-info-table th { color: var(--dim-color, #667); font-weight: 500; }
+.init-note { font-size: 11.5px; color: var(--dim-color, #889); margin: 8px 0 0; }
 .disclaimer-card p { font-size: 12.5px; line-height: 1.7; color: var(--dim-color, #556); margin: 0; }
 
-/* ---------- 深色模式 ---------- */
-body.dark-mode .cloud-cell { border-color: #556; }
 body.dark-mode .status-banner { background: #451a03; color: #fde68a; border-color: #78350f; }
 body.dark-mode .status-banner.error { background: #450a0a; color: #fecaca; border-color: #7f1d1d; }
+body.dark-mode .strip-label { background: var(--card-bg-dark, #2a2a3a); }

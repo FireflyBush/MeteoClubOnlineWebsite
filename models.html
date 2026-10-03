@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>全球模式对比预报 · 气象深高</title>
-  <meta name="description" content="对比 GFS、ECMWF IFS 与 AIFS 三大数值/AI 模式对同一地点的预报差异">
+  <title>模式预报查询 · 气象深高</title>
+  <meta name="description" content="查看 GFS、ECMWF IFS、AIFS 三大模式的各要素预报结果">
 
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="style_10d.css">
@@ -16,7 +16,6 @@
   <script defer src="script_models.js"></script>
 </head>
 <body>
-  <!-- 全站统一导航栏 -->
   <nav class="top-nav">
     <div class="nav-left">
       <img src="https://cdn.jsdelivr.net/gh/FireflyBush/MeteoClubOnlineWebsite@2026.0817/data/icons/logo.png" alt="Logo" class="nav-logo">
@@ -30,42 +29,20 @@
   </nav>
 
   <main class="models-container">
-    <!-- 页头 -->
     <section class="page-header">
-      <h2>数值 & AI 模式预报对比</h2>
+      <h2>模式预报查询</h2>
       <p class="sub">GFS Global（NOAA ~13km）· ECMWF IFS 0.25° · ECMWF AIFS 0.25°（AI 模式）</p>
     </section>
 
-    <!-- 控制面板 -->
     <section class="card control-card">
       <div class="control-row">
         <div class="ctrl-group">
-          <span class="ctrl-label">图表要素</span>
-          <div class="var-toggles" id="varToggles">
-            <label><input type="checkbox" data-var="temperature" checked>🌡 气温</label>
-            <label><input type="checkbox" data-var="humidity" checked>💧 湿度</label>
-            <label><input type="checkbox" data-var="precipitation" checked>🌧 降水</label>
-            <label><input type="checkbox" data-var="wind_speed">🍃 风速</label>
-            <label><input type="checkbox" data-var="pressure">📊 气压</label>
-            <label><input type="checkbox" data-var="dew_point">🌡 露点</label>
-            <label><input type="checkbox" data-var="apparent">🥵 体感</label>
+          <span class="ctrl-label">预报模式</span>
+          <div class="mode-select" id="modeSelect">
+            <button class="mode-btn" data-model="gfs">GFS</button>
+            <button class="mode-btn" data-model="ifs">IFS</button>
+            <button class="mode-btn active" data-model="aifs">AIFS</button>
           </div>
-        </div>
-      </div>
-      <div class="control-row">
-        <div class="ctrl-group">
-          <span class="ctrl-label">附属条</span>
-          <div class="strip-toggles" id="stripToggles">
-            <label><input type="checkbox" data-strip="cloud" checked>☁ 云量</label>
-            <label><input type="checkbox" data-strip="weather" checked>🌤 天气</label>
-            <label><input type="checkbox" data-strip="sunshine">☀ 日照</label>
-          </div>
-        </div>
-        <div class="ctrl-group">
-          <span class="ctrl-label">模式</span>
-          <label class="model-switch"><input type="checkbox" id="chkGfs" checked><span>GFS</span></label>
-          <label class="model-switch"><input type="checkbox" id="chkIfs" checked><span>IFS</span></label>
-          <label class="model-switch"><input type="checkbox" id="chkAifs" checked><span>AIFS</span></label>
         </div>
         <div class="ctrl-group">
           <span class="ctrl-label">时效</span>
@@ -89,30 +66,39 @@
         </div>
         <button id="refreshBtn" class="refresh-btn" title="手动刷新">🔄</button>
       </div>
-      <div class="cache-note">⏱ 数据缓存 10 分钟 · 下次可刷新：<span id="cacheCountdown">--</span></div>
+      <div class="control-row">
+        <div class="ctrl-group">
+          <span class="ctrl-label">图表要素</span>
+          <div class="var-toggles" id="varToggles">
+            <label><input type="checkbox" data-var="temperature" checked>🌡 气温</label>
+            <label><input type="checkbox" data-var="humidity" checked>💧 湿度</label>
+            <label><input type="checkbox" data-var="precipitation" checked>🌧 降水</label>
+            <label><input type="checkbox" data-var="wind_speed">🍃 风速</label>
+            <label><input type="checkbox" data-var="pressure">📊 气压</label>
+            <label><input type="checkbox" data-var="dew_point">🌡 露点</label>
+            <label><input type="checkbox" data-var="apparent">🥵 体感</label>
+          </div>
+        </div>
+        <div class="ctrl-group">
+          <span class="ctrl-label">附属条</span>
+          <div class="strip-toggles" id="stripToggles">
+            <label><input type="checkbox" data-strip="cloud" checked>☁ 云量</label>
+          </div>
+        </div>
+      </div>
+      <div class="cache-note">⏱ 数据缓存 10 分钟 · 下次可刷新：<span id="cacheCountdown">--</span> · 点击图表任意时刻可查看天气详情</div>
     </section>
 
-    <!-- 状态横幅 -->
     <div id="statusBanner" class="status-banner" hidden></div>
 
-    <!-- 主图表 -->
     <section class="card chart-card">
       <div id="mainChart" class="main-chart"></div>
-
-      <!-- 附属条：云量 -->
+      <!-- 云量条：像素级对齐主图 X 轴 -->
       <div class="sub-strip" id="stripCloud">
-        <span class="strip-label">☁ 云量</span><div class="strip-cells"></div>
-      </div>
-      <!-- 附属条：天气（以 IFS 为参考模式） -->
-      <div class="sub-strip" id="stripWeather">
-        <span class="strip-label">🌤 天气</span><div class="strip-cells"></div>
-      </div>
-      <!-- 附属条：日照（默认隐藏） -->
-      <div class="sub-strip" id="stripSunshine" hidden>
-        <span class="strip-label">☀ 日照</span><div class="strip-cells"></div>
+        <span class="strip-label">☁ 云量</span>
+        <div class="strip-cells" id="cloudCells"></div>
       </div>
 
-      <!-- 蒲福风级参考表（风速要素激活时显示） -->
       <details class="beaufort-ref" id="beaufortRef" hidden>
         <summary>🍃 蒲福风级对照表（GB/T 28591-2012，0–17级）</summary>
         <div class="beaufort-grid" id="beaufortGrid"></div>
@@ -120,16 +106,16 @@
       </details>
     </section>
 
-    <!-- 模式信息 + 免责声明 -->
     <section class="info-row">
       <div class="card info-card">
         <h3>模式信息</h3>
         <table class="model-info-table">
-          <tr><th>模式</th><th>分辨率</th><th>起报频率</th><th>最长时效</th><th>本次拉取</th></tr>
-          <tr><td>GFS Global</td><td>~13 km</td><td>每 6 小时</td><td>16 天</td><td id="initGfs">—</td></tr>
-          <tr><td>ECMWF IFS</td><td>~25 km</td><td>每 6 小时</td><td>15 天</td><td id="initIfs">—</td></tr>
-          <tr><td>ECMWF AIFS</td><td>~25 km</td><td>每 6 小时</td><td>15 天</td><td id="initAifs">—</td></tr>
+          <tr><th>模式</th><th>分辨率</th><th>起报时间</th><th>最长时效</th></tr>
+          <tr><td>GFS Global</td><td>~13 km</td><td id="initGfs">—</td><td>16 天</td></tr>
+          <tr><td>ECMWF IFS</td><td>~25 km</td><td id="initIfs">—</td><td>15 天</td></tr>
+          <tr><td>ECMWF AIFS</td><td>~25 km</td><td id="initAifs">—</td><td>15 天</td></tr>
         </table>
+        <p class="init-note">* 起报时间按当前 UTC 时间向下取整至最近的 6 小时推算（三模式均为 00/06/12/18Z 起报）。</p>
       </div>
       <div class="card disclaimer-card">
         <h3>免责声明</h3>
@@ -138,18 +124,11 @@
     </section>
   </main>
 
-  <!-- 复用全站模态框 -->
-  <div id="myModal" class="modal"><div class="modal-content"><span class="modal-close">&times;</span><p id="modalText"></p></div></div>
-
-  <script>
-    // 主题切换（与全站 localStorage key 一致）
-    $(function () {
-      $('#themeToggle, .theme-toggle').on('click', function () {
-        $('body').toggleClass('dark-mode');
-        localStorage.setItem('theme', $('body').hasClass('dark-mode') ? 'dark' : 'light');
-      });
-      if (localStorage.getItem('theme') === 'dark') $('body').addClass('dark-mode');
-    });
-  </script>
+  <div id="myModal" class="modal">
+    <div class="modal-content">
+      <span class="modal-close">&times;</span>
+      <div id="modalText"></div>
+    </div>
+  </div>
 </body>
 </html>
