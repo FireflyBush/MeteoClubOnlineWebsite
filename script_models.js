@@ -1,78 +1,77 @@
 /* =====================================================================
  * script_models.js —— 全球模式对比页
- * 数据源：Open-Meteo /v1/gfs 与 /v1/ecmwf 双端点并行请求
- * 缓存：服务端 Function 10 分钟边缘缓存（见 functions/api/models-proxy.js）
+ * 数据源：Open-Meteo /v1/forecast，单请求合并三模式
+ *   models = gfs_seamless, ecmwf_ifs025, ecmwf_aifs025_single
+ * 缓存：服务端 Function 10 分钟边缘缓存（functions/api/models-proxy.js）
  * 依赖：jQuery, ECharts 5, beaufort.js
  * ===================================================================== */
 $(function () {
   'use strict';
 
-  // ---------- 常量与配置 ----------
-  const PROXY = '/api/models-proxy?url=';          // 10 分钟缓存代理
-  const LAT = 22.552188, LON = 114.025106;         // 中心校区坐标，按实际改
+  // ---------- 配置 ----------
+  const PROXY = '/api/models-proxy?url=';
   const PROXY_TTL_MS = 10 * 60 * 1000;
+  const LAT = 22.552188, LON = 114.025106;   // 中心校区坐标，按实际改
 
-  // WMO weathercode → 中文描述 + 国标符号占位符（后续替换为 GB/T 22164 图标文件）
+  const HOURLY_VARS = [
+    'temperature_2m', 'relative_humidity_2m', 'dew_point_2m',
+    'precipitation', 'rain', 'snowfall',
+    'pressure_msl', 'wind_speed_10m', 'cloud_cover', 'weather_code',
+    'sunshine_duration',
+  ].join(',');
+
+  const MODELS = {
+    gfs:  { suffix: '_gfs_seamless',          label: 'GFS' },
+    ifs:  { suffix: '_ecmwf_ifs025',          label: 'IFS' },
+    aifs: { suffix: '_ecmwf_aifs025_single',  label: 'AIFS' },
+  };
+  const MODEL_KEYS = ['gfs', 'ifs', 'aifs'];
+
+  // WMO weathercode → [中文描述, 图标]（后续可替换为国标 SVG）
   const WMO = {
-    0:  ['晴', '☀️'],    1:  ['基本晴', '🌤️'],  2:  ['局部多云', '⛅'],
-    3:  ['阴', '☁️'],    45: ['雾', '🌫️'],      48: ['雾凇', '🌫️'],
+    0: ['晴', '☀️'],       1: ['基本晴', '🌤️'],  2: ['局部多云', '⛅'],  3: ['阴', '☁️'],
+    45: ['雾', '🌫️'],     48: ['雾凇', '🌫️'],
     51: ['毛毛雨', '🌦️'], 53: ['毛毛雨', '🌦️'],  55: ['毛毛雨', '🌦️'],
     56: ['冻毛毛雨', '🌧️'], 57: ['冻毛毛雨', '🌧️'],
-    61: ['小雨', '🌧️'],  63: ['中雨', '🌧️'],    65: ['大雨', '🌧️'],
-    66: ['冻雨', '🌧️'],  67: ['冻雨', '🌧️'],
-    71: ['小雪', '🌨️'],  73: ['中雪', '🌨️'],    75: ['大雪', '🌨️'],
-    77: ['雪粒', '🌨️'],
-    80: ['阵雨', '🌦️'],  81: ['阵雨', '🌦️'],    82: ['强阵雨', '⛈️'],
-    85: ['阵雪', '🌨️'],  86: ['阵雪', '🌨️'],
+    61: ['小雨', '🌧️'],   63: ['中雨', '🌧️'],    65: ['大雨', '🌧️'],
+    66: ['冻雨', '🌧️'],   67: ['冻雨', '🌧️'],
+    71: ['小雪', '🌨️'],   73: ['中雪', '🌨️'],    75: ['大雪', '🌨️'],   77: ['雪粒', '🌨️'],
+    80: ['阵雨', '🌦️'],   81: ['阵雨', '🌦️'],    82: ['强阵雨', '⛈️'],
+    85: ['阵雪', '🌨️'],   86: ['阵雪', '🌨️'],
     95: ['雷阵雨', '⛈️'], 96: ['雷阵雨伴冰雹', '⛈️'], 99: ['雷阵雨伴冰雹', '⛈️'],
   };
 
-  // 要素注册表：ECharts 类型、双轴、颜色、GFS 独有标记
-  const VARIABLE_DEFS = {
-    temperature: { label: '气温', type: 'line', smooth: true,
-      colors: { gfs: '#f39c12', ifs: '#2980b9', aifs: '#e74c3c' },
-      yAxis: { name: '温度 (°C)', scale: true } },
-    humidity: { label: '湿度', type: 'line', smooth: true,
-      colors: { gfs: '#16a085', ifs: '#2980b9', aifs: '#e74c3c' },
-      yAxis: { name: '相对湿度 (%)', min: 0, max: 100 } },
-    wind_speed: { label: '风速', type: 'line', smooth: true, beaufort: true,
-      colors: { gfs: '#16a085', ifs: '#8e44ad', aifs: '#c0392b' },
-      yAxis: { name: '风速 (km/h)', min: 0 } },
-    precipitation: { label: '降水', type: 'bar', stacked: true,
-      colors: { gfs: '#3498db', ifs: '#2980b9', aifs: '#e74c3c' },
-      yAxis: { name: '降水量 (mm)', min: 0 } },
-    pressure: { label: '气压', type: 'line', smooth: true,
-      colors: { gfs: '#f39c12', ifs: '#2980b9', aifs: '#e74c3c' },
-      yAxis: { name: '海平面气压 (hPa)', scale: true } },
-    cloud_cover: { label: '云量', type: 'line', smooth: true,
-      colors: { gfs: '#7f8c8d', ifs: '#5dade2', aifs: '#f5b041' },
-      yAxis: { name: '总云量 (%)', min: 0, max: 100 } },
-    weather_code: { label: '天气', type: 'strip' },        // 图标带，不画图
-    sunshine: { label: '日照', type: 'line', gfsDisabled: true,
-      colors: { ifs: '#f1c40f', aifs: '#e67e22' },
-      yAxis: { name: '日照时长 (分钟/时)' } },
-    dew_point: { label: '露点', type: 'line', smooth: true,
-      colors: { gfs: '#16a085', ifs: '#2980b9', aifs: '#e74c3c' },
-      yAxis: { name: '露点 (°C)', scale: true } },
-    apparent: { label: '体感', type: 'line', smooth: true, computed: true,
-      colors: { gfs: '#e67e22', ifs: '#2980b9', aifs: '#e74c3c' },
-      yAxis: { name: '体感温度 (°C)', scale: true } },
+  // 要素注册表：axisKey = 同单位共轴分组
+  const UNIFIED_DEFS = {
+    temperature:   { label: '气温', axisKey: 'temp', type: 'line', color: { gfs: '#f39c12', ifs: '#e74c3c', aifs: '#c0392b' } },
+    dew_point:     { label: '露点', axisKey: 'temp', type: 'line', color: { gfs: '#e67e22', ifs: '#f39c12', aifs: '#d35400' } },
+    apparent:      { label: '体感', axisKey: 'temp', type: 'line', color: { gfs: '#d35400', ifs: '#c05070', aifs: '#a04060' }, computed: true },
+    humidity:      { label: '湿度', axisKey: 'pct',  type: 'line', color: { gfs: '#16a085', ifs: '#5dade2', aifs: '#48c9b0' } },
+    wind_speed:    { label: '风速', axisKey: 'wind', type: 'line', color: { gfs: '#8e44ad', ifs: '#7d3c98', aifs: '#6c3483' }, beaufort: true },
+    pressure:      { label: '气压', axisKey: 'pres', type: 'line', color: { gfs: '#b070c0', ifs: '#8e44ad', aifs: '#7040a0' } },
+    precipitation: { label: '降水', axisKey: 'rain', type: 'bar',  color: { gfs: '#2ecc71', ifs: '#27ae60', aifs: '#1e8449' } },
   };
-
-  const MODEL_LABELS = { gfs: 'GFS 0.25°', ifs: 'ECMWF IFS', aifs: 'ECMWF AIFS' };
+  const AXIS_META = {
+    temp: { name: '温度 (°C)',    side: 'left',  scale: true },
+    pres: { name: '气压 (hPa)',   side: 'left',  offset: 44, scale: true },
+    pct:  { name: '湿度/云量 (%)', side: 'right', min: 0, max: 100 },
+    rain: { name: '降水 (mm)',    side: 'right', offset: 30, min: 0 },
+    wind: { name: '风速 (km/h)',  side: 'right', offset: 60, min: 0 },
+  };
 
   // ---------- 状态 ----------
   const state = {
-    variable: 'temperature',
+    activeVars: new Set(['temperature', 'humidity', 'precipitation']),
+    activeStrips: new Set(['cloud', 'weather']),
     models: { gfs: true, ifs: true, aifs: true },
     days: 10,
-    units: { wind: 'kmh' },
+    windUnit: 'kmh',
     showBands: false,
-    data: {},      // { gfs: {...}, ifs: {...}, aifs: {...} }
+    data: null,          // 单份合并响应
+    timeAxis: [],
     fetchedAt: 0,
   };
 
-  // ---------- 工具 ----------
   const chart = echarts.init(document.getElementById('mainChart'));
   $(window).on('resize', () => chart.resize());
 
@@ -82,311 +81,347 @@ $(function () {
     $b.text(msg).toggleClass('error', !!isError).show();
   }
 
-  // Steadman 体感温度（与首页 script.js 相同公式）
-  function apparentTemperature(T, RH, v) {   // °C, %, m/s
+  // ---------- Steadman 体感温度（与首页公式一致） ----------
+  function apparentTemperature(T, RH, v) {  // °C, %, m/s
     if (v > 4.8) return 13.12 + 0.6215 * T - 11.37 * Math.sqrt(v) + 0.3965 * T * Math.sqrt(v);
     return T + 0.33 * RH / 100 * 6.105 * Math.exp(17.27 * T / (237.7 + T)) - 4;
   }
 
-  // ---------- 数据获取 ----------
+  // ---------- 字段访问（固定后缀 + 全 null 兜底） ----------
+  function field(modelKey, base) {
+    const h = state.data?.hourly;
+    if (!h) return null;
+    const arr = h[base + MODELS[modelKey].suffix];
+    if (!arr || !arr.some(v => v !== null)) return null;   // 全 null 视为无数据
+    return arr;
+  }
+  function hasModel(modelKey) {
+    return state.models[modelKey] && field(modelKey, 'temperature_2m') !== null;
+  }
+
+  // ---------- 数据获取（单请求） ----------
   async function fetchData() {
     setStatus('⏳ 正在获取模式数据…');
-    const common = `latitude=${LAT}&longitude=${LON}&timezone=Asia%2FShanghai&forecast_days=${state.days}`;
-    const vars = buildHourlyVars();
-    const windUnit = state.units.wind;
-
-    const ecmwfModels = ['ifs', 'aifs'].filter(k => state.models[k]).map(k => k === 'ifs' ? 'ifs025' : 'aifs025').join(',');
-    const pEcmwf = state.models.ifs || state.models.aifs
-      ? fetch(PROXY + encodeURIComponent(
-          `https://api.open-meteo.com/v1/ecmwf?${common}&hourly=${vars.ecmwf}&models=${ecmwfModels}`
-          + (state.variable === 'wind_speed' ? `&wind_speed_unit=${windUnit}` : '')))
-      : Promise.resolve(null);
-    const pGfs = state.models.gfs
-      ? fetch(PROXY + encodeURIComponent(
-          `https://api.open-meteo.com/v1/gfs?${common}&hourly=${vars.gfs}`
-          + (state.variable === 'wind_speed' ? `&wind_speed_unit=${windUnit}` : '')))
-      : Promise.resolve(null);
-
-    const [gfsRes, ecmwfRes] = await Promise.allSettled([pGfs, pEcmwf]);
-    const next = { data: {}, fetchedAt: Date.now() };
-    let errs = [];
-
-    if (gfsRes.status === 'fulfilled' && gfsRes.value && gfsRes.value.ok) {
-      next.data.gfs = await gfsRes.value.json();
-    } else if (state.models.gfs) errs.push('GFS');
-
-    if (ecmwfRes.status === 'fulfilled' && ecmwfRes.value && ecmwfRes.value.ok) {
-      const j = await ecmwfRes.value.json();
-      // /v1/ecmwf 单模型请求时字段不带后缀，归一化为 *_ifs025 / *_aifs025
-      if (state.models.ifs && state.models.aifs) {
-        next.data.ifs = j; next.data.aifs = j;   // 共享同一响应，字段名区分
-      } else if (state.models.ifs) {
-        next.data.ifs = j;
-        next.data.ifs._singleModel = true;
-      } else if (state.models.aifs) {
-        next.data.aifs = j;
-        next.data.aifs._singleModel = true;
-      }
-    } else if (state.models.ifs || state.models.aifs) errs.push('ECMWF');
-
-    state.data = next.data;
-    state.fetchedAt = next.fetchedAt;
-
-    if (errs.length === 2) setStatus('❌ 所有模式数据获取失败，请稍后重试', true);
-    else if (errs.length === 1) setStatus(`⚠️ ${errs[0]} 数据获取失败，其他模式正常展示`);
-    else setStatus('');
-
+    const params = new URLSearchParams({
+      latitude: LAT, longitude: LON,
+      hourly: HOURLY_VARS,
+      models: 'gfs_seamless,ecmwf_ifs025,ecmwf_aifs025_single',
+      forecast_days: state.days,
+      timezone: 'Asia/Shanghai',
+    });
+    try {
+      const res = await fetch(PROXY + encodeURIComponent(
+        'https://api.open-meteo.com/v1/forecast?' + params.toString()));
+      const json = await res.json();
+      if (json.error) throw new Error(json.reason || 'API 返回错误');
+      state.data = json;
+      state.timeAxis = json.hourly?.time || [];
+      state.fetchedAt = Date.now();
+      setStatus('');
+    } catch (e) {
+      setStatus('❌ 数据获取失败：' + e.message, true);
+    }
     updateInitTable();
-    render();
+    renderAll();
   }
 
-  // 根据要素构造两个端点的 hourly 参数
-  function buildHourlyVars() {
-    const v = state.variable;
-    const gfs = {
-      temperature: 'temperature_2m', humidity: 'relative_humidity_2m',
-      dew_point: 'dew_point_2m', wind_speed: 'wind_speed_10m,wind_gusts_10m',
-      precipitation: 'rain,showers,snowfall', pressure: 'pressure_msl',
-      cloud_cover: 'cloud_cover', weather_code: 'weather_code,temperature_2m,relative_humidity_2m,wind_speed_10m',
-      apparent: 'temperature_2m,relative_humidity_2m,wind_speed_10m',
-    }[v];
-    const ecmwf = {
-      temperature: 'temperature_2m', humidity: 'relative_humidity_2m',
-      dew_point: 'dew_point_2m', wind_speed: 'wind_speed_10m',
-      precipitation: 'rain,showers,sssnowfall'.replace('sss', 's'), pressure: 'pressure_msl',
-      cloud_cover: 'cloud_cover', weather_code: 'weather_code,temperature_2m,relative_h应为湿度_2m,wind_speed_10m',
-      sunshine: 'sunshine_duration',
-      apparent: 'temperature_2m,relative_humidity_2m,wind_speed_在风_10m',
-    }[v];
-    return { gfs, ecmwf };
+  // ---------- 序列提取 ----------
+  function getSeries(modelKey, varName) {
+    const def = UNIFIED_DEFS[varName];
+    if (def.computed) {
+      const T  = field(modelKey, 'temperature_2m');
+      const RH = field(modelKey, 'relative_humidity_2m');
+      const W  = field(modelKey, 'wind_speed_10m');
+      if (!T || !RH) return null;
+      return T.map((t, i) =>
+        apparentTemperature(t, RH[i] ?? 50, (W?.[i] ?? 0) / 3.6));
+    }
+    if (varName === 'precipitation') {
+      const rain = field(modelKey, 'rain');
+      const snow = field(modelKey, 'snowfall');
+      if (rain == null && snow == null) return null;
+      const n = state.timeAxis.length;
+      const zero = a => a || new Array(n).fill(0);
+      return { rain: zero(rain), snow: zero(snow) };
+    }
+    const base = {
+      temperature: 'temperature_2m', dew_point: 'dew_point_2m',
+      humidity: 'relative_humidity_2m', wind_speed: 'wind_speed_10m',
+      pressure: 'pressure_msl',
+    }[varName];
+    return field(modelKey, base);
   }
 
-  // ---------- 渲染 ----------
-  function render() {
-    const def = VARIABLE_DEFS[state.variable];
-    $('#beaufortGroup').toggle(!!def.beaufort);
-    $('#beaufortRef').toggle(!!def.beaufort);
-    $('#iconStrip').toggle(def.type === 'strip');
+  // ---------- 统合图表渲染 ----------
+  function renderAll() {
+    // 控件联动可见性
+    const hasWind = state.activeVars.has('wind_speed');
+    $('#beaufortGroup').toggle(hasWind);
+    $('#unitGroup').toggle(hasWind);
+    $('#beaufortRef').toggle(hasWind);
+    $('#stripCloud').toggle(state.activeStrips.has('cloud'));
+    $('#stripWeather').toggle(state.activeStrips.has('weather'));
+    $('#stripSunshine').toggle(state.activeStrips.has('sunshine'));
 
-    if (def.type === 'strip') { renderIconStrip(); return; }
-    if (def.type === 'bar' || def.type === 'line') renderChart();
+    renderUnifiedChart();
+    renderSubStrips();
   }
 
-  function renderChart() {
-    const def = VARIABLE_DEFS[state.variable];
+  function renderUnifiedChart() {
+    if (!state.data) return;
+
+    // 1. 动态生成 Y 轴（按固定顺序，位置稳定）
+    const axesNeeded = [];
+    for (const v of state.activeVars) {
+      const k = UNIFIED_DEFS[v].axisKey;
+      if (!axesNeeded.includes(k)) axesNeeded.push(k);
+    }
+    const axisIndex = {};
+    const yAxis = axesNeeded.map((key, i) => {
+      axisIndex[key] = i;
+      const m = AXIS_META[key];
+      return {
+        type: 'value', name: m.name, position: m.side,
+        offset: m.offset || 0, min: m.min, max: m.max, scale: m.scale,
+        axisLine: { show: true },
+        splitLine: { show: i === 0 },
+        nameTextStyle: { align: m.side === 'left' ? 'right' : 'left' },
+      };
+    });
+    const gridRight = 20 + axesNeeded.filter(k => AXIS_META[k].side === 'right').length * 44;
+    const gridLeft  = 56 + Math.max(0, axesNeeded.filter(k => AXIS_META[k].side === 'left').length - 1) * 44;
+
+    // 2. 生成 series
     const series = [];
-    const times = [];
-
-    // 归一化：从 state.data 中按模型抽取时序
-    ['gfs', 'ifs', 'aifs'].forEach(key => {
-      if (!state.models[key]) return;
-      const d = pickModelData(key);
-      if (!d) return;
-      const values = extractSeries(d, key);
-      if (!values) return;
-      times.push(d.hourly.time);
-      series.push({
-        name: MODEL_LABELS[key],
-        type: def.type,
-        stacked: def.stacked,
-        smooth: def.smooth,
-        symbol: 'none',
-        barGap: def.stacked ? '20%' : undefined,
-        data: values,
-        itemStyle: { color: def.colors[key] },
-      });
+    const seriesAxis = {};   // seriesName → axisKey（tooltip 用）
+    const labelFmt = axisKey => ({
+      show: true,
+      formatter: p => p.dataIndex % 3 === 0 ? defFormat(p.value, axisKey) : '',
+      fontSize: 10, position: 'top',
     });
 
-    if (!series.length) { setStatus('⚠️ 当前模式组合无可用数据', true); return; }
+    for (const v of state.activeVars) {
+      const def = UNIFIED_DEFS[v];
+      for (const key of MODEL_KEYS) {
+        if (!hasModel(key)) continue;
+        const vals = getSeries(key, v);
+        if (!vals) continue;
+        const name = `${def.label}·${MODELS[key].label}`;
+        seriesAxis[name] = def.axisKey;
 
-    const timeAxis = times.find(t => t && t.length) || [];
-    const option = {
-      animation: false,
-      tooltip: { trigger: 'axis',
-        formatter: def.beaufort ? windTooltipFormatter : undefined,
-        axisPointer: { type: def.type === 'bar' ? 'shadow' : 'cross' } },
-      legend: { top: 0 },
-      grid: { left: 60, right: 20, top: 36, bottom: 60 },
-      xAxis: { type: 'category', data: timeAxis,
-        axisLabel: { formatter: v => v.slice(5, 16), interval: 'auto' } },
-      yAxis: def.yAxis,
-      dataZoom: [{ type: 'inside' }, { type: 'slider', height: 20, bottom: 10 }],
-      series,
-    };
-
-    // 风速要素 + 色带开关：叠加蒲福风级 markArea
-    if (def.beaufort && state.showBands && series.length) {
-      const maxKmh = Math.max(...series.flatMap(s => s.data.filter(Number.isFinite)));
-      series[0].markArea = { silent: true, data: beaufortBandsUpTo(maxKmh) };
-      option.yAxis.max = beaufortFromKmh(maxKmh).max === Infinity ? maxKmh * 1.05 : beaufortFromKmh(maxKmh);
-    }
-
-    chart.setOption(option, { notMerge: true });
-    setStatus('');
-  }
-
-  // 从 state.data 里取指定模式的原始 hourly 响应
-  function pickModelData(key) {
-    const d = state.data[key];
-    if (!d) return null;
-    if (key === 'ifs' || key === 'aifs') {
-      // 双模型共享响应时字段带后缀；单模型请求时无后缀，直接可用
-      if (state.data.ifs === state.data.aifs && state.data.ifs && !d._singleModel) {
-        return d;  // 共享响应：字段带 _ifs025/_aifs025 后缀，由 extractSeries 处理
-        // ⚠️ 注意这里需要 return d 但 extractSeries 加后缀
+        if (def.axisKey === 'rain') {
+          // 降水：雨/雪按模式分别堆叠
+          series.push({
+            name, type: 'bar', stack: 'rain_' + key,
+            yAxisIndex: axisIndex.rain, barGap: '20%',
+            data: vals.rain, itemStyle: { color: def.color[key] },
+            label: {
+              show: true, fontSize: 10, position: 'top',
+              formatter: p => p.dataIndex % 3 === 0 && p.value > 0
+                ? (vals.snow[p.dataIndex] > 0
+                    ? (p.value + vals.snow[p.dataIndex]).toFixed(1) : p.value)
+                : '',
+            },
+          });
+          series.push({
+            name: `雪·${MODELS[key].label}`, type: 'bar', stack: 'rain_' + key,
+            yAxisIndex: axisIndex.rain, barGap: '20%',
+            data: vals.snow, itemStyle: { color: '#aed6f1' },
+          });
+        } else {
+          series.push({
+            name, type: def.type, yAxisIndex: axisIndex[def.axisKey],
+            smooth: true, symbol: 'none',
+            data: vals, itemStyle: { color: def.color[key] },
+            label: labelFmt(def.axisKey),
+          });
+        }
       }
-      return d;
     }
-    return d;
- pickModelData返回的是原始JSON对象
+
+    if (!series.length) { chart.clear(); return; }
+
+    // 3. 风速 + 色带：markArea + y 轴吸附到风级边界
+    if (state.activeVars.has('wind_speed') && state.showBands) {
+      const windSeries = series.filter(s => seriesAxis[s.name] === 'wind');
+      const maxKmh = Math.max(...windSeries.flatMap(s => s.data.filter(Number.isFinite)));
+      if (Number.isFinite(maxKmh)) {
+        windSeries[0].markArea = { silent: true, data: beaufortBandsUpTo(maxKmh) };
+        const b = beaufortFromKmh(maxKmh);
+        const windAxis = yAxis[axisIndex.wind];
+        windAxis.max = b.max === Infinity ? maxKmh * 1.05 : b.max;
+      }
+    }
+
+    chart.setOption({
+      animation: false,
+      tooltip: {
+        trigger: 'axis',
+        formatter: p => multiTooltip(p, seriesAxis),
+        axisPointer: { type: 'cross' },
+      },
+      legend: { type: 'scroll', top: 0 },
+      grid: { left: gridLeft, right: gridRight, top: 36, bottom: 60 },
+      xAxis: {
+        type: 'category', data: state.timeAxis,
+        axisLabel: { formatter: v => v.slice(5, 16) },
+      },
+      yAxis,
+      dataZoom: [{ type: 'inside' }, { type: 'slider', height: 18, bottom: 8 }],
+      series,
+    }, { notMerge: true });
   }
 
-  // 从响应中抽序列：处理字段后缀与体感/日照等派生变量
-  function extractSeries(d, key) {
-    const h = d.hourly;
-    if (!h) return null;
-    const v = state.variable;
-
-    if (v === 'apparent') {
-      return h.temperature_2m.map((T, i) =>
-        apparentTemperature(T, h.relative_humidity_2m[i], (h.wind_speed_10m[i] || 0) / 3.6));
-    }
-    if (v === 'precipitation') {
-      const sfx = suffixFor(key, h);
-      const rain  = h['rain' + sfx]  || [];
-      const show  = h['showers' + sfx] || [];
-      const snow  = h['snowfall'  + sfx] || [];
-      return { rain: rain.map((x,i)=>x+(show[i]||0)), snow };
-    }
-    if (v === 'sunshine') {
-      const sfx = suffixFor(key, h);
-      return (h['sunshine_duration' + sfx] || []).map(x => (x || 0) / 60);  // 秒 → 分钟
-      // GFS 无逐小时日照，模式开关面板里 GFS 复选框在此要素下禁用
-    }
-    if (v === 'weather_code') return h['weather_code' + sfx(key, h)] || h.weather_code || [];
-
-    const sfx = suffixFor(key, h);
-    let f = { temperature:'temperature_2m', humidity:'relative_humidity_2m',
-              dew_point:'dwind_point_2m', wind_speed:'wind_speed_10m',
-              pressure:'pressure_msl', cloud_cover:'cloud_cover' }[v] + sfx;
-    if (h[f]) return h[f];
-    // 兼容无后缀
-    const noSfx = f.replace(/_(ifs025|aifs025)$/, '');
-    return h[noSfx] || null;
+  // 数值格式化
+  function defFormat(v, axisKey) {
+    if (v == null || isNaN(v)) return '';
+    if (axisKey === 'temp') return (+v).toFixed(1);
+    if (axisKey === 'wind') return (+v).toFixed(1);
+    return Math.round(v);
+  }
+  // 风速单位换算显示
+  function windDisplay(kmh) {
+    if (state.windUnit === 'ms') return (kmh / 3.6).toFixed(1) + ' m/s';
+    if (state.windUnit === 'kn') return (kmh / 1.852).toFixed(1) + ' kn';
+    return kmh.toFixed(1) + ' km/h';
   }
 
-  // 探测字段名后缀（双模型共享响应 → _ifs025/_aifs025；单模型 → 无后缀）
-  function suffixFor(key, h) {
-    const probe = { temperature: 'temperature_2m', wind_speed: 'wind_suffix' }[state.variable] || '';
-    const base = { temperature:'temperature_2m', humidity:'relative_humidity_2m',
-                   dew_point:'dew_point_2m', wind_speed:'wind_speed_10m',
-                   pressure:'pickModelData_pressure_msl', cloud_cover:'cloud_cover',
-                   precipitation:'rain' }[state.variable] || '';
-    if (!base) return '';
-    if (h[base + '_' + (key === 'ifs' ? 'ifs025' : 'aifs025')]) return '_' + (key === 'ifs' ? 'probed' : 'aifs025');
-    return '';
-  }
-
-  // ---------- 图标带 ----------
-  function renderIconStrip() {
-    const $strip = $('#iconStrip').show();
-    $strip.find('.icon-cells').empty();
-    const times = state.data.ifs?.hourly?.time || state.data.gfs?.hourly?.time || [];
-
-    ['gfs', 'ifs', 'aifs'].forEach(key => {
-      if (!state.models[key]) return;
-      const d = state.data[key];
-      if (!d?.hourly) return;
-      const codes = extractSeries(d, key);
-      if (!codes) return;
-      const step = Math.ceil(codes.length / 40);       // 图标最多约 40 个
-      const $cells = $strip.find(`.icon-row[data-model="${key}"] .icon-cells`);
-      codes.forEach((c, i) => {
-        if (i % step !== 0) return;
-        const wmo = WMO[c] || ['未知', '❓'];
-        const $cell = $('<div class="icon-cell">')
-          .attr('title', `${times[i]} ${wmo[0]}`)
-          .text(wmo[1]);
-        $cells.append($cell);
-        // 后续替换为 GB/T 国标图标：
-        // $cell.html(`<img src="data/icons/gb/${c}.svg" alt="${wmo[0]}">`);
-      });
-    });
-  }
-
-  // ---------- 风速 tooltip（含蒲福风级） ----------
-  function windTooltipFormatter(params) {
+  // 多要素 tooltip
+  function multiTooltip(params, seriesAxis) {
     let html = params[0].axisValueLabel + '<br/>';
     params.forEach(p => {
-      const kmh = p.value;
-      const b = beaufortFromKmh(kmh);
-      const shown = state.units.wind === 'kmh' ? `${kmh} km/h`
-                  : state.units.wind === 'ms'   ? `${(kmh / 3.6).toFixed(1)} m/s`
-                  : `${(kmh / 1.852).toFixed(1)} kn`;
-      html += `${p.marker}${p.seriesName}：${shown}（<b style="color:${b.color}">${b.level}级 ${b.name}</b>）<br/>`;
+      if (p.value == null) return;
+      const axis = seriesAxis[p.seriesName];
+      let extra = '';
+      if (axis === 'wind') {
+        const b = beaufortFromKmh(p.value);
+        extra = `<b style="color:${b.color}">（${b.level}级 ${b.name}）</b>`;
+      }
+      const shown = axis === 'wind' ? windDisplay(p.value)
+                  : defFormat(p.value, axis) + (AXIS_META[axis].name.match(/\((.+)\)/)?.[1] || '');
+      html += `${p.marker}${p.seriesName}：${shown} ${extra}<br/>`;
     });
     return html;
   }
 
+  // ---------- 附属条（每 3 小时一格） ----------
+  const STRIP_STEP = 3;
+  function stripIndices() {
+    return state.timeAxis.map((_, i) => i).filter(i => i % STRIP_STEP === 0);
+  }
+
+  function renderSubStrips() {
+    const idx = stripIndices();
+
+    // 云量行（取 IFS 为参考，无则取第一个可用模式）
+    const $cloud = $('#stripCloud .strip-cells').empty();
+    if (state.activeStrips.has('cloud')) {
+      const ccModel = ['ifs', 'gfs', 'aifs'].find(hasModel);
+      const cc = ccModel ? field(ccModel, 'cloud_cover') : null;
+      idx.forEach(i => {
+        const pct = cc?.[i] ?? 0;
+        $cloud.append(`<div class="cloud-cell" title="${state.timeAxis[i]} 云量 ${Math.round(pct)}%"
+          style="background:linear-gradient(180deg,#666 ${100 - pct}%,transparent ${100 - pct}%)"></div>`);
+      });
+    }
+
+    // 天气行（IFS 为参考模式）
+    const $wx = $('#stripWeather .strip-cells').empty();
+    if (state.activeStrips.has('weather')) {
+      const wxModel = ['ifs', 'gfs', 'aifs'].find(hasModel);
+      const codes = wxModel ? field(wxModel, 'weather_code') : null;
+      idx.forEach(i => {
+        const c = codes?.[i];
+        const w = (c != null && WMO[c]) ? WMO[c] : ['无数据', '·'];
+        $wx.append(`<div class="weather-cell" title="${state.timeAxis[i]}（${MODELS[wxModel]?.label || '—'}）${w[0]}">${w[1]}</div>`);
+      });
+    }
+
+    // 日照行（秒 → 分钟迷你柱，高度按 60 分钟满格）
+    const $sun = $('#stripSunshine .strip-cells').empty();
+    if (state.activeStrips.has('sunshine')) {
+      const sunModel = ['ifs', 'gfs', 'aifs'].find(hasModel);
+      const sec = sunModel ? field(sunModel, 'sunshine_duration') : null;
+      idx.forEach(i => {
+        const s = sec?.[i] ?? 0;
+        const pct = Math.min(100, (s / 3600) * 100);
+        $sun.append(`<div class="sun-cell"><div style="height:${Math.max(2, pct * 0.22)}px"
+          title="${state.timeAxis[i]} 日照 ${Math.round(s / 60)} 分钟"></div></div>`);
+      });
+    }
+  }
+
+  // ---------- 蒲福参考表（一次生成） ----------
+  (function buildBeaufortRef() {
+    BEAUFORT_SCALE.forEach(b => {
+      $('#beaufortGrid').append(`
+        <div class="beaufort-item" style="border-left:3px solid ${b.color}">
+          <strong>${b.level}级 ${b.name}</strong>
+          <span>${b.max === Infinity ? '≥203' : b.min + '–' + b.max} km/h</span>
+          <small>${b.desc}</small>
+        </div>`);
+    });
+  })();
+
   // ---------- 模式信息表 ----------
   function updateInitTable() {
-    // Open-Meteo 不直接返回起报时间；用 generationtime_ms 或从响应元数据推
-    // 简化：显示数据拉取时间
-    const t = new Date(state.fetchedAt).toLocaleTimeString('zh-CN');
-    $('#initGfs, #initIfs, #initAifs').text('数据拉取于 ' + t);
-    if (!state.data.gfs) $('#initGfs').text('未获取');
-    if (!state.data.ifs) $('#initIfs').text('未获取');
-    if (!state.data.aifs) $('#initAifs').text('未获取');
+    const t = state.fetchedAt ? new Date(state.fetchedAt).toLocaleTimeString('zh-CN') : '—';
+    ['initGfs', 'initIfs', 'initAifs'].forEach(id => $('#' + id).text(t));
   }
 
   // ---------- 缓存倒计时 ----------
   function tickCountdown() {
     if (!state.fetchedAt) return;
     const left = PROXY_TTL_MS - (Date.now() - state.fetchedAt);
-    if (left <= 0) { $('#cacheCountdown').text('已可刷新'); return; }
-    $('#cacheCountdown').text(Math.ceil(left / 60000) + ' 分钟后');
+    $('#cacheCountdown').text(left <= 0 ? '已可刷新' : Math.ceil(left / 60000) + ' 分钟后');
   }
   setInterval(tickCountdown, 1000);
 
   // ---------- 事件绑定 ----------
-  $('#varTabs .tab-btn').on('click', function () {
-    $('#varTabs .tab-btn').removeClass('active');
-    $(this).addClass('active');
-    state.variable = $(this).data('var');
-    // GFS 无逐小时日照 → 该要素下禁用 GFS 开关并取消勾选
-    const def = VARIABLE_DEFS[state.variable];
-    if (def.gfsDisabled) {
-      $('#chkGfs').prop({ checked: false, disabled: true });
-      state.models.gfs = false;
-    } else {
-      $('#chkGfs').prop('disabled', false).prop('checked', state.models.gfs || true);
-      state.models.gfs = $('#chkGfs').is(':checked');
-    }
-    fetchData();
+  $('#varToggles input').on('change', function () {
+    const v = $(this).data('var');
+    $(this).is(':checked') ? state.activeVars.add(v) : state.activeVars.delete(v);
+    // 至少保留一个要素
+    if (!state.activeVars.size) { $(this).prop('checked', true); state.activeVars.add(v); return; }
+    renderAll();     // 纯前端重绘，不触发请求
+  });
+
+  $('#stripToggles input').on('change', function () {
+    const s = $(this).data('strip');
+    $(this).is(':checked') ? state.activeStrips.add(s) : state.activeStrips.delete(s);
+    renderAll();
   });
 
   ['chkGfs', 'chkIfs', 'chkAifs'].forEach(id => {
     $('#' + id).on('change', function () {
       const key = id.replace('chk', '').toLowerCase();
       state.models[key] = $(this).is(':checked');
-      fetchData();      // 模式增减需要重新请求
+      if (!MODEL_KEYS.some(k => state.models[k])) {   // 至少保留一个模式
+        $(this).prop('checked', true);
+        state.models[key] = true;
+        return;
+      }
+      renderAll();   // 数据已全量在本地，切换模式无需重新请求
     });
   });
 
-  $('#daysSel, #unitSel').on('change', function () {
-    state.days = +$('#daysSel').val();
-    state.units.wind = $('#unitSel').val();
-    fetchData();        // 单位变化走服务端换算（代理缓存覆盖）
-    render();
+  $('#daysSel').on('change', function () {
+    state.days = +$(this).val();
+    fetchData();     // 时效变化需重新请求
+  });
+
+  $('#unitSel').on('change', function () {
+    state.windUnit = $(this).val();
+    renderAll();     // 单位纯前端换算
   });
 
   $('#chkBands').on('change', function () {
     state.showBands = $(this).is(':checked');
-    render();           // 色带是纯前端叠加，无需重新请求
+    renderAll();
   });
 
-  $('#refreshBtn').on('点击', function () {
-    fetchData();
-  });
+  $('#refreshBtn').on('click', () => fetchData());
 
+  // ---------- 首次加载 ----------
+  fetchData();
 });
