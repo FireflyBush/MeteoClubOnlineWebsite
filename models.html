@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>模式预报查询 · 气象深高</title>
+  <title>模式预报查询 - 深圳市高级中学气象社</title>
   <meta name="description" content="查看 GFS、ECMWF IFS、AIFS 三大模式的各要素预报结果">
 
   <link rel="stylesheet" href="style.css">
@@ -31,7 +31,7 @@
   <main class="models-container">
     <section class="page-header">
       <h2>模式预报查询</h2>
-      <p class="sub">GFS Global（NOAA ~13km）· ECMWF IFS 0.25° · ECMWF AIFS 0.25°（AI 模式）</p>
+      <p class="sub">GFS Global（NOAA ~13km）· ECMWF IFS HRES 9 km · ECMWF AIFS 0.25°（AI 模式）</p>
     </section>
 
     <section class="card control-card">
@@ -69,7 +69,7 @@
       </div>
 	  <div class="control-row">
 	  		<div id="locBar">
-  <input id="locInput" placeholder="输入区/县名，如：福田、南山、滨江…"
+  <input id="locInput" placeholder="市/区/县名，如：岳阳、浦东新区"
          autocomplete="off" />
   <button id="locSearchBtn" class="read-more-btn" style="height: 28px;">搜索</button>
   <button id="locResetBtn" class="read-more-btn" title="恢复默认位置" style="height: 28px;">默认</button>
@@ -87,8 +87,8 @@
             <label><input type="checkbox" data-var="wind_speed">🍃 风速</label>
             <label><input type="checkbox" data-var="wind_gusts">💨 阵风</label>
             <label><input type="checkbox" data-var="pressure">📊 气压</label>
-            <label><input type="checkbox" data-var="dew_point">🌡 <span class="has-tip" data-tip="露点温度：空气中水汽冷却达到饱和、开始凝结出露水时的温度。露点越高说明空气越潮湿、越闷热；常用于判断闷热程度（露点≥24°C 感觉闷热）以及雾和露的形成条件。">露点</span></label>
-            <label><input type="checkbox" data-var="apparent">🥵 <span class="has-tip" data-tip="体感温度：综合考虑气温、湿度、风速后，人体实际感受到的温度。夏季高湿高体感提示中暑风险，冬季大风低体感提示失温风险。">体感</span></label>
+            <label><input type="checkbox" data-var="dew_point">🌡 <span class="has-tip" data-tip="露点温度：在当前天气情况下，空气中水汽冷却达到饱和、开始凝结出液态水滴时的温度。露点越高说明空气越潮湿，可用于判断闷热程度（露点≥24°C且不下雨，人感觉闷热）以及雾的形成条件。">露点</span></label>
+            <label><input type="checkbox" data-var="apparent">🥵 <span class="has-tip" data-tip="体感温度：指示综合考虑气温、湿度、风速后人体对冷热的实际感受。夏季高温高湿时体感更热，冬季室外有大风时体感更冷。">体感</span></label>
           </div>
         </div>
         <div class="ctrl-group">
@@ -126,14 +126,14 @@
         <table class="model-info-table">
           <tr><th>模式</th><th>分辨率</th><th>起报时间</th><th>最长时效</th></tr>
           <tr><td>🇺🇸GFS Global</td><td>~13 km</td><td id="initGfs">—</td><td>16 天</td></tr>
-          <tr><td>🇪🇺ECMWF IFS</td><td>~25 km</td><td id="initIfs">—</td><td>15 天</td></tr>
+          <tr><td>🇪🇺ECMWF IFS</td><td>~9 km</td><td id="initIfs">—</td><td>15 天</td></tr>
           <tr><td>🤖ECMWF AIFS</td><td>~25 km</td><td id="initAifs">—</td><td>15 天</td></tr>
         </table>
         <p class="init-note">* 起报时间已转换为北京时间。</p>
       </div>
       <div class="card disclaimer-card">
         <h3>使用说明</h3>
-        <p>我国《气象法》第二十二条规定，公众气象预报和灾害性天气警报实行统一发布制度。数值模式数据来自 <a href="https://open-meteo.com" target="_blank" rel="noopener">Open-Meteo</a>（基于 ECMWF / NOAA 公开数据），仅代表模式模拟结果，<strong>不代表官方预报</strong>。灾害性天气请以气象部门发布为准。</p>
+        <p>我国《气象法》第二十二条规定，公众气象预报和灾害性天气警报实行统一发布制度。数值模式数据来自 <a href="https://open-meteo.com" target="_blank" rel="noopener">Open-Meteo</a>（基于 ECMWF / NOAA 公开数据），仅代表模式模拟结果，<strong>不代表官方预报</strong>。天气预报、预警请以当地气象部门发布的为准。</p>
       </div>
     </section>
   </main>
