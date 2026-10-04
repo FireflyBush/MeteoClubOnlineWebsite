@@ -76,7 +76,7 @@ const AXIS_SLOT_W = 50;   // 每根 Y 轴占用的横向空间（px），offset 
     data: null,
     timeAxis: [],
     fullTime: [],
-    initTimeBJT: '—',
+    initTimes: { gfs: null, ifs: null, aifs: null },   // { utc, bjt, estimated }
     fetchedAt: 0,
   };
   let precipActual = [];
@@ -189,8 +189,6 @@ const RUN_DELAY_H = { gfs: 6, ifs: 6, aifs: 6 };
         const r = toBJT(t);
         return `${r.date} ${r.time}`;
       });
-      const first = toBJT(json.hourly.time[0]);
-      state.initTimes = { gfs: null, ifs: null, aifs: null };  // { utc, bjt, estimated }
       state.fetchedAt = Date.now();
       setStatus('');
     } catch (e) {
