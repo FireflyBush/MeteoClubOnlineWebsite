@@ -13,9 +13,14 @@ $(function () {
   // ---------- 配置 ----------
   const PROXY = '/api/models-proxy?url=';
   const PROXY_TTL_MS = 10 * 60 * 1000;
-  const LAT = 22.552188, LON = 114.025106;
+//  const LAT = 22.552188, LON = 114.025106;
   const MOBILE_BP = '(max-width: 1000px)';
   const MOBILE_CHART_W = 900;
+  // ---------- 位置 ----------
+const DEFAULT_LOC = { name: '深圳市高级中学中心校区', lat: 22.552188, lon: 114.025106 };
+const GEO_URL = name =>
+  `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(name)}&count=20&language=zh&format=json` ;
+const REGION_OK = new Set(['CN', 'HK', 'MO', 'TW']);
 
   const HOURLY_VARS = [
     'temperature_2m', 'relative_humidity_2m', 'dew_point_2m',
@@ -72,6 +77,7 @@ const AXIS_SLOT_W = 50;   // 每根 Y 轴占用的横向空间（px），offset 
     activeStrips: new Set(['cloud']),
     days: 10,
     windUnit: 'kmh',
+	loc: null,   // { name, lat, lon }，加载时从 localStorage 恢复
     showBands: false,
     data: null,
     timeAxis: [],
@@ -145,6 +151,57 @@ const RUN_DELAY_H = { gfs: 6, ifs: 6, aifs: 6 };
     return T + 0.33 * RH / 100 * 6.105 * Math.exp(17.27 * T / (237.7 + T)) - 4;
   }
 
+// ---------- 位置搜索：区/县 → 坐标 ----------
+function locLabel(r) {
+  // 大陆：区县（市·省）；台湾：市；港澳：特区。同省重名靠市名区分（如石家庄/邢台的桥西区）
+  const parts = [r.admin2, r.admin1].filter((v, i, a) => v && a.indexOf(v) === i);
+  return parts.length ? `${r.name}（${parts.join('·')}）` : r.name;
+}
+function isAcceptable(r) {
+  if (!REGION_OK.has(r.country_code)) return false;
+  if (r.country_code === 'CN') {
+    if (!r.admin2) return false;                          // 大陆须能落到地级市下辖的区/县
+    if ((r.feature_code || '').startsWith('ADM1')) return false; // 排除省级条目
+  }
+  return true;
+}
+async function searchLocation() {
+  const q = $('#locInput').val().trim();
+  if (!q) return;
+  const $box = $('#locResults').empty().show();
+  try {
+    const res = await fetch(PROXY + encodeURIComponent(GEO_URL(q)));
+    const j = await res.json();
+    const hits = (j.results || []).filter(isAcceptable);
+    if (!hits.length) {
+      $box.html('<div class="loc-empty">未找到匹配的区/县，试试只输名称（如“滨江”而非“杭州市滨江区”）</div>');
+      return;
+    }
+    hits.slice(0, 12).forEach(r => {
+      $('<div class="loc-item">').text(locLabel(r))
+        .attr('title', `${r.latitude.toFixed(4)}, ${r.longitude.toFixed(4)}`)
+        .on('click', () => applyLocation(r))
+        .appendTo($box);
+    });
+  } catch {
+    $box.html('<div class="loc-empty">查询失败，请稍后重试</div>');
+  }
+}
+function applyLocation(r) {
+  $('#locResults').hide();
+  state.loc = { name: locLabel(r), lat: r.latitude, lon: r.longitude };
+  try { localStorage.setItem('wx_loc', JSON.stringify(state.loc)); } catch {}
+  $('#locCur').text('📍 ' + state.loc.name);
+  fetchData();
+}
+function resetLocation() {
+  state.loc = { ...DEFAULT_LOC };
+  try { localStorage.removeItem('wx_loc'); } catch {}
+  $('#locCur').text('📍 ' + DEFAULT_LOC.name + '（默认）');
+  fetchData();
+}
+
+
   // ---------- 字段访问 ----------
   function field(base) {
     const h = state.data?.hourly;
@@ -170,7 +227,8 @@ const RUN_DELAY_H = { gfs: 6, ifs: 6, aifs: 6 };
 	  fetchInitTimes();                          // fire-and-forget
   // ……原有主请求逻辑不变，仅删除结尾对 state.initTimeBJT 的赋值……
     const params = new URLSearchParams({
-      latitude: LAT, longitude: LON,
+      latitude: state.loc.lat,
+      longitude: state.loc.lon,
       hourly: HOURLY_VARS,
       models: 'gfs_seamless,ecmwf_ifs,ecmwf_aifs025_single',
       forecast_days: state.days,
@@ -452,7 +510,7 @@ async function fetchInitTimes() {
       textStyle: { fontSize: mobile ? 11 : 12 },
     };
     const titleConf = {
-      text: `${keyLabel} 模式预报`,
+      text: `${keyLabel} 模式预报 · ${state.loc.name}`,
       left: 'center',
       top: mobile ? 26 : 2,
       textStyle: { fontSize: 14, fontWeight: 500 },
@@ -608,6 +666,18 @@ function updateInitTable() {
     state.days = +$(this).val();
     fetchData();
   });
+
+
+$('#locSearchBtn').on('click', searchLocation);
+$('#locResetBtn').on('click', resetLocation);
+$('#locInput').on('keydown', e => { if (e.key === 'Enter') searchLocation(); });
+$(document).on('click', e => { if (!$(e.target).closest('#locBar').length) $('#locResults').hide(); });
+
+// 初始化：恢复上次选择，否则用默认
+try { state.loc = JSON.parse(localStorage.getItem('wx_loc')) || null; } catch {}
+if (!state.loc) state.loc = { ...DEFAULT_LOC };
+$('#locCur').text('📍 ' + state.loc.name + (state.loc === DEFAULT_LOC || state.loc.name === DEFAULT_LOC.name ? '（默认）' : ''));
+
 
   $('#unitSel').on('change', function () {
     state.windUnit = $(this).val();

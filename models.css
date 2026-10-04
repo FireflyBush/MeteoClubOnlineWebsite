@@ -151,3 +151,13 @@
 /* 模式不提供的要素：开关置灰 */
 .var-disabled { opacity: 0.38; cursor: not-allowed; }
 .var-disabled input { cursor: not-allowed; }
+
+#locBar { position: relative; display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+#locInput { width: 200px; padding: 4px 8px; }
+#locCur { font-size: 12px; opacity: .8; }
+#locResults { position: absolute; top: 100%; left: 0; z-index: 99;
+  background: #fff; border: 1px solid #ccc; border-radius: 6px;
+  max-height: 260px; overflow-y: auto; box-shadow: 0 4px 12px rgba(0,0,0,.15); }
+.loc-item { padding: 6px 12px; cursor: pointer; font-size: 13px; }
+.loc-item:hover { background: #eef4ff; }
+.loc-empty { padding: 8px 12px; font-size: 12px; color: #888; }

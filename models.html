@@ -53,6 +53,14 @@
             <option value="14">14 天</option>
           </select>
         </div>
+		<div id="locBar">
+  <input id="locInput" placeholder="输入区/县名，如：福田、南山、滨江…"
+         autocomplete="off" />
+  <button id="locSearchBtn" class="mode-btn">搜索</button>
+  <button id="locResetBtn" class="mode-btn" title="恢复默认位置">默认</button>
+  <span id="locCur">📍 加载中…</span>
+  <div id="locResults"></div>
+</div>
         <div class="ctrl-group" id="unitGroup" hidden>
           <span class="ctrl-label">风速单位</span>
           <select id="unitSel">
