@@ -1,7 +1,7 @@
 /* =====================================================================
  * script_models.js —— 模式预报查询页
  * 数据源：Open-Meteo /v1/forecast 单请求，一次拉取三模式全部要素
- *   models = gfs_seamless, ecmwf_ifs025, ecmwf_aifs025_single
+ *   models = gfs_seamless, ecmwf_ifs, ecmwf_aifs025_single
  * 页面逻辑：三选一展示单个模式；切换模式/要素纯前端重绘，不重新请求
  * 缓存：服务端 Function 10 分钟边缘缓存（functions/api/models-proxy.js）
  * 时间：API 返回 UTC，前端统一转为北京时间（UTC+8）显示
@@ -26,7 +26,7 @@ $(function () {
 
   const MODELS = {
     gfs:  { suffix: '_gfs_seamless',         label: 'GFS' },
-    ifs:  { suffix: '_ecmwf_ifs025',         label: 'IFS' },
+    ifs:  { suffix: '_ecmwf_ifs',         label: 'IFS' },
     aifs: { suffix: '_ecmwf_aifs025_single', label: 'AIFS' },
   };
 
@@ -44,23 +44,24 @@ $(function () {
   };
 
   // 要素注册表：axisKey = 同单位共轴分组
-  const UNIFIED_DEFS = {
-    temperature:   { label: '气温', axisKey: 'temp', type: 'line', color: '#D35618' },
-    dew_point:     { label: '露点', axisKey: 'temp', type: 'line', color: '#F3C75D' },
-    apparent:      { label: '体感', axisKey: 'temp', type: 'line', color: '#FF9929', computed: true },
-    humidity:      { label: '湿度', axisKey: 'pct',  type: 'line', color: '#4874CB' },
-    wind_speed:    { label: '风速', axisKey: 'wind', type: 'line', color: '#5BC0C8', beaufort: true },
-    wind_gusts:    { label: '阵风', axisKey: 'wind', type: 'line', color: '#FF86A9', beaufort: true },
-    pressure:      { label: '气压', axisKey: 'pres', type: 'line', color: '#83A5FD' },
-    precipitation: { label: '降水', axisKey: 'rain', type: 'bar',  color: '#00B248' },
-  };
-  const AXIS_META = {
-    temp: { name: '°C',   side: 'left' },
-    pres: { name: 'hPa',  side: 'left',  offset: 44 },
-    pct:  { name: '%',    side: 'right' },
-    rain: { name: 'mm',   side: 'right', offset: 30 },
-    wind: { name: 'km/h', side: 'right', offset: 60 },
-  };
+const UNIFIED_DEFS = {
+  temperature:   { label: '气温', axisKey: 'temp', type: 'line', color: 'rgba(211, 86, 24, 1)' },
+  dew_point:     { label: '露点', axisKey: 'temp', type: 'line', color: 'rgba(243, 199, 93, 1)' },
+  apparent:      { label: '体感', axisKey: 'temp', type: 'line', color: 'rgba(255, 153, 41, 1)', computed: true },
+  humidity:      { label: '湿度', axisKey: 'pct',  type: 'line', color: 'rgba(72, 116, 203, 0.35)' },
+  wind_speed:    { label: '风速', axisKey: 'wind', type: 'line', color: 'rgba(91, 192, 200, 1)', beaufort: true },
+  wind_gusts:    { label: '阵风', axisKey: 'wind', type: 'line', color: 'rgba(255, 134, 169, 1)', beaufort: true },
+  pressure:      { label: '气压', axisKey: 'pres', type: 'line', color: 'rgba(131, 165, 253, 1)' },
+  precipitation: { label: '降水', axisKey: 'rain', type: 'bar',  color: 'rgba(0, 178, 72, 1)' },
+};
+const AXIS_META = {
+  temp: { name: '°C',   side: 'left' },
+  pres: { name: 'hPa',  side: 'left' },
+  pct:  { name: '%',    side: 'right' },
+  rain: { name: 'mm',   side: 'right' },
+  wind: { name: 'km/h', side: 'right' },
+};
+const AXIS_SLOT_W = 50;   // 每根 Y 轴占用的横向空间（px），offset 与边距统一用它算
   const RAIN_CAP = 40;
   const WIND_DEFAULT_MAX = 75;
 
@@ -82,6 +83,16 @@ $(function () {
 
   const mq = window.matchMedia(MOBILE_BP);
   const isMobile = () => mq.matches;
+  
+  // Metadata API：各模式起报时间查询地址（从 model-updates 页各模型 Link 复制）
+const MODEL_META_URLS = {
+  gfs:  'https://api.open-meteo.com/data/ncep_gfs025/static/meta.json',
+  ifs:  'https://api.open-meteo.com/data/ecmwf_ifs/static/meta.json',
+  aifs: 'https://api.open-meteo.com/data/ecmwf_aifs025_single/static/meta.json',
+};
+// 兜底发布延迟（小时）：由 model-updates 页实测差值归纳（18Z 起报分别于 ~23:34Z / 01:17Z / 23:40Z 可用）
+const RUN_DELAY_H = { gfs: 6, ifs: 6, aifs: 6 };
+
 
   const chart = echarts.init(document.getElementById('mainChart'));
 
@@ -159,7 +170,7 @@ $(function () {
     const params = new URLSearchParams({
       latitude: LAT, longitude: LON,
       hourly: HOURLY_VARS,
-      models: 'gfs_seamless,ecmwf_ifs025,ecmwf_aifs025_single',
+      models: 'gfs_seamless,ecmwf_ifs,ecmwf_aifs025_single',
       forecast_days: state.days,
     });
     try {
@@ -324,28 +335,34 @@ $(function () {
       rain: { min: 0, max: RAIN_CAP },
     };
 
-    // 动态 Y 轴
+    // 动态 Y 轴：按侧分组后依序分配 offset，隐藏某轴时其余轴自动前移补位
     const axesNeeded = [];
     for (const v of state.activeVars) {
       const k = UNIFIED_DEFS[v].axisKey;
       if (!axesNeeded.includes(k)) axesNeeded.push(k);
     }
+    const leftAxes  = axesNeeded.filter(k => AXIS_META[k].side === 'left');
+    const rightAxes = axesNeeded.filter(k => AXIS_META[k].side === 'right');
+
     const axisIndex = {};
-    const yAxis = axesNeeded.map((k, i) => {
-      axisIndex[k] = i;
+    const yAxis = axesNeeded.map(k => {
       const m = AXIS_META[k];
+      // 同侧内的序号：左侧第 0 根贴 grid 边缘（offset 0），第 1 根 offset 56……
+      const slot = (m.side === 'left' ? leftAxes : rightAxes).indexOf(k);
+      axisIndex[k] = axesNeeded.indexOf(k);
       return {
         type: 'value', ...axisRange[k],
-        name: mobile ? '' : m.name, position: m.side, offset: m.offset || 0,
+        name: mobile ? '' : m.name, position: m.side, offset: slot * AXIS_SLOT_W,
         axisLabel: { show: !mobile },
         axisLine: { show: !mobile },
         axisTick: { show: false },
-        splitLine: { show: i === 0, lineStyle: { opacity: mobile ? 0.6 : 1 } },
+        splitLine: { show: axisIndex[k] === 0, lineStyle: { opacity: mobile ? 0.6 : 1 } },
         nameTextStyle: mobile ? {} : { align: m.side === 'left' ? 'right' : 'left' },
       };
     });
-    const gridRight = mobile ? 8 : 20 + axesNeeded.filter(k => AXIS_META[k].side === 'right').length * 44;
-    const gridLeft  = mobile ? 8 : 56 + Math.max(0, axesNeeded.filter(k => AXIS_META[k].side === 'left').length - 1) * 44;
+    // 边距同步动态化：右侧/左侧各需要多少像素由该侧轴数决定
+    const gridRight = mobile ? 8 : 50 + Math.max(0, rightAxes.length - 1) * AXIS_SLOT_W;
+    const gridLeft  = mobile ? 8 : 50 + Math.max(0, leftAxes.length - 1) * AXIS_SLOT_W;
 
     // series
     const series = [];
