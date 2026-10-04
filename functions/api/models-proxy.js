@@ -1,6 +1,7 @@
 // functions/api/models-proxy.js —— 模式对比页专用代理（10 分钟边缘缓存）
 const ALLOWED_DOMAIN = 'api.open-meteo.com';
 const ALLOWED_ORIGIN = 'https://smc-club.pages.dev';
+const ALLOWED_DOMAIN = 'geocoding-api.open-meteo.com';
 const TTL_MS = 10 * 60 * 1000;
 
 export async function onRequest(context) {
