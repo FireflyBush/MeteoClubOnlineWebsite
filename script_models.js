@@ -167,6 +167,8 @@ const RUN_DELAY_H = { gfs: 6, ifs: 6, aifs: 6 };
   // ---------- 数据获取（单请求三模式全要素） ----------
   async function fetchData() {
     setStatus('⏳ 正在获取模式数据…');
+	  fetchInitTimes();                          // fire-and-forget
+  // ……原有主请求逻辑不变，仅删除结尾对 state.initTimeBJT 的赋值……
     const params = new URLSearchParams({
       latitude: LAT, longitude: LON,
       hourly: HOURLY_VARS,
@@ -188,7 +190,7 @@ const RUN_DELAY_H = { gfs: 6, ifs: 6, aifs: 6 };
         return `${r.date} ${r.time}`;
       });
       const first = toBJT(json.hourly.time[0]);
-      state.initTimeBJT = `${first.date} ${first.time}`;
+      state.initTimes = { gfs: null, ifs: null, aifs: null };  // { utc, bjt, estimated }
       state.fetchedAt = Date.now();
       setStatus('');
     } catch (e) {
@@ -217,6 +219,34 @@ const RUN_DELAY_H = { gfs: 6, ifs: 6, aifs: 6 };
       }
     });
   }
+
+function fmtInit(d, estimated) {
+  const p = n => String(n).padStart(2, '0');
+  const b = new Date(d.getTime() + 8 * 3600000);
+  return {
+    utc: `${p(d.getUTCDate())}.${p(d.getUTCMonth() + 1)}.${d.getUTCFullYear()}, ${p(d.getUTCHours())}Z`,
+    bjt: `${d.getUTCMonth() + 1}/${b.getUTCDate()} ${p(b.getUTCHours())}:${p(b.getUTCMinutes())}`,
+    estimated,
+  };
+}
+
+async function fetchInitTimes() {
+  await Promise.allSettled(Object.entries(MODEL_META_URLS).map(async ([k, url]) => {
+    try {
+      const res = await fetch(PROXY + encodeURIComponent(url));   // 复用现有代理，规避跨域
+      const j = await res.json();
+      const ts = j.last_run_initialisation_time;
+      if (!ts) throw new Error('missing field');
+      state.initTimes[k] = fmtInit(new Date(ts * 1000), false);
+    } catch {
+      // 兜底：按 6 小时循环 + 各模式发布延迟反推
+      const est = Math.floor((Date.now() / 3600000 - RUN_DELAY_H[k]) / 6) * 6;
+      state.initTimes[k] = fmtInit(new Date(est * 3600000), true);
+    }
+  }));
+  updateInitTable();
+}
+
 
   // ---------- 序列提取 ----------
   function getSeries(varName) {
@@ -538,9 +568,14 @@ const RUN_DELAY_H = { gfs: 6, ifs: 6, aifs: 6 };
     });
   })();
 
-  function updateInitTable() {
-    $('#initGfs, #initIfs, #initAifs').text(state.initTimeBJT);
+function updateInitTable() {
+  for (const [k, sel] of [['gfs', '#initGfs'], ['ifs', '#initIfs'], ['aifs', '#initAifs']]) {
+    const t = state.initTimes[k];
+    if (!t) { $(sel).text('—').removeAttr('title'); continue; }
+    $(sel).text((t.estimated ? '≈' : '') + t.bjt)
+          .attr('title', `起报 ${t.utc}（UTC）${t.estimated ? '，按发布计划估算' : ''}`);
   }
+}
 
   function tickCountdown() {
     if (!state.fetchedAt) return;
