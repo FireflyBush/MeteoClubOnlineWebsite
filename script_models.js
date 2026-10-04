@@ -170,7 +170,7 @@ async function searchLocation() {
   if (!q) return;
   const $box = $('#locResults').empty().show();
   try {
-    const res = await fetch(PROXY + encodeURIComponent(GEO_URL(q)));
+    const res = await fetch(GEO_URL(q));
     const j = await res.json();
     const hits = (j.results || []).filter(isAcceptable);
     if (!hits.length) {
