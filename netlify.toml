@@ -1,0 +1,11 @@
+[build]
+  publish = "."
+
+# 路由到 Edge Function：路径与另两家完全一致，前端零改动
+[[edge_functions]]
+  path = "/api/models-proxy"
+  function = "models-proxy"
+
+[[edge_functions]]
+  path = "/api/proxy"
+  function = "proxy"
