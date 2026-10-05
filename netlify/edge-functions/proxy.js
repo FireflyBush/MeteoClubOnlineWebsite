@@ -1,20 +1,21 @@
-// netlify/edge-functions/proxy.js —— 降雨 API 代理（Netlify Edge，3 分钟冷却）
+// netlify/edge-functions/proxy.js —— 降雨 API 中继代理
 //
-// 白名单策略：域名 + 精确路径 + 必要参数存在性
-//   · 上游 URL 的 sign（签名）与 _（时间戳）逐请求变化，完整 URL 无法钉死，
-//     只锁定 hostname + pathname；签名有效性由上游自行校验
-//   · 整个 handler 包裹 try/catch：任何异常返回带信息的 500，不再触发
-//     "uncaught exception during edge function invocation"
+// 架构：浏览器(校园网) → Netlify → Cloudflare Pages /api/proxy → wx.121.com.cn
+//   · 校园网无法解析 *.pages.dev，但 Netlify 服务器可以 → 由本函数代为拉取
+//   · wx.121.com.cn 对 Cloudflare 出口友好、对 Netlify 出口不友好
+//     → 借道 Cloudflare 的已验证链路，中继本身不直接碰上游
+//   · 3 分钟单槽冷却由 Cloudflare 端的固定 cacheKey 负责，本端只做中继 + 缓存加速
+//
+// ⚠️ Cloudflare 端 proxy.js 的 ALLOWED_DOMAINS 必须仍含 'wx.121.com.cn'
+//    （服务端 fetch 无 Origin 头，CF 的 CORS 白名单不影响本中继）
 
-const ALLOWED_HOST = 'wx.121.com.cn';
-const ALLOWED_PATH = '/Mobile/LdService/position';
+const CF_PROXY = 'https://smc-club.pages.dev/api/proxy';
+const ALLOWED_HOST = 'wx.121.com.cn';     // 本端仍做轻量校验，防止被当开放中继滥用
 
 const ALLOWED_ORIGINS = new Set([
   'https://meteoszshs.netlify.app',
-  // 'https://smc-club.pages.dev',   // 多平台并存期可保留
+  // 'https://smc-club.pages.dev',
 ]);
-
-const TTL = 180;
 
 export default async (request) => {
   try {
@@ -31,45 +32,41 @@ export default async (request) => {
     try { t = new URL(targetUrl); }
     catch { return new Response('bad url', { status: 400 }); }
 
-    // 白名单：Set 用 .has()（不是 .includes！）；sign/_ 每次都变，只要求存在
-    if (
-      t.hostname !== ALLOWED_HOST ||
-      t.pathname !== ALLOWED_PATH ||
-      !t.searchParams.get('latitude') ||
-      !t.searchParams.get('longitude') ||
-      !t.searchParams.get('sign')
-    ) {
+    // 轻量校验：域名 + 路径即可（签名的有效性由上游和 CF 端把关）
+    if (t.hostname !== ALLOWED_HOST || t.pathname !== '/Mobile/LdService/position')
       return new Response('forbidden', { status: 403 });
-    }
 
-    // 伪装请求头原样保留，适配降雨 API 的反爬策略
-    const response = await fetch(t.toString(), {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Accept': 'application/json, text/plain, */*',
-        'Accept-Language': 'zh-CN,zh;q=0.9',
-        'Referer': 'https://wx.121.com.cn/',
-      },
+    const t0 = Date.now();
+    // 关键：目标 URL 本身已含 %2F 等编码序列，转发前必须重新 encodeURIComponent，
+    // 否则 CF 端 searchParams.get('url') 会拿到残缺值
+    const relayUrl = `${CF_PROXY}?url=${encodeURIComponent(t.toString())}`;
+
+    const response = await fetch(relayUrl, {
+      headers: { 'User-Agent': 'SMC-Club-WeatherStack/1.0' },
       redirect: 'follow',
+      signal: AbortSignal.timeout(9000),   // CF 端 + 上游的链路预算，低于平台时限
     });
     const bodyText = await response.text();
 
     const h = corsHeaders(request);
     h.set('Content-Type', response.headers.get('Content-Type') || 'application/json');
-    h.set('Cache-Control', 'no-store');          // 浏览器每次都过代理，冷却由 CDN 层负责
-    h.set('X-Upstream-Status', String(response.status));   // 调试用：看上游真实状态
+    h.set('Cache-Control', 'no-store');
+    h.set('X-Relay-Status', String(response.status));
+    h.set('X-Relay-Ms', String(Date.now() - t0));
+
     if (response.status === 200) {
-      h.set('Netlify-CDN-Cache-Control', `public, s-maxage=${TTL}, stale-while-revalidate=30`);
+      // Netlify CDN 按本函数请求 URL 缓存 180s：会话内恒定 URL 时命中，
+      // 即使未命中，CF 端的单槽冷却也保证了全局每 3 分钟最多一次真实回源
+      h.set('Netlify-CDN-Cache-Control', 'public, s-maxage=180, stale-while-revalidate=30');
     } else {
-      // 非 200 不写 CDN 缓存头，避免风控页被冻结 3 分钟
       h.set('Netlify-CDN-Cache-Control', 'no-store');
     }
     return new Response(bodyText, { status: response.status, headers: h });
 
   } catch (e) {
-    // 兜底：调试期把错误信息带回前端方便定位，稳定后改回纯 'internal server error'
-    console.error('Proxy Error:', e.message);
-    return new Response('internal server error: ' + e.message, { status: 500 });
+    console.error('Relay Error:', e.name, e.message);
+    const status = (e.name === 'TimeoutError' || e.name === 'AbortError') ? 504 : 500;
+    return new Response(`relay error: ${e.name}`, { status });
   }
 };
 
