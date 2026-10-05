@@ -344,7 +344,7 @@ body {
 #modalText { font-size: 16px; color: #333; line-height: 1.6; margin-top: 10px; word-break: break-all; }
 
 
-#edgeone-watermark{
+#edgeone-watermark, #nl-badge-frame{
 	display: none !important;
 }
 
