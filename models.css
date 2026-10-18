@@ -204,3 +204,12 @@
   display: none;                    /* 有内容时由 JS 显示 */
 }
 #locClear:hover { color: var(--text, #333); background: var(--bg-hover, #eef1f4); }
+
+.control-card:hover, .chart-card:hover, .info-card:hover, .disclaimer-card:hover{
+    transform: translateY(-5px);
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
+}
+
+.control-card, .chart-card, .info-card, .disclaimer-card{
+transition: all .3s cubic-bezier(.25, .8, .25, 1);
+}
