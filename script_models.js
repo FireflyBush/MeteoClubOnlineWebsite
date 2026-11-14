@@ -17,10 +17,43 @@ $(function () {
   const MOBILE_BP = '(max-width: 1000px)';
   const MOBILE_CHART_W = 900;
   // ---------- 位置 ----------
+
 const DEFAULT_LOC = { name: '深圳市高级中学中心校区', lat: 22.552188, lon: 114.025106 };
-const GEO_URL = name =>
-  `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(name)}&count=20&language=zh&format=json` ;
+// ---------- 位置搜索：区/县 → 坐标（Photon / OSM 数据源） ----------
+// Photon 返回 GeoJSON：features[].geometry.coordinates = [lon, lat]（经度在前！）
+const GEO_URL = q =>
+  `https://photon.komoot.io/api/?q=${encodeURIComponent(q)}` +
+  `&lat=${DEFAULT_LOC.lat}&lon=${DEFAULT_LOC.lon}&lang=default&limit=20`;
+//   ↑ lang=default：返回 OSM 原生名称，中文查询 → 中文结果
+//   ↑ lat/lon：位置偏置（不强制过滤范围），让华南/国内结果排序靠前
+// ---------- 位置搜索：乡镇/街道级 → 坐标（Photon / OSM 数据源） ----------
 const REGION_OK = new Set(['CN', 'HK', 'MO', 'TW']);
+
+// 放行的行政区划颗粒度（osm_value）：
+//   city        地级市 / 直辖市辖区（深圳市、浦东新区、唐山市）
+//   county      县 / 县级市
+//   district    市辖区（Photon 对部分区也标此值）
+//   municipality 州 / 盟 / 开发区等次级政区
+//   town        镇
+//   township    乡
+//   suburb      街道（OSM 中国城市街道办的常见标记）
+//   borough     区（港澳十八区常用）
+//   quarter     街道/片区（低于 suburb 一级，中国街道另一种标记）
+const LOC_OSM_VALUE_OK = new Set([
+  'city', 'county', 'district', 'municipality',
+  'town', 'township',
+  'suburb', 'borough', 'quarter',
+]);
+// 明确排除：行政村及以下、楼盘小区
+const LOC_OSM_VALUE_BLOCK = new Set([
+  'village',              // 行政村
+  'hamlet',               // 自然村
+  'neighbourhood',        // 小区/楼盘（香蜜湖水榭花都即此标记）
+  'isolated_dwelling',    // 独居点
+  'farm',                 // 农场
+  'locality',             // 未分类聚落（Photon 对楼盘常给此值）
+]);
+
 
   const HOURLY_VARS = [
     'temperature_2m', 'relative_humidity_2m', 'dew_point_2m',
@@ -153,33 +186,53 @@ const RUN_DELAY_H = { gfs: 6, ifs: 6, aifs: 6 };
 
 // ---------- 位置搜索：区/县 → 坐标 ----------
 function locLabel(r) {
-  // 大陆：区县（市·省）；台湾：市；港澳：特区。同省重名靠市名区分（如石家庄/邢台的桥西区）
-  const parts = [r.admin2, r.admin1].filter((v, i, a) => v && a.indexOf(v) === i);
+  // 大陆：地级市（或县级市county/区）+ 省；港澳台：state。
+  // 去重处理 name 与 city 重名（如搜"深圳"→"深圳市（广东省）"而非"深圳市（深圳市·广东省）"）
+  const parts = [r.county || r.city || r.district, r.state]
+    .filter((v, i, a) => v && a.indexOf(v) === i);
   return parts.length ? `${r.name}（${parts.join('·')}）` : r.name;
 }
+
 function isAcceptable(r) {
-  if (!REGION_OK.has(r.country_code)) return false;
-  if (r.country_code === 'CN') {
-    if (!r.admin2) return false;                          // 大陆须能落到地级市下辖的区/县
-    if ((r.feature_code || '').startsWith('ADM1')) return false; // 排除省级条目
-  }
-  return true;
+  const cc = (r.countrycode || '').toUpperCase();
+  if (!REGION_OK.has(cc)) return false;
+  // 行政区划必然是 place=*；楼盘/商场/道路/车站的 osm_key 是 building/amenity/highway/railway…
+  if (r.osm_key !== 'place') return false;
+  if (LOC_OSM_VALUE_BLOCK.has(r.osm_value)) return false;
+  return LOC_OSM_VALUE_OK.has(r.osm_value);
 }
+
 async function searchLocation() {
   const q = $('#locInput').val().trim();
   if (!q) return;
-  const $box = $('#locResults').empty().show();
+  const $box =$('#locResults').empty().show();
   try {
     const res = await fetch(GEO_URL(q));
     const j = await res.json();
-    const hits = (j.results || []).filter(isAcceptable);
-    if (!hits.length) {
-      $box.html('<div class="loc-empty">未找到匹配的区/县，试试只输名称（如“滨江”而非“杭州市滨江区”）</div>');
+    // 归一化：摊平 properties，并把 [lon, lat] 还原为 latitude / longitude
+    // → 下游 locLabel / applyLocation / title 坐标显示全部保持原签名不变
+    const hits = (j.features || [])
+      .map(f => ({
+        ...f.properties,
+        latitude: f.geometry.coordinates[1],
+        longitude: f.geometry.coordinates[0],
+      }))
+      .filter(isAcceptable);
+    // 按显示名去重（Photon 常对同一地点返回 city/district 双条目）
+    const seen = new Set();
+    const uniq = hits.filter(r => {
+      const k = locLabel(r);
+      if (seen.has(k)) return false;
+      seen.add(k);
+      return true;
+    });
+    if (!uniq.length) {
+      $box.html('<div class="loc-empty">未找到匹配的结果，试试增减行政区划名（如“鼓楼”↔️“鼓楼区”）</div>');
       return;
     }
-    hits.slice(0, 12).forEach(r => {
+    uniq.slice(0, 12).forEach(r => {
       $('<div class="loc-item">').text(locLabel(r))
-        .attr('title', `${r.latitude.toFixed(4)}, ${r.longitude.toFixed(4)}`)
+        .attr('title', `${r.latitude.toFixed(4)},${r.longitude.toFixed(4)}`)
         .on('click', () => applyLocation(r))
         .appendTo($box);
     });
