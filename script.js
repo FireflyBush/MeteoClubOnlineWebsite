@@ -14,7 +14,7 @@ $(document).ready(function() {
         });
     }
 
-    const CORS_PROXY = "/api/proxy?url=";
+//    const CORS_PROXY = "/api/proxy?url=";
     const BASE_URL_FORECAST = "https://weather.121.com.cn/data_cache/szWeather/sz10day_new.js";
     const BASE_URL_ALARM = "https://weather.121.com.cn/data_cache/szWeather/alarm/szAlarm.js";
     const BASE_URL_RAIN = "https://wx.121.com.cn/Mobile/LdService/position?latitude=22.552188&longitude=114.025106&sign=1e86faea84f8574f155c9e485ed4710e";
@@ -208,36 +208,32 @@ $(document).ready(function() {
         return `${h}:${m}`;
     }
 
-    function fetchAllData() {
-        const ts = new Date().getTime();
-        const URL_FORECAST = `${BASE_URL_FORECAST}?_=${ts}`;
-        const URL_ALARM = `${BASE_URL_ALARM}?_=${ts}`;
-// 确认是这一行（带 &_= 时间戳）
-const URL_RAIN = CORS_PROXY + encodeURIComponent(BASE_URL_RAIN + "&_=" + ts);
+function fetchAllData() {
+    const ts = new Date().getTime();
+    const URL_FORECAST = `${BASE_URL_FORECAST}?_=${ts}`;
+    const URL_ALARM = `${BASE_URL_ALARM}?_=${ts}`;
+    const URL_RAIN = `${BASE_URL_RAIN}&_=${ts}`;   // 直连，不再经代理
 
-        $.getScript(URL_FORECAST, function() {
-            let forecastData = window.SZ121_10dayWeather;
-            
-            $.getScript(URL_ALARM, function() {
-                let alarmData = window.SZ121_AlarmInfo;
-                renderAlarms(alarmData);
-
-                $.getJSON(URL_RAIN, function(rainData) {
-                    renderWeatherData(forecastData, rainData);
-                    renderRain(rainData);
-                }).fail(function() {
-                    renderWeatherData(forecastData, null);
-                    renderRain(null);
-                });
-                
+    $.getScript(URL_FORECAST, function() {
+        let forecastData = window.SZ121_10dayWeather;
+        $.getScript(URL_ALARM, function() {
+            let alarmData = window.SZ121_AlarmInfo;
+            renderAlarms(alarmData);
+            $.getJSON(URL_RAIN, function(rainData) {
+                renderWeatherData(forecastData, rainData);
+                renderRain(rainData);
             }).fail(function() {
-                renderAlarms(null);
+                renderWeatherData(forecastData, null);
+                renderRain(null);
             });
-            
         }).fail(function() {
-            console.warn("预报数据获取失败");
+            renderAlarms(null);
         });
-    }
+    }).fail(function() {
+        console.warn("预报数据获取失败");
+    });
+}
+
 
     $('#refreshBtn').on('click', fetchAllData);
     fetchAllData();
