@@ -6,7 +6,7 @@
 /* 2. 定义自定义西文字体 */
 @font-face {
     font-family: 'GWM Sans UI'; /* 自定义一个名字 */
-    src: url('https://cdn.jsdelivr.net/gh/FireflyBush/MeteoClubOnlineWebsite@2026.1115/data/GWM.woff2') format('woff2');
+    src: url('https://cdn.jsdelivr.net/gh/FireflyBush/MeteoClubOnlineWebsite@2026.1115a/data/GWM.woff2') format('woff2');
     font-weight: normal;
     font-style: normal;
     font-display: swap; /* 字体加载时先显示后备字体，避免白屏 */
@@ -30,7 +30,7 @@ h1, h2, h3, h4, h5, h6, .nav-title, .section-title, .card-title {
    1. 全局变量与重置
    ========================================= */
 :root {
-    --bg-color: rgba(255, 255, 255, 0.55);
+    --bg-color: rgba(255, 255, 255, 0.80);
     --text-color: rgba(0, 0, 0, 0.75);
     --dim-color: rgba(0, 0, 0, 0.5);
     --title-color: #545454;
@@ -51,6 +51,11 @@ h1, h2, h3, h4, h5, h6, .nav-title, .section-title, .card-title {
 
 body {
     background-color: #eef2f6;
+	background-image: url(https://cdn.jsdelivr.net/gh/FireflyBush/MeteoClubOnlineWebsite@2026.1115a/data/pictures/bg.webp);
+	background-attachment: fixed;
+	background-repeat: no-repeat;
+	background-size:  140% auto;
+	background-position: center;
     color: var(--text-color);
     min-height: 100vh;
     padding-top: calc(var(--nav-height) + 20px);
@@ -180,7 +185,7 @@ body {
     background-color: var(--bg-color);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
-    border: 1px solid var(--glass-border);
+/*    border: 1px solid var(--glass-border); */
     box-shadow: var(--glass-shadow);
     border-radius: 12px;
     padding: 16px;
@@ -240,10 +245,10 @@ body {
 /* 三日预报 */
 .forecast-section { display: flex; flex-direction: column; gap: 16px; }
 .forecast-header { display: flex; justify-content: space-between; align-items: center; }
-.publish-time { font-size: 16px; color: var(--dim-color); }
+.publish-time { font-size: 14px; color: var(--dim-color); }
 .forecast-days { display: flex; justify-content: space-between; gap: 30px; }
 .day-item { flex: 1; text-align: center; position: relative; display: flex; flex-direction: column; align-items: center; }
-.day-date { font-size: 16px; color: var(--dim-color); font-weight: bold; }
+.day-date { font-size: 14px; color: var(--dim-color); font-weight: bold; }
 .day-info { display: flex; flex-direction: row; justify-content: center; align-items: center; }
 .day-icon { width: 65px; height: 65px; cursor: pointer; }
 .day-temps { display: flex; flex-direction: column; align-items: center; gap: 2px; margin-top: 8px; }
@@ -279,7 +284,7 @@ body {
 }
 
 .content-card {
-    background: rgba(255, 255, 255, 0.7);
+    background: var(--bg-color);
     -webkit-backdrop-filter: blur(20px);
     backdrop-filter: blur(20px);
     border-radius: 16px;
@@ -373,6 +378,9 @@ body {
     .day-max, .day-min { font-size: 18px; font-weight: bold; }
     
     .nav-title { display: none; } /* 移动端隐藏标题 */
+		body{background-size:  auto 140%;
+		background-position: -350px center;
+		}
 }
 
 @media (min-width: 1000px) {
